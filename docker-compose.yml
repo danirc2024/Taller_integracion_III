@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # Base de Datos Unificada
+  db:
+    image: postgres:15-alpine
+    container_name: bd_supermercados
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-precios_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - microservices_net
+
+  # Message Broker (para encolar tareas de scraping)
+  redis:
+    image: redis:7-alpine
+    container_name: redis_broker
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - microservices_net
+
+  # API Gateway / Backend Central (Ej. FastAPI)
+  api_gateway:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: api_gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-precios_db}
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    networks:
+      - microservices_net
+
+  # Microservicio de Frontend (Ej. Next.js exportado)
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: frontend_web
+    ports:
+      - "3000:80" # Nginx exponiendo web en puerto 3000 hacia el host
+    depends_on:
+      - api_gateway
+    restart: unless-stopped
+    networks:
+      - microservices_net
+
+  # Microservicio de Scraping Asíncrono
+  scraper_supermercados:
+    build:
+      context: ./scraper
+      dockerfile: Dockerfile
+    container_name: web_scraper_alimentos
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DB_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-precios_db}
+    depends_on:
+      - db
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0' # Evita acaparar el Pentium durante recolección masiva
+          memory: 3G  # Contención contra fugas de memoria
+    restart: unless-stopped
+    networks:
+      - microservices_net
+
+  # Microservicio de Optimización Espacial y Algoritmia
+  motor_rutas_gasolina:
+    build:
+      context: ./motor_rutas
+      dockerfile: Dockerfile
+    container_name: spatial_optimizer
+    environment:
+      - DB_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-precios_db}
+      - MAPS_API_KEY=${MAPS_API_KEY}
+    depends_on:
+      - db
+    deploy:
+      resources:
+        limits:
+          cpus: '0.8' # Prioridad balanceada
+          memory: 2G
+    restart: unless-stopped
+    networks:
+      - microservices_net
+
+networks:
+  microservices_net:
+    driver: bridge
+
+volumes:
+  pgdata:
