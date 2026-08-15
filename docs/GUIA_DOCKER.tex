@@ -124,9 +124,33 @@ docker compose version
 \end{lstlisting}
 Una salida estándar informando las versiones de compilación correspondientes, sin retornos de error asociados a privilegios o descriptores de sockets inactivos, indicará que el entorno está operativo para el desarrollo.
 
+\vspace{0.5cm}
+\noindent\textbf{\textwarning\ Atención (Error: \texttt{failed to connect to the docker API /var/run/docker.sock}):} \\
+Si al ejecutar comandos de Docker recibe un error indicando que no se puede conectar al socket, significa que el servicio/demonio de Docker no está en ejecución. 
+\begin{itemize}
+    \item En \textbf{Linux (Arch/Fedora/Debian):} Asegúrese de haber iniciado el servicio con \texttt{sudo systemctl start docker} (y habilitarlo con \texttt{enable --now}).
+    \item En \textbf{Windows:} Asegúrese de tener abierta la aplicación de \textit{Docker Desktop}.
+\end{itemize}
+
+\vspace{0.5cm}
+\noindent\textbf{\textwarning\ Atención (Error: \texttt{permission denied while trying to connect to the docker API}):} \\
+Si recibe un error de permisos en Linux, significa que el demonio está corriendo pero su usuario no tiene privilegios para interactuar con él.
+\begin{itemize}
+    \item \textbf{Solución permanente (Recomendada):} Agregue su usuario al grupo docker y recargue los grupos:
+\begin{lstlisting}[language=bash]
+sudo usermod -aG docker $USER
+newgrp docker
+\end{lstlisting}
+    \item \textbf{Solución rápida temporal:} Ejecute Docker con privilegios de administrador usando \texttt{sudo} (ej. \texttt{sudo docker compose up --build}).
+\end{itemize}
+
 \section{Levantar el Proyecto (Modo Desarrollo)}
 
 \begin{enumerate}
+    \item \textbf{Configurar las variables de entorno:} Copie el archivo de plantilla \texttt{.env.example} y renómbrelo a \texttt{.env}. Esto evitará advertencias de variables vacías.
+\begin{lstlisting}[language=bash]
+cp .env.example .env
+\end{lstlisting}
     \item Abra su terminal y navegue hasta la carpeta raíz del proyecto (donde se encuentra el archivo \texttt{docker-compose.yml}).
     \item Ejecute el siguiente comando para construir las imágenes y levantar todo el ecosistema en segundo plano:
 \begin{lstlisting}[language=bash]
