@@ -12,5 +12,5 @@ WORKDIR /app
 # COPY . .
 
 # Comando de ejemplo
-CMD ["echo", "Motor de optimización espacial no implementado aún. Añadir script de algoritmos."]
+CMD ["sh", "-c", "echo 'Motor de optimización espacial no implementado aún. Añadir script de algoritmos.' && tail -f /dev/null"]
 # CMD ["python", "spatial_service.py"]

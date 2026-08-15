@@ -10,5 +10,5 @@ WORKDIR /app
 # COPY . .
 
 # Comando de ejemplo para iniciar un worker o script
-CMD ["echo", "Scraper no implementado aún. Añadir lógica de extracción asíncrona."]
+CMD ["sh", "-c", "echo 'Scraper no implementado aún. Añadir lógica de extracción asíncrona.' && tail -f /dev/null"]
 # CMD ["celery", "-A", "tasks", "worker", "--loglevel=info"]

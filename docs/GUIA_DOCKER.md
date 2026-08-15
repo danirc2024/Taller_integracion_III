@@ -80,12 +80,30 @@ docker compose version
 ```
 Una salida estándar informando las versiones de compilación correspondientes, sin retornos de error asociados a privilegios o descriptores de sockets inactivos, indicará que el entorno está operativo para el desarrollo.
 
+> **⚠️ Atención (Error: `failed to connect to the docker API /var/run/docker.sock`):**
+> Si al ejecutar comandos de Docker recibes un error indicando que no se puede conectar al socket, significa que el servicio/demonio de Docker no está en ejecución. 
+> - En **Linux (Arch/Fedora/Debian):** Asegúrate de haber iniciado el servicio con `sudo systemctl start docker` (y habilitarlo con `enable --now`).
+> - En **Windows:** Asegúrate de tener abierta la aplicación de *Docker Desktop*.
+
+> **⚠️ Atención (Error: `permission denied while trying to connect to the docker API`):**
+> Si recibes un error de permisos en Linux, significa que el demonio está corriendo pero tu usuario no tiene privilegios para interactuar con él. 
+> - **Solución permanente (Recomendada):** Agrega tu usuario al grupo docker y recarga los grupos:
+>   ```bash
+>   sudo usermod -aG docker $USER
+>   newgrp docker
+>   ```
+> - **Solución rápida temporal:** Ejecuta Docker con privilegios de administrador usando `sudo` (ej. `sudo docker compose up --build`).
+
 ---
 
 ## 2. Levantar el Proyecto (Modo Desarrollo)
 
-1. Abre tu terminal y navega hasta la carpeta raíz del proyecto (donde se encuentra el archivo `docker-compose.yml`).
-2. Ejecuta el siguiente comando para construir las imágenes y levantar todo el ecosistema en segundo plano:
+1. **Configurar las variables de entorno:** Copia el archivo de plantilla `.env.example` y renómbralo a `.env`. Esto evitará advertencias de variables vacías (como `OPENAI_API_KEY` o `MAPS_API_KEY`).
+   ```bash
+   cp .env.example .env
+   ```
+2. Abre tu terminal y navega hasta la carpeta raíz del proyecto (donde se encuentra el archivo `docker-compose.yml`).
+3. Ejecuta el siguiente comando para construir las imágenes y levantar todo el ecosistema en segundo plano:
    ```bash
    docker compose up -d --build
    ```
