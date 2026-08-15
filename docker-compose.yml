@@ -6,11 +6,12 @@ services:
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-precios_db}
+      # Eliminamos POSTGRES_DB maestro, el script init.sql creará las múltiples DBs
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./infrastructure/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
     networks:
       - microservices_net
@@ -34,7 +35,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DB_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-precios_db}
+      - DB_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/api_db
       - REDIS_URL=redis://redis:6379/0
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
@@ -44,14 +45,17 @@ services:
     networks:
       - microservices_net
 
-  # Microservicio de Frontend (Ej. Next.js exportado)
+  # Microservicio de Frontend (React + Vite)
   frontend:
     build:
       context: ./frontend/web
       dockerfile: Dockerfile
     container_name: frontend_web
     ports:
-      - "3000:80" # Nginx exponiendo web en puerto 3000 hacia el host
+      - "3000:3000" 
+    volumes:
+      - ./frontend/web:/app
+      - /app/node_modules
     depends_on:
       - api_gateway
     restart: unless-stopped
@@ -66,7 +70,7 @@ services:
     container_name: web_scraper_alimentos
     environment:
       - REDIS_URL=redis://redis:6379/0
-      - DB_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-precios_db}
+      - DB_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/scraper_db
     depends_on:
       - db
       - redis
@@ -86,7 +90,7 @@ services:
       dockerfile: Dockerfile
     container_name: spatial_optimizer
     environment:
-      - DB_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-precios_db}
+      - DB_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/rutas_db
       - MAPS_API_KEY=${MAPS_API_KEY}
     depends_on:
       - db

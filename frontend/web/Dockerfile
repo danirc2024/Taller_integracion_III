@@ -1,32 +1,17 @@
-# Plantilla Base para Frontend (React + Vite)
-# Multi-stage build optimizado para producción
+# Dockerfile para Frontend (React + Vite) - Entorno de Desarrollo
+FROM node:20-alpine
 
-# -- Etapa de Construcción --
-# Descomentar al iniciar el proyecto
-# FROM node:20-alpine AS builder
-# WORKDIR /app
-# COPY package.json package-lock.json ./
-# RUN npm ci
-# COPY . .
-# RUN npm run build
+WORKDIR /app
 
-# -- Etapa de Producción --
-FROM nginx:alpine
+# Instalar dependencias primero para aprovechar la caché de capas de Docker
+COPY package.json package-lock.json* ./
+RUN npm install
 
-# Vite exporta los archivos estáticos a la carpeta 'dist' por defecto
-# COPY --from=builder /app/dist /usr/share/nginx/html
+# Copiar el resto del código fuente
+COPY . .
 
-# Opcional: Copiar configuración de Nginx (necesario si se usa React Router)
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Exponer el puerto configurado en Vite
+EXPOSE 3000
 
-EXPOSE 80
-
-CMD ["sh", "-c", "echo 'Frontend React+Vite no implementado aún. Añadir código y descomentar nginx.' && tail -f /dev/null"]
-# CMD ["nginx", "-g", "daemon off;"]
-
-# ---
-# NOTA PARA DESARROLLO (Hot Module Replacement):
-# En desarrollo, en lugar de usar Nginx, es común usar el servidor dev de Vite.
-# Puedes sobreescribir el comando en docker-compose.yml así:
-# command: npm run dev -- --host 0.0.0.0
-# Y mapear el puerto 5173:5173.
+# Iniciar el servidor de desarrollo de Vite
+CMD ["npm", "run", "dev"]
