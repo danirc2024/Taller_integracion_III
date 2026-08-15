@@ -44,14 +44,17 @@ services:
     networks:
       - microservices_net
 
-  # Microservicio de Frontend (Ej. Next.js exportado)
+  # Microservicio de Frontend (React + Vite)
   frontend:
     build:
       context: ./frontend/web
       dockerfile: Dockerfile
     container_name: frontend_web
     ports:
-      - "3000:80" # Nginx exponiendo web en puerto 3000 hacia el host
+      - "3000:3000" 
+    volumes:
+      - ./frontend/web:/app
+      - /app/node_modules
     depends_on:
       - api_gateway
     restart: unless-stopped
