@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.router import api_router
 
 # Inicialización de la aplicación FastAPI
 app = FastAPI(
@@ -10,22 +9,21 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-# Configuración de CORS para permitir peticiones del Frontend (Vite)
+# Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # En producción cambiar por la URL del dominio
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Registro de todas las rutas de la API bajo el prefijo /api/v1
-app.include_router(api_router, prefix=settings.API_V1_STR)
+# TODO: El encargado de la API deberá importar e incluir aquí su enrutador principal
+# app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/", include_in_schema=False)
 def root():
-    """Redirección informativa para la raíz del servidor."""
     return {
         "message": "Bienvenido a la API Gateway de Supermercados.",
-        "docs": "Visita /docs para ver el autocompletado Swagger UI."
+        "docs": "Visita /docs para ver el autocompletado Swagger UI (Una vez se definan los endpoints)."
     }

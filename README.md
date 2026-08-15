@@ -2,7 +2,7 @@
 
 Este repositorio contiene la arquitectura de microservicios para la plataforma de comparación de precios de alimentos de supermercados, incluyendo capacidades de optimización espacial. El proyecto está diseñado íntegramente bajo un ecosistema de **Docker** para garantizar aislamiento, control de recursos (vía cgroups) y portabilidad total.
 
-## 🏗️ Arquitectura de Directorios
+## Arquitectura de Directorios
 
 El repositorio se divide en dos dominios macro (`frontend` y `backend`), aplicando patrones de **Clean Architecture** y **Feature-Sliced Design** para maximizar la mutabilidad y mantenibilidad del código fuente.
 
@@ -30,7 +30,7 @@ Desarrollado sobre **React + Vite**. La estructura interna se orienta a funciona
 - **`scraper/`:** Nodo _worker_ asíncrono aislado. Se encarga exclusivamente de consumir e iterar catálogos web/APIs de supermercados sin bloquear el servidor web principal.
 - **`motor_rutas/`:** Microservicio dedicado a la alta carga matemática de trazado espacial (Problema del Viajante, A*), evaluación de tráfico y cálculo de gastos de combustible.
 
-## 🐳 Infraestructura Docker y Servicios
+## Infraestructura Docker y Servicios
 
 El entorno se levanta unificado a través de `docker-compose.yml`, el cual despliega una subred local (`microservices_net`) y coordina 6 contenedores principales:
 
@@ -41,7 +41,7 @@ El entorno se levanta unificado a través de `docker-compose.yml`, el cual despl
 5. **`web_scraper_alimentos`:** Contenedor restringido intencionalmente a 3GB RAM y 1.0 cpus vía _cgroups_ para prevenir *Thermal Throttling* durante la recolección masiva.
 6. **`spatial_optimizer`:** Contenedor reservado para procesamiento algorítmico.
 
-## 🚀 Despliegue Rápido (Modo Desarrollo)
+## Despliegue Rápido (Modo Desarrollo)
 
 1. Clona el archivo de configuración base:
    ```bash
