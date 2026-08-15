@@ -28,7 +28,7 @@ services:
   # API Gateway / Backend Central (Ej. FastAPI)
   api_gateway:
     build:
-      context: ./api
+      context: ./backend/api
       dockerfile: Dockerfile
     container_name: api_gateway
     ports:
@@ -47,7 +47,7 @@ services:
   # Microservicio de Frontend (Ej. Next.js exportado)
   frontend:
     build:
-      context: ./web
+      context: ./frontend/web
       dockerfile: Dockerfile
     container_name: frontend_web
     ports:
@@ -61,7 +61,7 @@ services:
   # Microservicio de Scraping Asíncrono
   scraper_supermercados:
     build:
-      context: ./scraper
+      context: ./backend/scraper
       dockerfile: Dockerfile
     container_name: web_scraper_alimentos
     environment:
@@ -82,7 +82,7 @@ services:
   # Microservicio de Optimización Espacial y Algoritmia
   motor_rutas_gasolina:
     build:
-      context: ./motor_rutas
+      context: ./backend/motor_rutas
       dockerfile: Dockerfile
     container_name: spatial_optimizer
     environment:
