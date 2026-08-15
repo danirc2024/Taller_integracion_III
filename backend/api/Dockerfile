@@ -7,18 +7,14 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Descomentar e instalar dependencias (asegúrate de incluir 'fastapi' y 'uvicorn' en el txt)
-# COPY requirements.txt .
-# RUN pip install --no-cache-dir -r requirements.txt
+# Instalar dependencias
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# COPY . .
+# Copiar el código fuente
+COPY . .
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "echo 'API Gateway (FastAPI) no implementado aún. Añade código y descomentar uvicorn.' && tail -f /dev/null"]
-
-# Comando sugerido para Producción:
-# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-
-# Comando sugerido para Desarrollo (con recarga automática):
-# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Comando para Desarrollo (con recarga automática)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
