@@ -125,6 +125,26 @@ services:
     networks:
       - microservices_net
 
+  # Motor Geográfico y Cálculo de Matrices de Distancias (C++)
+  osrm-backend:
+    image: osrm/osrm-backend:latest
+    container_name: osrm_engine
+    # Nota: Este contenedor fallará al encender si no se ha ejecutado el script setup_mapa.sh primero
+    # ya que requiere los archivos preprocesados (.osrm) en la carpeta /data
+    command: "osrm-routed --algorithm mld /data/mapa.osrm"
+    volumes:
+      - ./backend/motor_rutas/data:/data
+    ports:
+      - "5000:5000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0' 
+          memory: 2G # OSRM es ultra ligero si el mapa es solo una ciudad
+    restart: unless-stopped
+    networks:
+      - microservices_net
+
 networks:
   microservices_net:
     driver: bridge
