@@ -98,11 +98,17 @@ Una salida estándar informando las versiones de compilación correspondientes, 
 
 ## 2. Levantar el Proyecto (Modo Desarrollo)
 
-1. **Configurar las variables de entorno:** Copia el archivo de plantilla `.env.example` y renómbralo a `.env`. Esto evitará advertencias de variables vacías (como `OPENAI_API_KEY` o `MAPS_API_KEY`).
+1. **Configurar las variables de entorno:** Copia el archivo de plantilla `.env.example` y renómbralo a `.env`. Asegúrate de rellenar tus claves de IA (`GEMINI_API_KEY`).
    ```bash
    cp .env.example .env
    ```
-2. Abre tu terminal y navega hasta la carpeta raíz del proyecto (donde se encuentra el archivo `docker-compose.yml`).
+2. **Generar el Mapa Físico (OSRM):** El motor de rutas espaciales requiere un mapa de tu ciudad compilado localmente. Antes de levantar Docker por primera vez, ejecuta el script automático (por defecto descargará Temuco, Chile):
+   ```bash
+   ./scripts/setup_mapa.sh
+   ```
+   *(Si deseas descargar otra ciudad, pásale las coordenadas: `./scripts/setup_mapa.sh "sur,oeste,norte,este" "Ciudad"`).*
+
+3. Abre tu terminal y navega hasta la carpeta raíz del proyecto (donde se encuentra el archivo `docker-compose.yml`).
 3. Ejecuta el siguiente comando para construir las imágenes y levantar todo el ecosistema en segundo plano:
    ```bash
    docker compose up -d --build
