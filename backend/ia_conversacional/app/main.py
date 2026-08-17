@@ -1,26 +1,72 @@
+"""
+Punto de entrada del backend.
+
+Este archivo solo arma las piezas: crea la app FastAPI, instancia el
+repositorio de productos y los proveedores de IA con su configuracion, y
+los conecta a los routers. Toda la logica real (filtrado, llamadas a las
+APIs, manejo de errores, prompts) vive en app/ -- ver el README para el
+detalle de que hace cada modulo.
+
+no me funciona la z y derrepente se me olvida usar el teclado en pantalla perdon
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import chat, productos
 
-# TODO: Importar tu clase RespuestaUTF8 desde utils cuando la tengas lista
-# app = FastAPI(default_response_class=RespuestaUTF8)
-app = FastAPI(title="Microservicio de IA Conversacional")
+from app import config
+from app.ia_definiciones import definicion_funcion_filtros, definicion_funcion_filtros_gemini
+from app.productos import ProductoRepositorio
+from app.proveedores.gemini_proveedor import GeminiProveedor
+from app.proveedores.groq_proveedor import GroqProveedor
+from app.routers.chat import crear_router_chat
+from app.routers.productos import crear_router_productos
+from app.utils import RespuestaUTF8, fix_encoding_consola
 
-# Configuración de CORS según tu sección 5.10
+fix_encoding_consola()
+
+app = FastAPI(
+    title="Prototipo IA - Comparacion Groq vs Gemini",
+    default_response_class=RespuestaUTF8,
+)
+
+# --------------------------------------------------------------------------
+# el frontend arcaico es un HTML suelto (file:// o servido por un
+# server estatico simple, en otro puerto que 127.0.0.1:8000) haciendo
+# fetch() directo a estos endpoints
+# --------------------------------------------------------------------------
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Orígenes abiertos para que el frontend de prueba pase
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# TODO: Instanciar tu repositorio de productos y tus 3 proveedores aquí
+# --------------------------------------------------------------------------
+# dependencias: catalogo de productos + un proveedor de IA por cada uno de
+# los dos servicios que se estan comparando
+# --------------------------------------------------------------------------
 
-# Registrar los routers
-app.include_router(chat.router, prefix="/chat", tags=["Chat IA"])
-app.include_router(productos.router, prefix="/productos", tags=["Productos Crudos"])
+repositorio_productos = ProductoRepositorio(config.PRODUCTOS_PATH)
 
-@app.get("/")
-async def root():
-    return {"status": "ok", "message": "Microservicio de IA activo. Agrega tu lógica aquí."}
+proveedor_groq = GroqProveedor(
+    api_key=config.GROQ_API_KEY,
+    endpoint=config.GROQ_ENDPOINT,
+    modelo_extraccion=config.GROQ_MODEL_EXTRACCION,
+    modelo_explicacion=config.GROQ_MODEL_EXPLICACION,
+    definicion_funcion=definicion_funcion_filtros,
+)
+
+proveedor_gemini = GeminiProveedor(
+    api_key=config.GEMINI_API_KEY,
+    endpoint=config.GEMINI_ENDPOINT,
+    modelo=config.GEMINI_MODEL,
+    definicion_funcion=definicion_funcion_filtros_gemini,
+)
+
+# --------------------------------------------------------------------------
+# Routers
+# --------------------------------------------------------------------------
+
+app.include_router(crear_router_productos(repositorio_productos))
+app.include_router(crear_router_chat(repositorio_productos, proveedor_groq, proveedor_gemini))
