@@ -211,7 +211,7 @@ def main() -> None:
     print(f"Distancia total recorrida: {distancia_total:.2f} km")
 
     # Mostrar resultados completos
-    mostrar_resultados(orden, nombres, matriz_distancias)
+  #  mostrar_resultados(orden, nombres, matriz_distancias)
 
 
 if __name__ == "__main__":

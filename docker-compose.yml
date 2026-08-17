@@ -131,7 +131,7 @@ services:
     container_name: osrm_engine
     # Nota: Este contenedor fallará al encender si no se ha ejecutado el script setup_mapa.sh primero
     # ya que requiere los archivos preprocesados (.osrm) en la carpeta /data
-    command: "osrm-routed --algorithm mld /data/mapa.osrm"
+    command: "osrm-routed --algorithm mld /data/chile.osrm"
     volumes:
       - ./backend/motor_rutas/data:/data
     ports:
