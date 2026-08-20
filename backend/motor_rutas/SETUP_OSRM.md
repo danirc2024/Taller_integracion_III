@@ -10,40 +10,30 @@ Este documento explica cómo configurar y ejecutar OSRM (Open Source Routing Mac
 - **Conexión a Internet** para descargar datos OSM
 - **Permisos de ejecución** en el directorio `backend/motor_rutas`
 
-## Instalación Rápida (3 Pasos)
+> [!WARNING]
+> **ATENCIÓN DEL EQUIPO DE ARQUITECTURA (EVITAR CRASH DE RAM):**
+> Los scripts anteriores (`setup_mapa.ps1` y `setup_mapa.sh` locales) descargaban el mapa de todo Chile (`chile-latest.osm.pbf`). Compilar el mapa de un país completo con OSRM consume entre **4 a 8 GB de memoria RAM** en ráfagas, lo que causaba que el servidor principal (Pentium) y los contenedores Docker colapsaran por OOM (Out of Memory).
+>
+> **Solución aplicada:**
+> Los scripts viejos fueron eliminados. Ahora DEBEN utilizar el script unificado `scripts/setup_mapa.sh` ubicado en la raíz del proyecto. Éste se comunica con la API satelital Overpass para descargar **estrictamente** las calles de Temuco (Bounding Box), reduciendo el consumo de RAM a menos de 50MB.
 
-### Paso 1: Ejecutar el Script de Setup
+## Instalación Rápida (1 Paso)
 
-#### **En Linux/Mac:**
+### Paso 1: Ejecutar el Script de Setup Unificado
+
+Desde la raíz del proyecto (donde está el `docker-compose.yml`), ejecuta:
+
+#### **En Linux/Mac o WSL:**
 ```bash
-cd backend/motor_rutas
-chmod +x setup_mapa.sh
-bash setup_mapa.sh
+./scripts/setup_mapa.sh
 ```
 
-#### **En Windows - PowerShell (RECOMENDADO):**
-```powershell
-cd backend\motor_rutas
-.\setup_mapa.ps1
-```
-
-**Si obtienes error de permisos en PowerShell:**
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
-Luego ejecuta nuevamente:
-```powershell
-.\setup_mapa.ps1
-```
-
-#### **En Windows - Git Bash (SI funciona con Docker):**
+#### **En Windows (Git Bash):**
 ```bash
-cd backend/motor_rutas
-bash setup_mapa.sh
+bash scripts/setup_mapa.sh
 ```
 
-**Nota:** Si Git Bash falla con error `docker: error during connect`, usa PowerShell en su lugar.
+*(Si necesitas otra ciudad, puedes pasarle coordenadas: `./scripts/setup_mapa.sh "-38.8,-72.7,-38.6,-72.4" "OtraCiudad"`).*
 
 ---
 
