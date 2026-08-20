@@ -60,3 +60,10 @@ Thumbs.db
 *.fdb_latexmk
 *.synctex.gz
 *.pdf
+
+# Mapas Geoespaciales de OSRM (Archivos Pesados)
+*.osm
+*.osm.pbf
+*.osrm
+*.osrm.*
+backend/motor_rutas/data/
