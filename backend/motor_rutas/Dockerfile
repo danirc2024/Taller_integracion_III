@@ -7,13 +7,9 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Instalar dependencias geoespaciales críticas a nivel de sistema operativo
-# (Librerías como OSMnx y GeoPandas suelen requerir C++ y libspatialindex)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    g++ \
-    libspatialindex-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Al migrar de OSMnx a OSRM/OR-Tools, ya no necesitamos instalar compiladores 
+# pesados de C++ (gcc, g++, libspatialindex) en la imagen de Python.
+# Esto hace que el contenedor levante mucho mas rapido y ligero.
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

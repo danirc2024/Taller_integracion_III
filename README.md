@@ -14,6 +14,7 @@ El repositorio se divide en dos dominios macro (`frontend` y `backend`), aplican
 ├── backend/
 │   ├── api/                   # API Gateway Central (FastAPI)
 │   │   └── app/               # Clean Architecture: api, core, domain, infrastructure, services
+│   ├── ia_conversacional/     # Asistente LLM con patrón anti-alucinaciones (FastAPI)
 │   ├── motor_rutas/           # Microservicio de algoritmia y trazado geoespacial (Python)
 │   └── scraper/               # Extractor asíncrono de catálogos y ofertas (Python)
 ├── docs/                      # Documentación del proyecto (PDFs, LaTeX, Guías Markdown)
@@ -28,7 +29,8 @@ Desarrollado sobre **React + Vite**. La estructura interna se orienta a funciona
 ### Dominio Backend (`backend/`)
 - **`api/`:** Funciona como el Gateway nervioso de la plataforma, construido sobre **FastAPI**. Separa estrictamente los controladores HTTP (`app/api/`) de la lógica de negocio pura (`app/services/`) y los adaptadores de terceros o base de datos (`app/infrastructure/`).
 - **`scraper/`:** Nodo _worker_ asíncrono aislado. Se encarga exclusivamente de consumir e iterar catálogos web/APIs de supermercados sin bloquear el servidor web principal.
-- **`motor_rutas/`:** Microservicio dedicado a la alta carga matemática de trazado espacial (Problema del Viajante, A*), evaluación de tráfico y cálculo de gastos de combustible.
+- **`motor_rutas/`:** Microservicio dedicado a la alta carga matemática de trazado espacial (Problema del Viajante, A*), impulsado por OSRM y Google OR-Tools.
+- **`ia_conversacional/`:** Microservicio que integra Modelos de Lenguaje (Gemini/Groq) para interpretar consultas naturales y explicar resultados, operando estrictamente sobre datos pre-filtrados para evitar alucinaciones.
 
 ## Infraestructura Docker y Servicios
 
@@ -38,8 +40,10 @@ El entorno se levanta unificado a través de `docker-compose.yml`, el cual despl
 2. **`redis`:** Message Broker en memoria para encolar tareas asíncronas del web scraper.
 3. **`api_gateway`:** Backend RESTful, expuesto en el host vía puerto `8000`.
 4. **`frontend_web`:** Servidor Nginx que entrega la WebApp, expuesto en el puerto `3000`.
-5. **`web_scraper_alimentos`:** Contenedor restringido intencionalmente a 3GB RAM y 1.0 cpus vía _cgroups_ para prevenir *Thermal Throttling* durante la recolección masiva.
-6. **`spatial_optimizer`:** Contenedor reservado para procesamiento algorítmico.
+5. **`web_scraper_alimentos`:** Contenedor restringido intencionalmente a 3GB RAM para prevenir fugas de memoria.
+6. **`spatial_optimizer`:** Contenedor Python para resolver logísticas algorítmicas (TSP).
+7. **`osrm_engine`:** Motor backend en C++ (Open Source Routing Machine) que procesa mapas viales para el contenedor espacial.
+8. **`ia_chatbot_service`:** Asistente inteligente aislado en FastAPI.
 
 ## Despliegue Rápido (Modo Desarrollo)
 

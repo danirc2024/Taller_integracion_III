@@ -1,5 +1,7 @@
 fastapi>=0.100.0
 uvicorn[standard]>=0.23.0
 pydantic>=2.0.0
-osmnx>=1.9.0
-networkx>=3.0
+# osmnx y networkx ELIMINADOS por consumir demasiada RAM
+# Reemplazados por OR-Tools (Algoritmo TSP exacto) y httpx (Llamadas a OSRM Docker)
+ortools>=9.7.0
+httpx>=0.24.1
