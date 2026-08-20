@@ -103,6 +103,48 @@ services:
     networks:
       - microservices_net
 
+  # Microservicio de IA Conversacional (Asistente y Chatbot)
+  ia_conversacional:
+    build:
+      context: ./backend/ia_conversacional
+      dockerfile: Dockerfile
+    container_name: ia_chatbot_service
+    ports:
+      - "8002:8002"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      # Variable preparada por si el desarrollador decide mutar de JSON a DB
+      - DB_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/api_db
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5' # La IA pesada corre en Cloud, FastAPI local consume poco
+          memory: 1G
+    restart: unless-stopped
+    networks:
+      - microservices_net
+
+  # Motor Geográfico y Cálculo de Matrices de Distancias (C++)
+  osrm-backend:
+    image: osrm/osrm-backend:latest
+    container_name: osrm_engine
+    # Nota: Este contenedor fallará al encender si no se ha ejecutado el script setup_mapa.sh primero
+    # ya que requiere los archivos preprocesados (.osrm) en la carpeta /data
+    command: "osrm-routed --algorithm mld /data/chile.osrm"
+    volumes:
+      - ./backend/motor_rutas/data:/data
+    ports:
+      - "5000:5000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0' 
+          memory: 2G # OSRM es ultra ligero si el mapa es solo una ciudad
+    restart: unless-stopped
+    networks:
+      - microservices_net
+
 networks:
   microservices_net:
     driver: bridge
