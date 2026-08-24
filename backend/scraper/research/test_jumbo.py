@@ -1,53 +1,42 @@
-import json
-import re
-import scrapy
+"""Punto de entrada histórico para probar el spider de Jumbo.
+
+La implementación vive en ``scraper_core/spiders/jumbo`` para que
+``scrapy crawl jumbo_rsc`` y esta prueba no puedan divergir.
+"""
+
+import unittest
+
+from scrapy.http import TextResponse
+
+from scraper_core.spiders.jumbo import JumboRscSpider
 
 
-class JumboRscSpider(scrapy.Spider):
-    name = "jumbo_rsc"
-    allowed_domains = ["jumbo.cl"]
-
-    # 1. URL limpia de la categoría (sin el hash _rsc=...)
-    start_urls = ["https://www.jumbo.cl/frutas-y-verduras/verduras"]
-
-    # 2. Cabeceras esenciales para simular la petición de Next.js
-    custom_settings = {
-        "ROBOTSTXT_OBEY": False,
-        "LOG_LEVEL": "INFO",
-        "DEFAULT_REQUEST_HEADERS": {
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+class JumboExtractionTest(unittest.TestCase):
+    def test_extract_names_from_json_ld(self):
+        response = TextResponse(
+            url="https://www.jumbo.cl/frutas-y-verduras/verduras",
+            body=(
+                b'<script type="application/ld+json">'
+                b'{"@graph":[{"item":{"@type":"Product",'
+                b'"name":"Tomate Larga Vida"}}]}'
+                b'</script>'
             ),
-            "RSC": "1",  # Indica a Next.js que envíe solo la capa de datos
-            "Accept": "text/x-component",  # Formato del stream de Next.js
-        },
-    }
-
-    def parse(self, response):
-        print("\n" + "=" * 50)
-        print(f"STATUS HTTP: {response.status}")
-        print(f"TAMAÑO DE RESPUESTA: {len(response.body)} bytes")
-        print("=" * 50 + "\n")
-
-        # 3. Extraemos nombres de productos directamente del stream RSC mediante Expresiones Regulares
-        raw_text = response.text
-
-        # Busca patrones comunes de texto de productos dentro de la respuesta de Next.js
-        productos_encontrados = re.findall(r'"productName":"([^"]+)"', raw_text)
-
-        # Si no encuentra 'productName', busca por etiquetas de elementos del catálogo
-        if not productos_encontrados:
-            productos_encontrados = re.findall(
-                r'"displayName":"([^"]+)"', raw_text
-            )
-
-        # Eliminar duplicados manteniendo el orden
-        productos_unicos = list(dict.fromkeys(productos_encontrados))
-
-        print(
-            f"¡ÉXITO! Se detectaron {len(productos_unicos)} elementos en el stream RSC:\n"
+            encoding="utf-8",
         )
-        for idx, nombre in enumerate(productos_unicos[:15], 1):
-            print(f" {idx}. {nombre}")
 
-        print("\n" + "=" * 50)
+        self.assertEqual(
+            JumboRscSpider._extract_names(response), ["Tomate Larga Vida"]
+        )
+
+    def test_category_is_taken_from_url(self):
+        response = TextResponse(
+            url="https://www.jumbo.cl/frutas-y-verduras/verduras",
+            body=b"",
+            encoding="utf-8",
+        )
+
+        self.assertEqual(response.url.rstrip("/").split("/")[-1], "verduras")
+
+
+if __name__ == "__main__":
+    unittest.main()

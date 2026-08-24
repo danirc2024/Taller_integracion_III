@@ -1,52 +1,109 @@
 import json
-import re
+import os
+from pathlib import Path
+from urllib.parse import urlparse
+
 import scrapy
 
 
 class JumboRscSpider(scrapy.Spider):
     name = "jumbo_rsc"
     allowed_domains = ["jumbo.cl"]
+    default_category_urls = (
+        "https://www.jumbo.cl/frutas-y-verduras/verduras",
+    )
+    category_file = Path(__file__).parents[2] / "research" / "jumbo_categories.txt"
 
-    # 1. URL limpia de la categoría (sin el hash _rsc=...)
-    start_urls = ["https://www.jumbo.cl/frutas-y-verduras/verduras"]
-
-    # 2. Cabeceras esenciales para simular la petición de Next.js
     custom_settings = {
-        "ROBOTSTXT_OBEY": False,
         "LOG_LEVEL": "INFO",
         "DEFAULT_REQUEST_HEADERS": {
             "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                "TallerIntegracionIII/1.0 (contacto del proyecto)"
             ),
-            "RSC": "1",  # Indica a Next.js que envíe solo la capa de datos
-            "Accept": "text/x-component",  # Formato del stream de Next.js
+            "Accept": "text/html,application/xhtml+xml",
         },
     }
 
     def parse(self, response):
-        print("\n" + "=" * 50)
-        print(f"STATUS HTTP: {response.status}")
-        print(f"TAMAÑO DE RESPUESTA: {len(response.body)} bytes")
-        print("=" * 50 + "\n")
+        names = self._extract_names(response)
+        category = response.url.rstrip("/").split("/")[-1]
 
-        # 3. Extraemos nombres de productos directamente del stream RSC mediante Expresiones Regulares
-        raw_text = response.text
-
-        # Busca patrones comunes de texto de productos dentro de la respuesta de Next.js
-        productos_encontrados = re.findall(r'"productName":"([^"]+)"', raw_text)
-
-        # Si no encuentra 'productName', busca por etiquetas de elementos del catálogo
-        if not productos_encontrados:
-            productos_encontrados = re.findall(
-                r'"displayName":"([^"]+)"', raw_text
+        if not names:
+            self.logger.warning(
+                "No se encontraron productos en %s; el formato del sitio pudo cambiar",
+                response.url,
             )
 
-        # Eliminar duplicados manteniendo el orden
-        productos_unicos = list(dict.fromkeys(productos_encontrados))
-
-        # 4. En lugar de print, enviamos cada producto con yield
-        for nombre in productos_unicos:
+        for nombre in dict.fromkeys(names):
             yield {
                 "producto": nombre,
-                "supermercado": "Jumbo"
+                "supermercado": "Jumbo",
+                "categoria": category,
             }
+
+    def __init__(self, *args, add_url=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if add_url:
+            self._append_category_url(add_url)
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super().from_crawler(crawler, *args, **kwargs)
+        file_urls = cls._read_category_urls()
+        configured_urls = os.getenv("JUMBO_CATEGORY_URLS", "")
+        environment_urls = tuple(
+            url.strip() for url in configured_urls.split(",") if url.strip()
+        )
+        urls = tuple(dict.fromkeys(file_urls + environment_urls))
+        spider.start_urls = urls or cls.default_category_urls
+        if not spider.start_urls:
+            spider.logger.warning(
+                "No hay categorías configuradas para Jumbo",
+            )
+        return spider
+
+    @classmethod
+    def _read_category_urls(cls):
+        if not cls.category_file.exists():
+            return ()
+        return tuple(
+            line.strip()
+            for line in cls.category_file.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        )
+
+    def _append_category_url(self, url):
+        parsed = urlparse(url)
+        if parsed.scheme != "https" or parsed.hostname not in {"jumbo.cl", "www.jumbo.cl"}:
+            raise ValueError("add_url debe ser una URL HTTPS pública de jumbo.cl")
+        urls = self._read_category_urls()
+        if url not in urls:
+            self.category_file.parent.mkdir(parents=True, exist_ok=True)
+            with self.category_file.open("a", encoding="utf-8") as file:
+                file.write(f"{url}\n")
+
+    @staticmethod
+    def _extract_names(response):
+        """Extrae nombres desde los bloques JSON-LD de la categoría."""
+        names = []
+        for script in response.css('script[type="application/ld+json"]::text').getall():
+            try:
+                data = json.loads(script)
+            except json.JSONDecodeError:
+                continue
+            for entry in JumboRscSpider._walk_json(data):
+                if entry.get("@type") == "Product":
+                    name = entry.get("name")
+                    if isinstance(name, str) and name.strip():
+                        names.append(name.strip())
+        return names
+
+    @staticmethod
+    def _walk_json(value):
+        if isinstance(value, dict):
+            yield value
+            for child in value.values():
+                yield from JumboRscSpider._walk_json(child)
+        elif isinstance(value, list):
+            for child in value:
+                yield from JumboRscSpider._walk_json(child)
