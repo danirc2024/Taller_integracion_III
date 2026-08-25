@@ -41,6 +41,21 @@ class JumboRscSpider(scrapy.Spider):
                 "categoria": category,
             }
 
+    def start_requests(self):
+        for url in self.start_urls:
+            yield scrapy.Request(url, callback=self.parse, errback=self.handle_error)
+
+    def handle_error(self, failure):
+        request = failure.request
+        response = getattr(failure.value, "response", None)
+        status = response.status if response is not None else "sin respuesta"
+        self.logger.error(
+            "No se pudo procesar %s (HTTP %s): %s",
+            request.url,
+            status,
+            failure.getErrorMessage(),
+        )
+
     def __init__(self, *args, add_url=None, **kwargs):
         super().__init__(*args, **kwargs)
         if add_url:
@@ -86,7 +101,8 @@ class JumboRscSpider(scrapy.Spider):
     def _extract_names(response):
         """Extrae nombres desde los bloques JSON-LD de la categoría."""
         names = []
-        for script in response.css('script[type="application/ld+json"]::text').getall():
+        scripts = response.css('script[type="application/ld+json"]::text').getall()
+        for script in scripts:
             try:
                 data = json.loads(script)
             except json.JSONDecodeError:

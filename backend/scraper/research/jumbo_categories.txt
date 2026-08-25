@@ -1,6 +1,21 @@
+# Categoria Frutas y verduras
 https://www.jumbo.cl/frutas-y-verduras/verduras
 https://www.jumbo.cl/frutas-y-verduras/frutas
 https://www.jumbo.cl/frutas-y-verduras/frutos-secos-y-semillas
+
+# Categoria Lacteos, Huevos y Congelados
 https://www.jumbo.cl/lacteos-huevos-y-congelados/yoghurt
 https://www.jumbo.cl/lacteos-huevos-y-congelados/leches
+https://www.jumbo.cl/lacteos-huevos-y-congelados/huevos
+https://www.jumbo.cl/lacteos-huevos-y-congelados/mantequillas-y-margarinas
+https://www.jumbo.cl/lacteos-huevos-y-congelados/helados-y-postres
+https://www.jumbo.cl/lacteos-huevos-y-congelados/postres-refrigerados
+https://www.jumbo.cl/lacteos-huevos-y-congelados/verduras-congeladas
+https://www.jumbo.cl/lacteos-huevos-y-congelados/hamburguesas
+https://www.jumbo.cl/lacteos-huevos-y-congelados/nuggets-apanados-y-embutidos
+https://www.jumbo.cl/lacteos-huevos-y-congelados/frutas-y-pulpas-congeladas
+https://www.jumbo.cl/lacteos-huevos-y-congelados/leches-cultivadas-y-bebidas-lacteas
+https://www.jumbo.cl/lacteos-huevos-y-congelados/manjar-y-dulce-de-leche
+
+# Categoria Carnes y Pescados
 https://www.jumbo.cl/carnes-y-pescados/vacuno

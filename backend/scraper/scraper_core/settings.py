@@ -33,6 +33,9 @@ AUTOTHROTTLE_MAX_DELAY = 60
 AUTOTHROTTLE_TARGET_CONCURRENCY = 0.5
 RETRY_TIMES = 1
 
+# Guarda el progreso para poder reanudar el spider tras un reinicio.
+JOBDIR = "/app/.scrapy/jumbo_job"
+
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
 
