@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import scrapy
 
@@ -13,6 +13,7 @@ class JumboRscSpider(scrapy.Spider):
         "https://www.jumbo.cl/frutas-y-verduras/verduras",
     )
     category_file = Path(__file__).parents[2] / "research" / "jumbo_categories.txt"
+    max_pages = 20
 
     custom_settings = {
         "LOG_LEVEL": "INFO",
@@ -25,30 +26,68 @@ class JumboRscSpider(scrapy.Spider):
     }
 
     def parse(self, response):
-        names = self._extract_names(response)
-        category = response.url.rstrip("/").split("/")[-1]
+        products = self._extract_products(response)
+        category_url = response.meta.get("category_url", response.url)
+        category = urlparse(category_url).path.rstrip("/").split("/")[-1]
 
-        if not names:
+        if not products:
             self.logger.warning(
                 "No se encontraron productos en %s; el formato del sitio pudo cambiar",
                 response.url,
             )
 
-        for nombre in dict.fromkeys(names):
+        for product in products:
             yield {
-                "producto": nombre,
+                "producto": product["producto"],
+                "precio": product["precio"],
+                "imagen": product["imagen"],
                 "supermercado": "Jumbo",
                 "categoria": category,
             }
 
+        page = int(response.meta.get("page", 1))
+        if products and page < self.max_pages:
+            next_url = self._page_url(category_url, page + 1)
+            yield scrapy.Request(
+                next_url,
+                callback=self.parse,
+                errback=self.handle_error,
+                meta={"category_url": category_url, "page": page + 1},
+            )
+        elif products:
+            self.logger.warning(
+                "Se alcanzó el límite de %d páginas para %s",
+                self.max_pages,
+                category_url,
+            )
+
     def start_requests(self):
         for url in self.start_urls:
-            yield scrapy.Request(url, callback=self.parse, errback=self.handle_error)
+            yield scrapy.Request(
+                url,
+                callback=self.parse,
+                errback=self.handle_error,
+                meta={"category_url": url, "page": 1},
+            )
+
+    @staticmethod
+    def _page_url(category_url, page):
+        parsed = urlparse(category_url)
+        query = parse_qs(parsed.query, keep_blank_values=True)
+        query["page"] = [str(page)]
+        return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
 
     def handle_error(self, failure):
         request = failure.request
         response = getattr(failure.value, "response", None)
         status = response.status if response is not None else "sin respuesta"
+        if status == 404 and request.meta.get("page", 1) > 1:
+            self.logger.info(
+                "Fin de paginación para %s en page=%s",
+                request.meta.get("category_url", request.url),
+                request.meta["page"],
+            )
+            return
         self.logger.error(
             "No se pudo procesar %s (HTTP %s): %s",
             request.url,
@@ -98,9 +137,10 @@ class JumboRscSpider(scrapy.Spider):
                 file.write(f"{url}\n")
 
     @staticmethod
-    def _extract_names(response):
-        """Extrae nombres desde los bloques JSON-LD de la categoría."""
-        names = []
+    def _extract_products(response):
+        """Extrae nombre, precio e imagen desde los bloques JSON-LD."""
+        products = []
+        seen = set()
         scripts = response.css('script[type="application/ld+json"]::text').getall()
         for script in scripts:
             try:
@@ -111,8 +151,24 @@ class JumboRscSpider(scrapy.Spider):
                 if entry.get("@type") == "Product":
                     name = entry.get("name")
                     if isinstance(name, str) and name.strip():
-                        names.append(name.strip())
-        return names
+                        name = name.strip()
+                        if name in seen:
+                            continue
+                        seen.add(name)
+                        offer = entry.get("offers", {})
+                        if isinstance(offer, list):
+                            offer = offer[0] if offer else {}
+                        image = entry.get("image")
+                        if isinstance(image, list):
+                            image = image[0] if image else None
+                        products.append(
+                            {
+                                "producto": name,
+                                "precio": offer.get("price") if isinstance(offer, dict) else None,
+                                "imagen": image if isinstance(image, str) else None,
+                            }
+                        )
+        return products
 
     @staticmethod
     def _walk_json(value):

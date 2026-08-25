@@ -1,3 +1,5 @@
+import os
+
 # Scrapy settings for scraper_core project
 #
 # For simplicity, this file contains only settings considered important or
@@ -33,8 +35,8 @@ AUTOTHROTTLE_MAX_DELAY = 60
 AUTOTHROTTLE_TARGET_CONCURRENCY = 0.5
 RETRY_TIMES = 1
 
-# Guarda el progreso para poder reanudar el spider tras un reinicio.
-JOBDIR = "/app/.scrapy/jumbo_job"
+# Actívalo con SCRAPY_JOBDIR sólo cuando quieras reanudar una ejecución.
+JOBDIR = os.getenv("SCRAPY_JOBDIR")
 
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
