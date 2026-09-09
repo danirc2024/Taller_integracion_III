@@ -1,0 +1,69 @@
+# ===============================
+# Secretos y Variables de Entorno
+# ===============================
+.env
+.env.*
+!.env.example
+
+# ===============================
+# Frontend (Node.js / React / Vite)
+# ===============================
+node_modules/
+.npm/
+dist/
+out/
+build/
+
+# ===============================
+# Backend (Python / FastAPI / Scraper)
+# ===============================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+
+# Entornos Virtuales de Python
+venv/
+.venv/
+env/
+
+# ===============================
+# Base de Datos / Volúmenes
+# ===============================
+pgdata/
+
+# ===============================
+# Logs
+# ===============================
+logs/
+*.log
+
+# ===============================
+# Sistema Operativo y Editores
+# ===============================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ===============================
+# Archivos de compilación LaTeX
+# ===============================
+*.aux
+*.toc
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.pdf
+
+# Mapas Geoespaciales de OSRM (Archivos Pesados)
+*.osm
+*.osm.pbf
+*.osrm
+*.osrm.*
+backend/motor_rutas/data/
