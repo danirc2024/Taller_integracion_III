@@ -1,0 +1,67 @@
+@startuml Diagrama_Secuencia_SuperAdmin
+skinparam Style StrictUml
+skinparam SequenceMessageAlignment center
+skinparam DatabaseBackgroundColor #E1F5FE
+skinparam ParticipantBackgroundColor #FFEBEE
+
+actor "Super Admin" as Admin
+participant "Frontend Panel (React)" as UI
+participant "API Gateway (FastAPI)" as API
+participant "Redis Queue" as Redis
+participant "Worker Web Scraper" as Scraper
+database "PostgreSQL DB" as DB
+
+autonumber 300
+
+box "1. Login Super Admin y Gestión de Fuentes de Scraping (ucScraping, ucFuentes)" #FFEBEE
+    Admin -> UI : 1. Inicia sesión como Super Admin
+    UI -> API : POST /api/v1/admin/login (credenciales admin)
+    API -> DB : Validar credenciales y rol SuperAdmin
+    DB --> API : Rol confirmado + Token JWT Admin
+    API --> UI : 200 OK (Token Admin)
+
+    Admin -> UI : 2. Gestionar Fuentes (Agregar/Actualizar/Eliminar Supermercados)
+    UI -> API : PUT /api/v1/admin/fuentes (fuente_id, config_url, estado)
+    API -> DB : UPDATE fuentes_supermercado SET estado = ...
+    DB --> API : Confirmación actualización OK
+    API --> UI : 200 OK (Fuente actualizada)
+
+    Admin -> UI : 3. Ejecutar Web Scraping manual
+    UI -> API : POST /api/v1/admin/scraping/trigger (fuentes_ids)
+    API -> Redis : Encolar tarea de extracción asíncrona
+    Redis -> Scraper : Ejecutar worker de extracción (web_scraper_alimentos)
+    Scraper -> DB : UPSERT en catálogo de productos y precios
+    DB --> Scraper : Datos guardados
+    API --> UI : 202 Accepted (Scraping iniciado en segundo plano)
+end box
+
+box "2. Gestión de Usuarios e Igualdad de Productos (ucUsuarios, Definir Igualdad)" #FCE4EC
+    Admin -> UI : 4. Solicita listado de usuarios
+    UI -> API : GET /api/v1/admin/usuarios
+    API -> DB : SELECT * FROM usuarios
+    DB --> API : Lista de usuarios del sistema
+    API --> UI : 200 OK (Tabla de Usuarios)
+
+    Admin -> UI : Cambia estado (Activar/Desactivar) o Modifica Suscripción
+    UI -> API : PATCH /api/v1/admin/usuarios/{id} (estado="desactivado", plan="premium")
+    API -> DB : UPDATE usuarios SET estado = ...
+    DB --> API : OK
+    API --> UI : 200 OK (Usuario modificado)
+
+    Admin -> UI : 5. Definir Igualdad / Equivalencia entre Productos (ucEquivalencias)
+    UI -> API : POST /api/v1/admin/productos/equivalencias (prod_a_id, prod_b_id)
+    API -> DB : INSERT INTO producto_equivalencias (prod_master_id, prod_alias_id)
+    DB --> API : Registro de equivalencia unificado
+    API --> UI : 200 OK (Productos vinculados semánticamente)
+end box
+
+box "3. Monitoreo del Sistema y Métricas (Monitoreo del sistema)" #FFF3E0
+    Admin -> UI : 6. Solicita Dashboard de Monitoreo
+    UI -> API : GET /api/v1/admin/metrics
+    API -> DB : Query métricas (Éxito/Error Scraping, Tokens IA, Ahorro Promedio, Productos Top)
+    DB --> API : Datos consolidados de métricas
+    API --> UI : 200 OK (JSON Métricas del Sistema)
+    UI --> Admin : Despliega gráficos (Tasa scraping, uso tokens LLM, ahorro promedio y productos más agregados)
+end box
+
+@enduml

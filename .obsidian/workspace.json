@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "README.md",
+                "file": "docs/GUIA_PULL_REQUESTS.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "README"
+              "title": "GUIA_PULL_REQUESTS"
             }
           }
         ]
@@ -188,6 +188,23 @@
       "bases:Crear nueva base": false
     }
   },
-  "active": "0f01639092ad9390",
-  "lastOpenFiles": []
+  "active": "b9965e7eb96fd132",
+  "lastOpenFiles": [
+    "docs/guia_pull_requests_informe.tex",
+    "docs/Investigaciones/Arquitectura_Servidor_y_Dependencias.md",
+    "docs/GUIA_PULL_REQUESTS.md",
+    "docs/Diagramas/README.md",
+    "docs/FLUJO_GITHUB.md",
+    "docs/Diagramas/secuencia_superadmin.puml",
+    "docs/Diagramas/secuencia_registrado.puml",
+    "docs/Diagramas/secuencia_invitado.puml",
+    "docs/Diagramas",
+    "docs/diagramas/README.md",
+    "docs/diagramas/secuencia_superadmin.puml",
+    "docs/diagramas/secuencia_registrado.puml",
+    "docs/diagramas/secuencia_invitado.puml",
+    "docs/diagramas",
+    "docs/GUIA_DOCKER.md",
+    "README.md"
+  ]
 }
