@@ -12,6 +12,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./infrastructure/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infrastructure/db/schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
     restart: unless-stopped
     networks:
       - microservices_net
@@ -125,22 +126,40 @@ services:
     networks:
       - microservices_net
 
-  # Motor Geográfico y Cálculo de Matrices de Distancias (C++)
-  osrm-backend:
-    image: osrm/osrm-backend:latest
-    container_name: osrm_engine
-    # Nota: Este contenedor fallará al encender si no se ha ejecutado el script setup_mapa.sh primero
-    # ya que requiere los archivos preprocesados (.osrm) en la carpeta /data
-    command: "osrm-routed --algorithm mld /data/mapa.osrm"
+  # Microservicio en Go (Base en espera del código real de Matu)
+  go_service:
+    image: golang:1.21-alpine
+    container_name: go_backend_service
+    working_dir: /app
     volumes:
-      - ./backend/motor_rutas/data:/data
+      - ./backend/go_service:/app
+    # Espera a que el código exista para levantarlo, de lo contrario se queda activo esperando
+    command: sh -c "if [ -f main.go ]; then go run main.go; else echo 'Waiting for Go code...' && tail -f /dev/null; fi"
     ports:
-      - "5000:5000"
+      - "8081:8080" # Expuesto externamente en el puerto 8081
+    environment:
+      - DB_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/api_db
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - microservices_net
+
+  # OpenTripPlanner (Soporte Transporte Público y Multimodal - Reemplaza a OSRM)
+  otp_engine:
+    image: docker.io/opentripplanner/opentripplanner:latest
+    container_name: otp_engine
+    # Nota: Requiere carpeta con OSM (PBF) y GTFS (.zip) para construir el grafo
+    command: "--build --serve /var/otp/graphs"
+    volumes:
+      - ./backend/motor_rutas/otp_data:/var/otp/graphs
+    ports:
+      - "8080:8080"
     deploy:
       resources:
         limits:
-          cpus: '1.0' 
-          memory: 2G # OSRM es ultra ligero si el mapa es solo una ciudad
+          cpus: '2.0' 
+          memory: 4G # OTP requiere más memoria para cargar grafos completos
     restart: unless-stopped
     networks:
       - microservices_net
