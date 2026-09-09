@@ -1,3 +1,5 @@
+import os
+
 # Scrapy settings for scraper_core project
 #
 # For simplicity, this file contains only settings considered important or
@@ -22,9 +24,19 @@ ADDONS = {}
 ROBOTSTXT_OBEY = True
 
 # Concurrency and throttling settings
-#CONCURRENT_REQUESTS = 16
+CONCURRENT_REQUESTS = 1
 CONCURRENT_REQUESTS_PER_DOMAIN = 1
 DOWNLOAD_DELAY = 1
+DOWNLOAD_TIMEOUT = 30
+DOWNLOAD_MAXSIZE = 5 * 1024 * 1024
+AUTOTHROTTLE_ENABLED = True
+AUTOTHROTTLE_START_DELAY = 2
+AUTOTHROTTLE_MAX_DELAY = 60
+AUTOTHROTTLE_TARGET_CONCURRENCY = 0.5
+RETRY_TIMES = 1
+
+# Actívalo con SCRAPY_JOBDIR sólo cuando quieras reanudar una ejecución.
+JOBDIR = os.getenv("SCRAPY_JOBDIR")
 
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
@@ -64,14 +76,6 @@ DOWNLOAD_DELAY = 1
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
-#AUTOTHROTTLE_ENABLED = True
-# The initial download delay
-#AUTOTHROTTLE_START_DELAY = 5
-# The maximum download delay to be set in case of high latencies
-#AUTOTHROTTLE_MAX_DELAY = 60
-# The average number of requests Scrapy should be sending in parallel to
-# each remote server
-#AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
 # Enable showing throttling stats for every response received:
 #AUTOTHROTTLE_DEBUG = False
 

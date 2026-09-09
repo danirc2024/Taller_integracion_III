@@ -38,6 +38,38 @@ Cuando el desarrollador haya programado su araña (ej. `ejemplo_supermercado`), 
 docker compose exec scraper_supermercados scrapy crawl ejemplo_supermercado
 ```
 
+Para Jumbo:
+
+```bash
+docker compose exec scraper_supermercados scrapy crawl jumbo_rsc -O /tmp/jumbo.json
+```
+
+La lista persistente está en `research/jumbo_categories.txt`. Para agregar una
+categoría y ejecutar todas las URLs guardadas:
+
+```bash
+docker compose exec scraper_supermercados scrapy crawl jumbo_rsc \
+	-a add_url="https://www.jumbo.cl/ruta-de-la-categoria" \
+	-O /tmp/jumbo.json
+```
+
+El comando agrega la URL sólo si no existe. Ejecuta el comando una vez por cada
+nueva categoría, o edita directamente el archivo dejando una URL pública por
+línea. El volumen de Docker conserva la lista al recrear el contenedor.
+
+El spider `jumbo_rsc` consulta la categoría de verduras una sola vez por
+ejecución. Respeta `robots.txt`, usa una identidad identificable y mantiene
+una solicitud simultánea por dominio. `AutoThrottle`, el timeout de 30
+segundos, el máximo de 5 MiB por respuesta y un solo reintento reducen la
+carga y el consumo del contenedor.
+
+La respuesta con `Accept: text/x-component` (RSC) es un detalle interno de
+Next.js, no una API pública estable. Por eso el spider usa HTML por defecto y
+la extracción de nombres está aislada: si Jumbo cambia su formato, registra
+una advertencia en vez de generar datos silenciosamente incorrectos. La URL
+actual no implementa paginación; agregarla requiere confirmar primero el
+enlace o endpoint público que el sitio entregue.
+
 ## Conectividad
 Tanto la URL de Redis como la URL de la Base de Datos están siendo pasadas dinámicamente al contenedor a través de `docker-compose.yml`. Para conectarte a ellas desde Scrapy (por ejemplo en el archivo `pipelines.py`), solo debes invocar las variables de entorno:
 
