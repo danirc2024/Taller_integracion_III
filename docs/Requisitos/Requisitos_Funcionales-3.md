@@ -35,11 +35,17 @@ Vicente Matus
 
 Los requerimientos funcionales han sido definidos asegurando una trazabilidad estricta con las Reglas de Negocio (RN) y el Diagrama de Casos de Uso. Todo el ciclo de desarrollo a lo largo de los 4 Sprints constituye la construcción del **Producto Mínimo Viable (MVP)** , asumiendo integración continua entre Frontend y Backend. 
 
-**_Nota de Herencia y Control de Acceso (RN-11):_** El actor _Usuario registrado_ hereda de forma implícita todos los permisos de lectura e interacción del actor _Invitado_ . 
+**_Nota de Herencia y Control de Acceso (RN-11):_** El actor _Usuario registrado_ hereda de forma implícita todos los permisos de lectura e interacción del actor _Invitado_ . A su vez, el _Usuario Colaborador_ hereda todas las capacidades del _Usuario registrado_ . 
 
 ### **1.1. MVP Etapa 1: Catálogo, Autenticación y Listas (Sprints 1 y 2)** 
 
-Esta etapa consolida la base de datos, el acceso seguro, la gestión del perfil (incluyendo restricciones alimentarias) y la interacción inicial con el asistente de Inteligencia Artificial. 
+Esta etapa consolida la base de datos, el acceso seguro, la gestión del perfil (incluyendo restricciones alimentarias), la interacción inicial con el asistente de Inteligencia Artificial y el sistema de misiones crowdsourced. 
+
+1 
+
+Taller de Integración 
+
+Vicente Matus 
 
 |**ID**|**Acción / Nom-**<br>**bre**|**Descripción de la Funcio-**<br>**nalidad y Trazabilidad**|**Sprint**|**Actor**|
 |---|---|---|---|---|
@@ -50,20 +56,22 @@ Esta etapa consolida la base de datos, el acceso seguro, la gestión del perfil 
 |**RF-01.5**|Ejecutar<br>Web<br>Scraping|Accionar la API Piloto para<br>extracción de precios en tiem-<br>po real.|1|Super Admin|
 |**RF-02.1**|Guardar elemen-<br>tos|Crear listas y añadir ítems. El<br>sistema excluirá productos sin<br>stock (RN-02).|2|Usuario regis-<br>trado|
 |**RF-02.2**|Asistente IA (Re-<br>cetas)|Recibir solicitudes de recetas<br>y filtrar resultados según el<br>perfil dietético del usuario. El<br>backend validará el stock real<br>(RN-06).|2|Usuario regis-<br>trado|
+|**RF-02.3**|Completar misio-<br>nes de validación|Reportar la fidelidad de pre-<br>cios, stock o costos logísticos<br>tras una compra, acumulando<br>puntos para la IA (RN-25, RN-<br>26).|2|Usu. Colabo-<br>rador|
+|**RF-02.4**|Consultar estado<br>de colaborador|Panel para revisar nivel de mi-<br>siones, tiempo de vigencia res-<br>tante y saldo de tokens de IA<br>disponibles (RN-25).|2|Usu. Colabo-<br>rador|
 
 
 
 Cuadro 1: Requerimientos Funcionales - MVP Sprints 1 y 2. 
 
-1 
+### **1.2. MVP Etapa 2: Motor de Optimización y Administración (Sprints 3 y 4)** 
+
+Esta etapa despliega el núcleo matemático (cruzando logística y finanzas) y proporciona al administrador las herramientas de monitoreo y homologación de datos. 
+
+2 
 
 Taller de Integración 
 
 Vicente Matus 
-
-### **1.2. MVP Etapa 2: Motor de Optimización y Administración (Sprints 3 y 4)** 
-
-Esta etapa despliega el núcleo matemático (cruzando logística y finanzas) y proporciona al administrador las herramientas de monitoreo y homologación de datos. 
 
 |**ID**|**Acción / Nom-**<br>**bre**|**Descripción de la Funcio-**<br>**nalidad y Trazabilidad**|**Sprint**|**Actor**|
 |---|---|---|---|---|
@@ -80,5 +88,5 @@ Esta etapa despliega el núcleo matemático (cruzando logística y finanzas) y p
 
 Cuadro 2: Requerimientos Funcionales - MVP Sprints 3 y 4. 
 
-2 
+3 
 
