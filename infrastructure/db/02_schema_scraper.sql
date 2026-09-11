@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS scraper.productos_crudos (
     titulo_crudo VARCHAR(255) NOT NULL,
     marca_cruda VARCHAR(100),
     categoria_cruda VARCHAR(100),
+    formato_crudo VARCHAR(100),
     url_producto TEXT,
     url_imagen TEXT,
     en_stock BOOLEAN DEFAULT true,
@@ -70,6 +71,7 @@ CREATE TABLE IF NOT EXISTS scraper.capturas_precios (
     precio_tarjeta DECIMAL(12,2),
     precio_por_unidad DECIMAL(12,2),
     metrica_unidad VARCHAR(20),
+    mecanica_promocion VARCHAR(255),
     esta_disponible BOOLEAN DEFAULT true,
     capturado_el TIMESTAMP NOT NULL DEFAULT NOW()
 );

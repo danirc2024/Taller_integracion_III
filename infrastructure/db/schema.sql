@@ -186,6 +186,7 @@ CREATE TABLE IF NOT EXISTS scraper.productos_crudos (
     titulo_crudo VARCHAR(255) NOT NULL,
     marca_cruda VARCHAR(100),
     categoria_cruda VARCHAR(100),
+    formato_crudo VARCHAR(100),
     url_producto TEXT,
     url_imagen TEXT,
     en_stock BOOLEAN DEFAULT true,
@@ -201,6 +202,7 @@ CREATE TABLE IF NOT EXISTS scraper.capturas_precios (
     precio_tarjeta DECIMAL(12,2),
     precio_por_unidad DECIMAL(12,2),
     metrica_unidad VARCHAR(20),
+    mecanica_promocion VARCHAR(255),
     esta_disponible BOOLEAN DEFAULT true,
     capturado_el TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -268,3 +270,20 @@ CREATE TABLE IF NOT EXISTS rutas.detalle_articulos_parada (
     cantidad INTEGER NOT NULL DEFAULT 1,
     precio_unitario_aplicado DECIMAL(12,2) NOT NULL
 );
+
+-- Restricciones de Integridad Referencial Cruzadas (Cross-Schema Foreign Keys)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_tarjetas_cadena') THEN
+        ALTER TABLE api.tarjetas_fidelidad_usuario
+            ADD CONSTRAINT fk_tarjetas_cadena
+            FOREIGN KEY (cadena_id) REFERENCES scraper.cadenas_supermercado(id) ON DELETE CASCADE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_misiones_sucursal') THEN
+        ALTER TABLE api.misiones_validacion
+            ADD CONSTRAINT fk_misiones_sucursal
+            FOREIGN KEY (sucursal_id) REFERENCES scraper.sucursales_supermercado(id) ON DELETE CASCADE;
+    END IF;
+END $$;
+
