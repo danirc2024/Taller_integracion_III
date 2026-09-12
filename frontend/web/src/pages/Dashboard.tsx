@@ -1,14 +1,14 @@
 import { useMemo } from 'react'
 import { Navigation, Route, Store } from 'lucide-react'
 import { useLayoutContext } from '@/layouts/MainLayout'
-import { ProductCard } from '@/components/product-card'
-import { RouteMap, type MapStop } from '@/components/route-map'
+import { ProductCard } from '@/components/ProductCard'
+import { RouteMap, type MapStop } from '@/components/RouteMap'
 import {
   HOME,
   products,
   supermarketById,
-  type Product,
-} from '@/lib/data'
+} from '@/data/mock'
+import type { UiProduct as Product } from '@/types'
 
 // Haversine-ish squared distance is enough for ordering nearby stops.
 function dist(a: [number, number], b: [number, number]) {

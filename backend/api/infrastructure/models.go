@@ -45,13 +45,13 @@ func (PreferencialDieteticaUsuario) TableName() string {
 
 // DireccionUsuario almacena las ubicaciones guardadas en api.direcciones_usuario
 type DireccionUsuario struct {
-	ID              uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	UsuarioID       uuid.UUID `gorm:"type:uuid;not null;index" json:"usuario_id"`
-	Etiqueta        *string   `gorm:"type:varchar(100)" json:"etiqueta,omitempty"`
-	TextoDireccion  string    `gorm:"type:varchar(255);not null" json:"texto_direccion"`
-	Lat             float64   `gorm:"type:decimal(10,8);not null" json:"lat"`
-	Lon             float64   `gorm:"type:decimal(11,8);not null" json:"lon"`
-	EsPrincipal     bool      `gorm:"default:false" json:"es_principal"`
+	ID             uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	UsuarioID      uuid.UUID `gorm:"type:uuid;not null;index" json:"usuario_id"`
+	Etiqueta       *string   `gorm:"type:varchar(100)" json:"etiqueta,omitempty"`
+	TextoDireccion string    `gorm:"type:varchar(255);not null" json:"texto_direccion"`
+	Lat            float64   `gorm:"type:decimal(10,8);not null" json:"lat"`
+	Lon            float64   `gorm:"type:decimal(11,8);not null" json:"lon"`
+	EsPrincipal    bool      `gorm:"default:false" json:"es_principal"`
 
 	Usuario *Usuario `gorm:"foreignKey:UsuarioID;constraint:OnDelete:CASCADE" json:"-"`
 }
@@ -82,11 +82,12 @@ func (PerfilTransporteUsuario) TableName() string {
 type TarjetaFidelidadUsuario struct {
 	ID          int       `gorm:"primaryKey;autoIncrement" json:"id"`
 	UsuarioID   uuid.UUID `gorm:"type:uuid;not null;index" json:"usuario_id"`
-	CadenaID    int       `gorm:"not null" json:"cadena_id"`
+	CadenaID    int       `gorm:"not null;index" json:"cadena_id"`
 	TipoTarjeta string    `gorm:"type:varchar(100);not null" json:"tipo_tarjeta"`
 	CreadoEl    time.Time `gorm:"default:now();not null" json:"creado_el"`
 
-	Usuario *Usuario `gorm:"foreignKey:UsuarioID;constraint:OnDelete:CASCADE" json:"-"`
+	Usuario *Usuario            `gorm:"foreignKey:UsuarioID;constraint:OnDelete:CASCADE" json:"-"`
+	Cadena  *CadenaSupermercado `gorm:"foreignKey:CadenaID;constraint:OnDelete:CASCADE" json:"-"`
 }
 
 func (TarjetaFidelidadUsuario) TableName() string {
@@ -97,7 +98,7 @@ func (TarjetaFidelidadUsuario) TableName() string {
 type MisionValidacion struct {
 	ID                       uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 	UsuarioID                uuid.UUID  `gorm:"type:uuid;not null;index" json:"usuario_id"`
-	SucursalID               int        `gorm:"not null" json:"sucursal_id"`
+	SucursalID               int        `gorm:"not null;index" json:"sucursal_id"`
 	ProductoID               *uuid.UUID `gorm:"type:uuid" json:"producto_id,omitempty"`
 	PrecioReportado          *float64   `gorm:"type:decimal(12,2)" json:"precio_reportado,omitempty"`
 	StockDisponible          bool       `gorm:"default:true" json:"stock_disponible"`
@@ -107,7 +108,9 @@ type MisionValidacion struct {
 	Estado                   string     `gorm:"type:varchar(30);default:'aprobado'" json:"estado"`
 	CompletadaEl             time.Time  `gorm:"default:now();not null" json:"completada_el"`
 
-	Usuario *Usuario `gorm:"foreignKey:UsuarioID;constraint:OnDelete:CASCADE" json:"-"`
+	Usuario  *Usuario              `gorm:"foreignKey:UsuarioID;constraint:OnDelete:CASCADE" json:"-"`
+	Sucursal *SucursalSupermercado `gorm:"foreignKey:SucursalID;constraint:OnDelete:CASCADE" json:"-"`
+	Producto *ProductoNormalizado  `gorm:"foreignKey:ProductoID;constraint:OnDelete:SET NULL" json:"-"`
 }
 
 func (MisionValidacion) TableName() string {
@@ -116,11 +119,11 @@ func (MisionValidacion) TableName() string {
 
 // Categoria mapea api.categorias
 type Categoria struct {
-	ID       int        `gorm:"primaryKey;autoIncrement" json:"id"`
-	PadreID  *int       `gorm:"index" json:"padre_id,omitempty"`
-	Nombre   string     `gorm:"type:varchar(100);not null" json:"nombre"`
-	Slug     string     `gorm:"type:varchar(100);unique;not null" json:"slug"`
-	Padre    *Categoria `gorm:"foreignKey:PadreID;constraint:OnDelete:SET NULL" json:"-"`
+	ID      int        `gorm:"primaryKey;autoIncrement" json:"id"`
+	PadreID *int       `gorm:"index" json:"padre_id,omitempty"`
+	Nombre  string     `gorm:"type:varchar(100);not null" json:"nombre"`
+	Slug    string     `gorm:"type:varchar(100);unique;not null" json:"slug"`
+	Padre   *Categoria `gorm:"foreignKey:PadreID;constraint:OnDelete:SET NULL" json:"-"`
 }
 
 func (Categoria) TableName() string {
@@ -139,17 +142,17 @@ func (Marca) TableName() string {
 
 // ProductoNormalizado mapea api.productos_normalizados
 type ProductoNormalizado struct {
-	ID               uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	CategoriaID      *int       `gorm:"index" json:"categoria_id,omitempty"`
-	MarcaID          *int       `gorm:"index" json:"marca_id,omitempty"`
-	CodigoBarrasEAN  *string    `gorm:"type:varchar(50);unique" json:"codigo_barras_ean,omitempty"`
-	NombreEstandar   string     `gorm:"type:varchar(255);not null" json:"nombre_estandar"`
-	ContenidoNeto    *float64   `gorm:"type:decimal(8,2)" json:"contenido_neto,omitempty"`
-	UnidadMedida     *string    `gorm:"type:varchar(20)" json:"unidad_medida,omitempty"`
-	EsSinGluten      bool       `gorm:"default:false" json:"es_sin_gluten"`
-	EsVegano         bool       `gorm:"default:false" json:"es_vegano"`
-	EsSinLactosa     bool       `gorm:"default:false" json:"es_sin_lactosa"`
-	CreadoEl         time.Time  `gorm:"default:now();not null" json:"creado_el"`
+	ID              uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	CategoriaID     *int      `gorm:"index" json:"categoria_id,omitempty"`
+	MarcaID         *int      `gorm:"index" json:"marca_id,omitempty"`
+	CodigoBarrasEAN *string   `gorm:"type:varchar(50);unique" json:"codigo_barras_ean,omitempty"`
+	NombreEstandar  string    `gorm:"type:varchar(255);not null" json:"nombre_estandar"`
+	ContenidoNeto   *float64  `gorm:"type:decimal(8,2)" json:"contenido_neto,omitempty"`
+	UnidadMedida    *string   `gorm:"type:varchar(20)" json:"unidad_medida,omitempty"`
+	EsSinGluten     bool      `gorm:"default:false" json:"es_sin_gluten"`
+	EsVegano        bool      `gorm:"default:false" json:"es_vegano"`
+	EsSinLactosa    bool      `gorm:"default:false" json:"es_sin_lactosa"`
+	CreadoEl        time.Time `gorm:"default:now();not null" json:"creado_el"`
 
 	Categoria *Categoria `gorm:"foreignKey:CategoriaID;constraint:OnDelete:SET NULL" json:"-"`
 	Marca     *Marca     `gorm:"foreignKey:MarcaID;constraint:OnDelete:SET NULL" json:"-"`
@@ -246,18 +249,18 @@ func (CadenaSupermercado) TableName() string {
 
 // SucursalSupermercado mapea scraper.sucursales_supermercado
 type SucursalSupermercado struct {
-	ID             int       `gorm:"primaryKey;autoIncrement" json:"id"`
-	CadenaID       int       `gorm:"not null;index" json:"cadena_id"`
-	CodigoSucursal *string   `gorm:"type:varchar(50)" json:"codigo_sucursal,omitempty"`
-	Nombre         string    `gorm:"type:varchar(150);not null" json:"nombre"`
-	Direccion      string    `gorm:"type:varchar(255);not null" json:"direccion"`
-	Comuna         *string   `gorm:"type:varchar(100)" json:"comuna,omitempty"`
-	Ciudad         *string   `gorm:"type:varchar(100)" json:"ciudad,omitempty"`
-	Lat            float64   `gorm:"type:decimal(10,8);not null" json:"lat"`
-	Lon            float64   `gorm:"type:decimal(11,8);not null" json:"lon"`
-	HoraApertura   *string   `gorm:"type:time" json:"hora_apertura,omitempty"`
-	HoraCierre     *string   `gorm:"type:time" json:"hora_cierre,omitempty"`
-	EstaActiva     bool      `gorm:"default:true" json:"esta_activa"`
+	ID             int     `gorm:"primaryKey;autoIncrement" json:"id"`
+	CadenaID       int     `gorm:"not null;index" json:"cadena_id"`
+	CodigoSucursal *string `gorm:"type:varchar(50)" json:"codigo_sucursal,omitempty"`
+	Nombre         string  `gorm:"type:varchar(150);not null" json:"nombre"`
+	Direccion      string  `gorm:"type:varchar(255);not null" json:"direccion"`
+	Comuna         *string `gorm:"type:varchar(100)" json:"comuna,omitempty"`
+	Ciudad         *string `gorm:"type:varchar(100)" json:"ciudad,omitempty"`
+	Lat            float64 `gorm:"type:decimal(10,8);not null" json:"lat"`
+	Lon            float64 `gorm:"type:decimal(11,8);not null" json:"lon"`
+	HoraApertura   *string `gorm:"type:time" json:"hora_apertura,omitempty"`
+	HoraCierre     *string `gorm:"type:time" json:"hora_cierre,omitempty"`
+	EstaActiva     bool    `gorm:"default:true" json:"esta_activa"`
 
 	Cadena *CadenaSupermercado `gorm:"foreignKey:CadenaID;constraint:OnDelete:CASCADE" json:"-"`
 }
@@ -292,6 +295,7 @@ type ProductoCrudo struct {
 	TituloCrudo        string    `gorm:"type:varchar(255);not null" json:"titulo_crudo"`
 	MarcaCruda         *string   `gorm:"type:varchar(100)" json:"marca_cruda,omitempty"`
 	CategoriaCruda     *string   `gorm:"type:varchar(100)" json:"categoria_cruda,omitempty"`
+	FormatoCrudo       *string   `gorm:"type:varchar(100)" json:"formato_crudo,omitempty"`
 	URLProducto        *string   `gorm:"type:text" json:"url_producto,omitempty"`
 	URLImagen          *string   `gorm:"type:text" json:"url_imagen,omitempty"`
 	EnStock            bool      `gorm:"default:true" json:"en_stock"`
@@ -306,15 +310,16 @@ func (ProductoCrudo) TableName() string {
 
 // CapturaPrecio mapea scraper.capturas_precios
 type CapturaPrecio struct {
-	ID              int64     `gorm:"primaryKey;autoIncrement" json:"id"`
-	ProductoCrudoID uuid.UUID `gorm:"type:uuid;not null;index" json:"producto_crudo_id"`
-	PrecioNormal    float64   `gorm:"type:decimal(12,2);not null" json:"precio_normal"`
-	PrecioOferta    *float64  `gorm:"type:decimal(12,2)" json:"precio_oferta,omitempty"`
-	PrecioTarjeta   *float64  `gorm:"type:decimal(12,2)" json:"precio_tarjeta,omitempty"`
-	PrecioPorUnidad *float64  `gorm:"type:decimal(12,2)" json:"precio_por_unidad,omitempty"`
-	MetricaUnidad   *string   `gorm:"type:varchar(20)" json:"metrica_unidad,omitempty"`
-	EstaDisponible  bool      `gorm:"default:true" json:"esta_disponible"`
-	CapturadoEl     time.Time `gorm:"default:now();not null" json:"capturado_el"`
+	ID                int64     `gorm:"primaryKey;autoIncrement" json:"id"`
+	ProductoCrudoID   uuid.UUID `gorm:"type:uuid;not null;index" json:"producto_crudo_id"`
+	PrecioNormal      float64   `gorm:"type:decimal(12,2);not null" json:"precio_normal"`
+	PrecioOferta      *float64  `gorm:"type:decimal(12,2)" json:"precio_oferta,omitempty"`
+	PrecioTarjeta     *float64  `gorm:"type:decimal(12,2)" json:"precio_tarjeta,omitempty"`
+	PrecioPorUnidad   *float64  `gorm:"type:decimal(12,2)" json:"precio_por_unidad,omitempty"`
+	MetricaUnidad     *string   `gorm:"type:varchar(20)" json:"metrica_unidad,omitempty"`
+	MecanicaPromocion *string   `gorm:"type:varchar(255)" json:"mecanica_promocion,omitempty"`
+	EstaDisponible    bool      `gorm:"default:true" json:"esta_disponible"`
+	CapturadoEl       time.Time `gorm:"default:now();not null" json:"capturado_el"`
 
 	ProductoCrudo *ProductoCrudo `gorm:"foreignKey:ProductoCrudoID;constraint:OnDelete:CASCADE" json:"-"`
 }
