@@ -1,5 +1,5 @@
 # Dockerfile para Frontend (React + Vite) - Entorno de Desarrollo
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
