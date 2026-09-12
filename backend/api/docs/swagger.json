@@ -1,0 +1,34 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API Gateway construida en Go con Gin",
+        "title": "API Gateway de Supermercados",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/": {
+            "get": {
+                "description": "Endpoint raíz para comprobar el estado de la API",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "root"
+                ],
+                "summary": "Muestra mensaje de bienvenida",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
