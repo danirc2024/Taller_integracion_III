@@ -1,10 +1,11 @@
 # Dockerfile para Frontend (React + Vite) - Entorno de Desarrollo
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
 # Instalar dependencias automáticamente basándose en el package.json
 COPY package.json package-lock.json* ./
+RUN npm install -g npm@latest
 RUN npm install
 
 # Copiar el resto del código fuente del cliente React
