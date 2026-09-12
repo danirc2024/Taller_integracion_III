@@ -1,6 +1,7 @@
 # Investigación Técnica: Prevención de Inyecciones SQL y Sanitización de Entradas en Go
 
-**Autores:** Equipo de Desarrollo (Taller de Integración III)
+**Autores:** Vicente Matus, Daniela Romero, Renato Carrasco, Fabian Sánchez, Esban Vejar
+**Profesor:** Marcelo Matamala
 **Fecha:** Septiembre 2026
 **Tecnologías Implicadas:** Go (Golang), PostgreSQL, GORM, React (Frontend)
 
