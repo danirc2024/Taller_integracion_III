@@ -146,3 +146,24 @@ CREATE TABLE IF NOT EXISTS api.mapeos_productos_ia (
     estado VARCHAR(30) DEFAULT 'mapeado',
     procesado_el TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- Restricciones de Integridad Referencial Cruzadas (Cross-Schema Foreign Keys)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='scraper' AND table_name='cadenas_supermercado') THEN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_tarjetas_cadena') THEN
+            ALTER TABLE api.tarjetas_fidelidad_usuario
+                ADD CONSTRAINT fk_tarjetas_cadena
+                FOREIGN KEY (cadena_id) REFERENCES scraper.cadenas_supermercado(id) ON DELETE CASCADE;
+        END IF;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='scraper' AND table_name='sucursales_supermercado') THEN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_misiones_sucursal') THEN
+            ALTER TABLE api.misiones_validacion
+                ADD CONSTRAINT fk_misiones_sucursal
+                FOREIGN KEY (sucursal_id) REFERENCES scraper.sucursales_supermercado(id) ON DELETE CASCADE;
+        END IF;
+    END IF;
+END $$;
+

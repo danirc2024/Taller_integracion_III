@@ -1,5 +1,5 @@
-import { AuthVisual } from "@/components/auth/auth-visual"
-import { AuthPanel } from "@/components/auth/auth-panel"
+import { AuthVisual } from "@/components/auth/AuthVisual"
+import { AuthPanel } from "@/components/auth/AuthPanel"
 
 export default function Page() {
   return (

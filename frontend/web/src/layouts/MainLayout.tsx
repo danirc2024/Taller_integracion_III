@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Outlet, useOutletContext } from "react-router-dom";
-import { TopNav } from "@/components/top-nav";
-import { SideBar } from "@/components/side-bar";
+import { TopNav } from "@/components/TopNav";
+import { SideBar } from "@/components/Sidebar";
 
 type LayoutContextType = {
   query: string;
