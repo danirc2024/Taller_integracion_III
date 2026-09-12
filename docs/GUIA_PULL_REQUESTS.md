@@ -88,3 +88,22 @@ Si al crear el Pull Request GitHub muestra el mensaje "Can't automatically merge
    `git commit -m "fix: resuelve conflicto de fusion"`
    `git push origin tu-rama`
 6. El Pull Request en la página web pasará a estar verde y listo para el paso final.
+
+## 💥 Cómo Resolver Conflictos de Merge
+
+Si GitHub te dice **"This branch has conflicts that must be resolved"**, significa que tú y otro compañero editaron la misma línea de código. 
+
+### Opción A: Resolver en GitHub (Para conflictos pequeños)
+1. Haz clic en el botón gris **"Resolve conflicts"** en la página del PR.
+2. GitHub te mostrará el editor web. Verás marcas como `<<<<<<<`, `=======` y `>>>>>>>`.
+3. Borra las marcas y deja solo el código final que debe sobrevivir.
+4. Haz clic en **"Mark as resolved"** y luego en **"Commit merge"**.
+
+### Opción B: Resolver en VSCode (Para conflictos grandes)
+Si el conflicto es en muchos archivos (ej. un `schema.sql` gigante), hazlo localmente:
+1. Asegúrate de estar en tu rama: `git checkout tu-rama`
+2. Trae los cambios de develop: `git fetch origin`
+3. Inicia la fusión: `git merge origin/develop`
+4. Abre VSCode. En la pestaña de Source Control (Control de Código Fuente) verás los archivos en conflicto. VSCode te dará botones amigables que dicen "Accept Current Change", "Accept Incoming Change" o "Accept Both Changes".
+5. Una vez arreglado todo, haz `git add .`, luego `git commit -m "Resuelve conflictos"` y súbelo con `git push`.
+6. ¡Listo! Tu PR en GitHub ahora aparecerá verde y listo para fusionar.

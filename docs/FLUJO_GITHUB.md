@@ -77,3 +77,8 @@ git checkout develop
 git pull origin develop
 git branch -d backend/feat/auth-endpoint-fabian
 ```
+
+## 🧹 Regla de Oro: Limpieza de Ramas (Anti-Fantasmas)
+Para evitar que el repositorio se llene de ramas obsoletas o "fantasmas":
+1. **Borrar tras el Merge:** Una vez que tu Pull Request sea aprobado y le des al botón verde de "Squash and merge", **DEBES presionar el botón "Delete branch"** que aparece inmediatamente después. 
+2. **Cierre de Ciclo:** Si creaste una rama localmente y ya fue fusionada a `develop`, bórrala en tu computador con: `git branch -d nombre-rama` y actualiza tu local con `git fetch -p` para purgar referencias remotas muertas.
