@@ -1,37 +1,70 @@
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/Button";
+import { Link } from 'react-router-dom';
+import { Search, MapPin, Sparkles, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ROUTES } from '@/core/routes';
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 text-white p-4">
-      <div className="text-center space-y-6 max-w-2xl mx-auto">
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
-          Unificación de Interfaces
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 py-16">
+      {/* Hero */}
+      <section className="flex flex-col items-center gap-6 text-center">
+        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+          Taller de Integración III
+        </span>
+        <h1 className="text-balance text-4xl font-bold tracking-tight md:text-6xl">
+          Compara precios y arma la ruta más barata
         </h1>
-        <p className="text-zinc-400 text-lg md:text-xl">
-          Selecciona una de las interfaces generadas por v0 para visualizarla y probarla.
+        <p className="max-w-2xl text-balance text-lg text-muted-foreground">
+          Encuentra los productos que buscas en los supermercados de Temuco, compara
+          precios en tiempo real y calcula cuánto te cuesta realmente trasladarte.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-8">
-          <Link to="/dashboard" className="w-full">
-            <Button variant="outline" className="w-full h-32 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 border-zinc-800 transition-all text-white hover:text-white bg-zinc-950">
-              <span className="text-xl font-semibold">Dashboard</span>
-              <span className="text-sm text-zinc-500 font-normal">Panel de Control</span>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Link to={ROUTES.CATALOGO}>
+            <Button size="lg" className="gap-2">
+              <Search className="h-4 w-4" />
+              Explorar catálogo
             </Button>
           </Link>
-          <Link to="/login" className="w-full">
-            <Button variant="outline" className="w-full h-32 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 border-zinc-800 transition-all text-white hover:text-white bg-zinc-950">
-              <span className="text-xl font-semibold">Login</span>
-              <span className="text-sm text-zinc-500 font-normal">Acceso y Registro</span>
-            </Button>
-          </Link>
-          <Link to="/onboarding" className="w-full">
-            <Button variant="outline" className="w-full h-32 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 border-zinc-800 transition-all text-white hover:text-white bg-zinc-950">
-              <span className="text-xl font-semibold">Onboarding</span>
-              <span className="text-sm text-zinc-500 font-normal">Primeros pasos</span>
+          <Link to={ROUTES.LOGIN}>
+            <Button size="lg" variant="outline" className="gap-2">
+              Iniciar sesión
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
         </div>
-      </div>
+      </section>
+
+      {/* Features */}
+      <section className="grid gap-4 sm:grid-cols-3">
+        {[
+          {
+            icon: Search,
+            title: 'Compara precios',
+            body: 'Miles de productos de Jumbo, Líder, Unimarc y más en un solo lugar.',
+          },
+          {
+            icon: MapPin,
+            title: 'Optimiza tu ruta',
+            body: 'Calculamos si el ahorro justifica el viaje, en auto o en transporte público.',
+          },
+          {
+            icon: Sparkles,
+            title: 'Asistente IA',
+            body: 'Pídele recetas o sustitutos y te sugiere productos reales del catálogo.',
+          },
+        ].map(({ icon: Icon, title, body }) => (
+          <div
+            key={title}
+            className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-6"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+              <Icon className="h-5 w-5" />
+            </span>
+            <h2 className="text-base font-semibold">{title}</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
+          </div>
+        ))}
+      </section>
     </div>
   );
 }
