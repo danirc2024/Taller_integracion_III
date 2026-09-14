@@ -1,5 +1,5 @@
 # Dockerfile para Backend API Gateway (Golang) - Entorno de Desarrollo
-FROM golang:1.22-alpine
+FROM golang:1.26-alpine
 
 # Instalar git y utilidades de compilación necesarias para Go y Air
 RUN apk add --no-cache git gcc musl-dev
