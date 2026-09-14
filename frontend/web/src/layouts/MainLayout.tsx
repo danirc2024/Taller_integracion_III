@@ -39,9 +39,8 @@ export function MainLayout() {
       {/* pb-16 reserva espacio para el BottomNav fijo y evita tapar contenido */}
       <div className="flex flex-1 flex-col overflow-hidden pb-16">
         {/* overflow-y-auto permite que Home / ProductDetail puedan scrollear */}
-        <div className="flex-1 overflow-y-auto">
-          <Outlet context={{ query, activeMarket } satisfies LayoutContextType} />
-        </div>
+        <Outlet context={{ query, activeMarket } satisfies LayoutContextType} />
+
       </div>
 
       <BottomNav active="dashboard" />
