@@ -40,6 +40,15 @@ class JumboRscSpider(scrapy.Spider):
             yield {
                 "producto": product["producto"],
                 "precio": product["precio"],
+                "precio_normal": product["precio_normal"],
+                "precio_oferta": product["precio_oferta"],
+                "ean_gtin": product["ean_gtin"],
+                "sku": product["sku"],
+                "marca": product["marca"],
+                "formato_crudo": product["formato_crudo"],
+                "mecanica_promocion": product["mecanica_promocion"],
+                "en_stock": product["en_stock"],
+                "url_producto": product["url_producto"],
                 "imagen": product["imagen"],
                 "supermercado": "Jumbo",
                 "categoria": category,
@@ -158,17 +167,79 @@ class JumboRscSpider(scrapy.Spider):
                         offer = entry.get("offers", {})
                         if isinstance(offer, list):
                             offer = offer[0] if offer else {}
+                        normal_price = JumboRscSpider._normal_price(entry)
+                        offer_price = JumboRscSpider._first_price(offer, "price")
+                        if offer_price is None:
+                            offer_price = normal_price
+                        brand = entry.get("brand")
+                        if isinstance(brand, dict):
+                            brand = brand.get("name")
+                        availability = offer.get("availability") if isinstance(offer, dict) else None
                         image = entry.get("image")
                         if isinstance(image, list):
                             image = image[0] if image else None
                         products.append(
                             {
                                 "producto": name,
-                                "precio": offer.get("price") if isinstance(offer, dict) else None,
+                                "precio": offer_price,
+                                "precio_normal": normal_price,
+                                "precio_oferta": offer_price,
+                                "ean_gtin": JumboRscSpider._first_value(
+                                    entry, "gtin", "gtin8", "gtin12", "gtin13", "ean"
+                                ),
+                                "sku": JumboRscSpider._first_value(
+                                    entry, "sku", "productID", "productId"
+                                ),
+                                "marca": brand if isinstance(brand, str) else None,
+                                "formato_crudo": JumboRscSpider._first_value(
+                                    entry, "format", "size", "description"
+                                ),
+                                "mecanica_promocion": JumboRscSpider._first_value(
+                                    offer,
+                                    "promotion",
+                                    "promotionMechanic",
+                                    "offerDescription",
+                                ),
+                                "en_stock": JumboRscSpider._stock_value(availability),
+                                "url_producto": entry.get("url"),
                                 "imagen": image if isinstance(image, str) else None,
                             }
                         )
         return products
+
+    @staticmethod
+    def _first_value(data, *keys):
+        if not isinstance(data, dict):
+            return None
+        for key in keys:
+            value = data.get(key)
+            if value is not None and not isinstance(value, (dict, list)):
+                return str(value)
+        return None
+
+    @staticmethod
+    def _first_price(data, *keys):
+        value = JumboRscSpider._first_value(data, *keys)
+        try:
+            return float(value) if value is not None else None
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _normal_price(entry):
+        price = JumboRscSpider._first_price(entry, "price")
+        if price is not None:
+            return price
+        specification = entry.get("priceSpecification")
+        if isinstance(specification, list):
+            specification = specification[0] if specification else None
+        return JumboRscSpider._first_price(specification, "price")
+
+    @staticmethod
+    def _stock_value(availability):
+        if not isinstance(availability, str):
+            return None
+        return availability.rsplit("/", 1)[-1].lower() != "outofstock"
 
     @staticmethod
     def _walk_json(value):

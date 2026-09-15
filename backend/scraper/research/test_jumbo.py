@@ -30,7 +30,16 @@ class JumboExtractionTest(unittest.TestCase):
             [
                 {
                     "producto": "Tomate Larga Vida",
-                    "precio": "1290",
+                    "precio": 1290.0,
+                    "precio_normal": None,
+                    "precio_oferta": 1290.0,
+                    "ean_gtin": None,
+                    "sku": None,
+                    "marca": None,
+                    "formato_crudo": None,
+                    "mecanica_promocion": None,
+                    "en_stock": None,
+                    "url_producto": None,
                     "imagen": "https://img.test/tomate.jpg",
                 }
             ],
@@ -44,6 +53,31 @@ class JumboExtractionTest(unittest.TestCase):
         )
 
         self.assertEqual(response.url.rstrip("/").split("/")[-1], "verduras")
+
+    def test_extracts_comparison_fields(self):
+        response = TextResponse(
+            url="https://www.jumbo.cl/frutas-y-verduras/verduras",
+            body=(
+                b'<script type="application/ld+json">'
+                b'{"@type":"Product","name":"Lechuga", "gtin13":"7800000000001",'
+                b'"sku":"SKU-1","brand":{"name":"Marca Test"},'
+                b'"description":"1 unidad", "url":"https://jumbo.cl/p/lechuga",'
+                b'"offers":{"price":"990","availability":"https://schema.org/InStock",'
+                b'"offerDescription":"2x1"}}'
+                b'</script>'
+            ),
+            encoding="utf-8",
+        )
+
+        product = JumboRscSpider._extract_products(response)[0]
+
+        self.assertEqual(product["ean_gtin"], "7800000000001")
+        self.assertEqual(product["sku"], "SKU-1")
+        self.assertEqual(product["marca"], "Marca Test")
+        self.assertEqual(product["formato_crudo"], "1 unidad")
+        self.assertEqual(product["mecanica_promocion"], "2x1")
+        self.assertTrue(product["en_stock"])
+        self.assertEqual(product["url_producto"], "https://jumbo.cl/p/lechuga")
 
     def test_page_url_preserves_category(self):
         url = JumboRscSpider._page_url(
