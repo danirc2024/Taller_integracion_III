@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Menu, MapPin, Search, ShoppingBasket, SlidersHorizontal, Bot, User, LogOut, ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 type TopNavProps = {
