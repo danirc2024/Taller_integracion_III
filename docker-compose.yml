@@ -17,11 +17,11 @@ services:
       - microservices_net
 
   # 2. Backend API Gateway en Golang (GORM)
-  backend:
+  go_service:
     build:
       context: ./backend/api
       dockerfile: Dockerfile
-    container_name: backend_api
+    container_name: go_service_api
     ports:
       - "8080:8080"
     environment:
@@ -56,7 +56,7 @@ services:
       - ./frontend/web:/app
       - /app/node_modules
     depends_on:
-      - backend
+      - go_service
     restart: unless-stopped
     networks:
       - microservices_net
