@@ -9,75 +9,75 @@
 
 ## 1. Introducción al Documento
 
-Una vez establecido por qué los Modelos de Lenguaje (LLMs) sufren de sesgos y alucinaciones, el presente reporte detalla la solución de ingeniería propuesta para la plataforma. El objetivo es estructurar un flujo de datos que reduzca radicalmente los costos de API (tokens) y garantice que el 100% de la información mostrada provenga del catálogo sincronizado.
+Una vez resuelto el marco teórico de las alucinaciones probabilísticas, el presente informe eleva el análisis hacia la ingeniería de software aplicada. El objetivo es estructurar una topología de flujo de datos capaz de aislar el modelo de lenguaje de operaciones deterministas, minimizando el consumo de tokens y anulando el riesgo de generación de información espuria.
 
----
+## 2. Topología del Enrutamiento Asimétrico (Solución Principal)
 
-## 2. Solución Arquitectónica Principal: Enrutamiento Asimétrico
+La solución propuesta por el equipo de desarrollo se denomina **Arquitectura Híbrida de Enrutamiento Asimétrico**. Este diseño abandona el paradigma clásico de "chat directo con el LLM" en favor de un sistema de capas supervisadas por un microservicio en Go.
 
-La propuesta del equipo se basa en una **Arquitectura Híbrida de dos capas** (coloquialmente referida como modelo "Call Center"). Esta arquitectura intercepta la petición del usuario antes de que toque la IA.
+### 2.1. Nivel Cero: Clasificación de Intenciones (Intent Routing)
+Antes de ejecutar cualquier lógica, un enrutador (NLU heurístico basado en Regex y análisis léxico rápido) clasifica la intención del usuario. Si la varianza semántica es baja (ej. "¿Cuánto cuesta el kilo de pan?"), el enrutador bloquea el acceso a la IA y desvía la petición a la Capa 1.
 
-### 2.1. Capa 1: Bot Heurístico (Máquina de Estados Finitos - FSM)
+### 2.2. Capa 1: Máquina de Estados Finitos (El "Call Center")
+Actúa como un agente conversacional determinista y estructurado. 
 
-La primera línea defensiva es un bot determinista programado en Go. Funciona evaluando la intención del usuario a través de menús estructurados o clasificación por palabras clave.
-
-```mermaid
-graph TD
-    A[Usuario escribe: "Precio de Leche Colun"] --> B{Capa 1: Enrutador Heurístico}
-    B -- Detección de Búsqueda Directa --> C[Backend ejecuta SQL LIKE en BD]
-    C --> D[Retorna Lista de Precios Formateada]
-    D --> E[Fin de interacción. Gasto tokens: 0]
-```
-
-*   **Ventajas:** Si el usuario solo quiere comparar un producto específico, la Capa 1 lo resuelve con consultas de base de datos tradicionales. El margen de alucinación es matemáticamente 0% y el costo es nulo.
-
-### 2.2. Capa 2: LLM bajo Demanda (RAG Restrictivo)
-
-El modelo de lenguaje solo se invoca si la intención del usuario es analítica o requiere síntesis cruzada (ej. *"Arma una receta vegana con un presupuesto de $10.000"*).
+*   **Ingeniería:** Mantiene el contexto a través de un árbol de decisiones estricto (Máquina de Estados). Traduce intenciones simples directamente a consultas SQL (`SELECT precio FROM productos WHERE nombre ILIKE...`).
+*   **Eficiencia:** El tiempo de respuesta es sub-100 milisegundos. El consumo económico es nulo (0 tokens) y el índice de facticidad es 100%, ya que la información es un volcado crudo de PostgreSQL a la interfaz.
 
 ```mermaid
 graph TD
-    A[Usuario: "Receta vegana por $10.000"] --> B{Capa 1: Enrutador Heurístico}
-    B -- Detección Analítica (Receta) --> C[Backend Go busca productos veganos < $10.000 en SQL]
-    C --> D[Go inyecta productos en JSON al Prompt del LLM]
-    D --> E[LLM redacta receta SOLO con esos ingredientes]
-    E --> F[Retorno al usuario]
+    A[Query: 'Precio de Leche Colun'] --> B{Enrutador Lexical Go}
+    B -- Intención Directa --> C[FSM: Estado Búsqueda SQL]
+    C --> D[PostgreSQL: fetch data]
+    D --> E[Formateador de UI]
+    E --> F((Output Usuario))
+    style C fill:#2ECC71,stroke:#333,stroke-width:2px
 ```
 
-*   **Mecánica de Anclaje:** El backend obliga al modelo a generar la respuesta encerrándolo en un contexto cerrado. Si el LLM intenta sugerir "Champiñones" (porque su memoria paramétrica lo asocia a dietas veganas), pero no venían en el JSON, un *post-procesador* en Go interceptará la respuesta, validará las entidades y bloqueará el mensaje por alucinación.
+### 2.3. Capa 2: Motor de RAG Restrictivo (LLM On-Demand)
+Reservada exclusivamente para intenciones de alta entropía (ej. *"Arma un menú semanal vegano para 2 personas por $30.000 usando productos del Jumbo"*).
 
----
+*   **Ingeniería de Contexto:** El backend en Go ejecuta consultas complejas para recolectar el catálogo aplicable. Luego, aplica un algoritmo de *Chunking* (segmentación) para evitar desbordar el *Context Window Limit* del LLM.
+*   **Prompt Injection:** Se empaqueta el catálogo filtrado en formato JSON inyectado bajo un *System Prompt* coercitivo. Un Post-Procesador en Go audita la respuesta de la IA; si detecta una entidad (producto/precio) que no estaba en el JSON original, la respuesta es silenciada por considerarse alucinada.
 
-## 3. Alternativas del Estado del Arte Evaluadas
+## 3. Evaluación Crítica del Estado del Arte (Alternativas Analizadas)
 
-Para demostrar el rigor técnico de la propuesta, se evaluaron otras alternativas que fueron descartadas por viabilidad técnica o financiera en la etapa actual:
+Para fundamentar la decisión de la arquitectura híbrida, se sometieron a análisis de viabilidad técnica las siguientes estrategias emergentes:
 
-*   **Auto-Corrección Asistida (Reflexion):** Obligar a la IA a auditar su propia respuesta en una segunda llamada a la API ("¿Hay algún producto inventado en tu respuesta anterior?"). *Descartada temporalmente porque duplica los costos de facturación por usuario.*
-*   **Fine-Tuning de Modelos Locales:** Entrenar una red neuronal (ej. Llama 3) inyectando los pesos de nuestro catálogo. *Descartada porque los precios cambian a diario, y reentrenar un modelo 24/7 requiere poder computacional inasumible.*
+### 3.1. Auto-Corrección y Cadena de Verificación (Chain-of-Verification / Reflexion)
+*   **Mecánica:** Consiste en forzar al LLM a generar un borrador (Draft), y luego inyectar ese borrador en un segundo prompt pidiendo: *"Analiza críticamente tu respuesta paso a paso y verifica si inventaste algún producto"*.
+*   **Evaluación:** **Descartada**. Si bien reduce alucinaciones en tareas de razonamiento lógico, en comercio electrónico duplica la latencia (TTFT - Time To First Token) y los costos de facturación por usuario sin garantizar inmunidad factual.
 
----
+### 3.2. Adaptación de Pesos (PEFT / LoRA Fine-Tuning)
+*   **Mecánica:** Entrenar una red neuronal de código abierto adaptando sus matrices de peso (Low-Rank Adaptation) para que "aprenda de memoria" nuestro catálogo.
+*   **Evaluación:** **Descartada**. Las bases de datos de supermercados sufren mutaciones de estado diario (fluctuaciones de precio y quiebres de stock). La memoria paramétrica de un LLM es inmutable una vez entrenado; requeriría re-entrenamiento diario, lo cual es inviable financieramente.
 
-## 4. Recomendación Técnica Autónoma: Búsqueda Vectorial (`pgvector`)
+### 3.3. Graph RAG (Grafos de Conocimiento)
+*   **Mecánica:** Utilizar bases de datos orientadas a grafos (como Neo4j) para mapear explícitamente relaciones del tipo `(Producto_A)-[SE_VENDE_EN]->(Supermercado_B)-[CUESTA]->(Precio_X)`. Al consultar al LLM, se extrae un sub-grafo relacional perfecto.
+*   **Evaluación:** Altamente precisa y convergente con investigaciones algorítmicas pasadas del proyecto. Sin embargo, mantener sincronizada una base de datos de grafos con la base de datos transaccional (PostgreSQL) añade una sobrecarga arquitectónica que no se justifica para la fase actual.
 
-Si bien la propuesta de las dos capas (Call Center + LLM) es excelente, existe un cuello de botella en la Capa 2: **¿Cómo el backend en Go sabe qué productos inyectarle al LLM cuando el usuario hace consultas ambiguas?** 
+## 4. Recomendación Técnica Autónoma: Búsqueda Híbrida (Vectorial + Léxica)
 
-Una consulta SQL clásica (`WHERE nombre LIKE '%dulce%'`) fallará miserablemente si el usuario pide *"algo crujiente para el desayuno"*.
+Si bien la arquitectura asimétrica propuesta (Capa 1 + Capa 2) es robusta, el puente de datos hacia la Capa 2 presenta una deficiencia: la búsqueda SQL es léxica (coincidencia de caracteres). Si el usuario solicita *"ingredientes para algo crujiente de desayuno"*, el motor SQL tradicional no retornará *"cereal"*, privando al LLM del contexto necesario para generar la receta.
 
-> 💡 **Recomendación Estratégica:** Complementar la Capa 2 integrando **Bases de Datos Vectoriales** (extensión `pgvector` para PostgreSQL).
+> 💡 **Recomendación Estratégica:** Aumentar la infraestructura instalando la extensión `pgvector` en PostgreSQL, habilitando una **Búsqueda Híbrida (BM25 + Semantic Cosine Similarity)**.
 
-### 4.1. Concepto y Ejemplo de Embeddings Vectoriales
-Las bases de datos vectoriales no guardan palabras, guardan "significados" representados por coordenadas matemáticas en un espacio de miles de dimensiones (Embeddings). 
+### 4.1. Mecánica de los Embeddings (Espacios de Alta Dimensionalidad)
+Mediante un modelo de *embeddings* (ej. `text-embedding-3`), el catálogo se transforma en vectores numéricos continuos. 
+El concepto de "Cereal" podría ocupar las coordenadas `[0.82, -0.15, 0.44]`. Cuando el usuario busca "Crujiente de desayuno", esta frase se vectoriza ocupando una coordenada casi idéntica `[0.80, -0.10, 0.41]`. 
 
-*   **El proceso:** Cuando cargamos nuestro catálogo, un modelo convierte las descripciones en vectores. "Cereal Tostado" podría ser el vector `[0.8, -0.2, 0.5]`.
-*   **Búsqueda Semántica:** Si el usuario busca *"algo crujiente para el desayuno"*, eso se convierte en el vector `[0.7, -0.1, 0.4]`.
-*   **La Similitud del Coseno:** PostgreSQL utiliza matemáticas (Similitud del Coseno) para medir la distancia geométrica entre vectores. Descubrirá que el vector de la búsqueda está extremadamente cerca de "Cereal", y muy lejos de "Detergente" `[-0.9, 0.8, -0.1]`.
+### 4.2. Indexación y Algoritmia de Recuperación
+Al aplicar la fórmula matemática de **Similitud del Coseno** en PostgreSQL, la base de datos medirá la distancia angular entre los vectores, retornando inmediatamente los productos conceptualmente afines, sin importar si comparten o no las mismas letras en su nombre.
 
 ```mermaid
 graph LR
-    A[Búsqueda: 'Crujiente para desayuno'] --> B(Convertir a Vector)
-    B --> C{PostgreSQL pgvector}
-    C -- Similitud del Coseno --> D(Producto: Cereal Tostado)
-    C -- Muy distante --> E(Producto: Detergente)
+    A[Intención: 'Desayuno Crujiente'] --> B(Modelo de Embedding)
+    B -- Vector Generado --> C{pgvector: Index HNSW}
+    C -- Distancia Angular Mínima --> D(Cereal Tostado)
+    C -- Distancia Angular Máxima --> E(Detergente en Polvo)
+    D --> F[Inyección de Contexto al LLM]
+    style C fill:#3498DB,stroke:#333,stroke-width:2px,color:#fff
 ```
 
-**Conclusión final:** Al usar `pgvector`, el backend siempre sabrá qué productos exactos entregarle a la IA (incluso con peticiones ambiguas), cerrando el círculo de la arquitectura híbrida y construyendo un asistente de compras de nivel corporativo.
+### 4.3. Conclusión
+La implementación de `pgvector` con indexación **HNSW** (Hierarchical Navigable Small World) permite búsquedas semánticas sub-milisegundo a gran escala. Esto asegura que la Capa 2 del modelo híbrido reciba siempre el catálogo exacto, cerrando definitivamente las brechas probabilísticas de alucinación y dotando al sistema de una inteligencia de recuperación de nivel corporativo.
