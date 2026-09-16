@@ -6,6 +6,7 @@ import (
 	"os"
 
 	_ "github.com/danirc2024/Taller_integracion_III/backend/api/docs"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -32,7 +33,18 @@ func initDB() {
 }
 
 func setupRouter() *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+
+	// Logger por defecto y Middleware Global de Errores
+	r.Use(gin.Logger())
+	r.Use(middleware.ErrorHandler())
+
+	// Habilitar detección de métodos HTTP no permitidos
+	r.HandleMethodNotAllowed = true
+
+	// Manejadores estandarizados para 404 (NoRoute) y 405 (NoMethod)
+	r.NoRoute(middleware.NotFoundHandler())
+	r.NoMethod(middleware.MethodNotAllowedHandler())
 
 	// Configuración básica de CORS para desarrollo
 	r.Use(func(c *gin.Context) {
