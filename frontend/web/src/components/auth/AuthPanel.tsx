@@ -4,15 +4,15 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowRight, Eye, EyeOff, Leaf, Lock, Mail } from "lucide-react"
 
-import { Button } from "@/components/ui/Button"
-import { Input } from "@/components/ui/Input"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Field,
   FieldGroup,
   FieldLabel,
   FieldSeparator,
-} from "@/components/ui/Field"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs"
+} from "@/components/ui/field"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PasswordStrength } from "@/components/auth/PasswordStrength"
 import { SocialButtons } from "@/components/auth/SocialButtons"
 

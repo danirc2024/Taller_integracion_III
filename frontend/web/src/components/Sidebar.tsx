@@ -16,7 +16,7 @@ import {
   Map,
   Users
 } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
 import { supermarkets } from '@/data/mock'
 

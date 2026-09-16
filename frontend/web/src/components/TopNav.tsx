@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Menu, MapPin, Search, ShoppingBasket, SlidersHorizontal, Bot, User, LogOut, ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 type TopNavProps = {
@@ -43,14 +43,18 @@ export function TopNav({ query, onQueryChange, onMenuClick }: TopNavProps) {
           </Button>
         )}
 
-        <div className="flex items-center gap-2 shrink-0">
+        <Link
+          to="/"
+          className="flex items-center gap-2 shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Ir al inicio"
+        >
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <ShoppingBasket className="h-5 w-5" aria-hidden="true" />
           </span>
           <span className="hidden text-lg font-semibold tracking-tight sm:inline">
             Compara<span className="text-primary">Carrito</span>
           </span>
-        </div>
+        </Link>
 
         <form
           role="search"

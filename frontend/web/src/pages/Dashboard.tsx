@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Navigation, Route, Store } from 'lucide-react'
 import { useLayoutContext } from '@/layouts/MainLayout'
 import { ProductCard } from '@/components/ProductCard'
@@ -48,7 +48,7 @@ function buildRoute(marketIds: string[]): MapStop[] {
   return route
 }
 
-export default function Page() {
+export default function Dashboard() {
   const { query, activeMarket } = useLayoutContext()
 
   const filtered = useMemo(() => {
@@ -70,10 +70,12 @@ export default function Page() {
     return buildRoute(ids)
   }, [filtered])
 
-  const handleAdd = (product: Product) => {
-    console.log('[v0] Producto añadido a la lista:', product.name)
-  }
+  const [cartCount, setCartCount] = useState(0)
 
+  const handleAdd = (product: Product) => {
+    setCartCount((c) => c + 1)
+    console.log('[v0] Producto añadido:', product.name)
+  }
   return (
 
       <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-6 overflow-hidden px-4 py-6 md:px-6 lg:grid lg:grid-cols-[1.35fr_1fr]">
@@ -93,6 +95,11 @@ export default function Page() {
                 {stops.length}{' '}
                 {stops.length === 1 ? 'supermercado' : 'supermercados'}
               </p>
+              {cartCount > 0 && (
+                <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">
+                  {cartCount} en la lista
+                </span>
+              )}
             </div>
           </div>
 

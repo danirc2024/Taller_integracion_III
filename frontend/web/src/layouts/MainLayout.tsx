@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, useOutletContext } from "react-router-dom";
 import { TopNav } from "@/components/TopNav";
 import { SideBar } from "@/components/Sidebar";
+import BottomNav from "@/components/BottomNav";
 
 type LayoutContextType = {
   query: string;
@@ -28,22 +29,19 @@ export function MainLayout() {
           setSidebarOpen(false);
         }}
       />
-      
+
       <TopNav
         query={query}
         onQueryChange={setQuery}
         onMenuClick={() => setSidebarOpen(true)}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Main Content Area */}
+      {/* pb-16 reserva espacio para el BottomNav fijo y evita tapar contenido */}
+      <div className="flex min-h-0 flex-1 flex-col pb-16">
         <Outlet context={{ query, activeMarket } satisfies LayoutContextType} />
-        
-        {/* Futuro Footer */}
-        <footer className="border-t border-border bg-card p-4 text-center text-sm text-muted-foreground mt-auto">
-          &copy; {new Date().getFullYear()} PrecioRuta. Todos los derechos reservados.
-        </footer>
       </div>
+
+      <BottomNav active="dashboard" />
     </div>
   );
 }
