@@ -8,11 +8,19 @@ El proyecto incluye archivos de contexto (`GEMINI.md`, `CLAUDE.md`, `copilot-ins
 
 ### Paso único (una sola vez después de hacer pull)
 
+**Linux / Mac / Git Bash (Windows):**
 ```bash
 bash scripts/setup-hooks.sh
 ```
 
+**Windows (PowerShell o CMD):**
+```powershell
+git config core.hooksPath scripts/git-hooks
+```
+
 Eso es todo. **No hay paso 2.** A partir de ahora, cada vez que hagas `git commit`, los archivos de contexto se actualizan automáticamente e incluyen en tu commit. No tienes que hacer nada extra ni recordar nada.
+
+> **Nota Windows:** El hook se ejecuta con el bash que trae Git para Windows, así que funciona sin importar si usas PowerShell, CMD o Git Bash para tu trabajo diario. Solo necesitas tener Python instalado y accesible desde la terminal (`python` o `python3`).
 
 ### ¿Cómo verifico que funciona?
 
