@@ -12,7 +12,7 @@ El proyecto incluye archivos de contexto (`GEMINI.md`, `CLAUDE.md`, `copilot-ins
 ```bash
 bash scripts/setup-hooks.sh
 ```
-
+# popin
 **Windows (PowerShell o CMD):**
 ```powershell
 git config core.hooksPath scripts/git-hooks
