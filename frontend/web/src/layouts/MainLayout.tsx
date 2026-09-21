@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, useOutletContext } from "react-router-dom";
 import { TopNav } from "@/components/TopNav";
 import { SideBar } from "@/components/Sidebar";
+import { CartSidebar } from "@/components/CartSidebar";
 
 type LayoutContextType = {
   query: string;
@@ -18,7 +19,8 @@ export function MainLayout() {
   const [activeMarket, setActiveMarket] = useState<string | null>(null);
 
   return (
-    <div className="flex h-dvh flex-col bg-background">
+    <div className="flex h-dvh flex-col bg-background bg-dotted">
+      <CartSidebar />
       <SideBar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -38,11 +40,6 @@ export function MainLayout() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Main Content Area */}
         <Outlet context={{ query, activeMarket } satisfies LayoutContextType} />
-        
-        {/* Futuro Footer */}
-        <footer className="border-t border-border bg-card p-4 text-center text-sm text-muted-foreground mt-auto">
-          &copy; {new Date().getFullYear()} PrecioRuta. Todos los derechos reservados.
-        </footer>
       </div>
     </div>
   );

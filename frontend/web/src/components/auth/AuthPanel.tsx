@@ -4,15 +4,15 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowRight, Eye, EyeOff, Leaf, Lock, Mail } from "lucide-react"
 
-import { Button } from "@/components/ui/Button"
-import { Input } from "@/components/ui/Input"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Field,
   FieldGroup,
   FieldLabel,
   FieldSeparator,
-} from "@/components/ui/Field"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs"
+} from "@/components/ui/field"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PasswordStrength } from "@/components/auth/PasswordStrength"
 import { SocialButtons } from "@/components/auth/SocialButtons"
 
@@ -34,8 +34,18 @@ export function AuthPanel() {
   }
 
   return (
-    <div className="flex h-full items-center justify-center overflow-y-auto bg-surface px-5 py-10 sm:px-8">
-      <div className="w-full max-w-md">
+    <div className="relative flex h-full items-center justify-center overflow-y-auto bg-surface px-5 py-10 sm:px-8">
+      {/* Street art background without blur */}
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500 grayscale opacity-30"
+          style={{
+            backgroundImage: "url('/street_art_supermarket.jpg')",
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md">
         {/* Mobile brand */}
         <div className="mb-8 flex items-center justify-center gap-2.5 lg:hidden">
           <span className="flex size-9 items-center justify-center rounded-xl bg-primary/10">
@@ -46,9 +56,9 @@ export function AuthPanel() {
           </span>
         </div>
 
-        <div className="rounded-3xl border border-border/60 bg-background p-6 shadow-xl sm:p-8">
+        <div className="rounded-xl border-4 border-border bg-background p-6 shadow-[8px_8px_0px_var(--color-border)] sm:p-8">
           <Tabs value={tab} onValueChange={(v: string) => setTab(v)}>
-            <TabsList className="mb-7 grid h-11 w-full grid-cols-2 rounded-xl bg-surface p-1">
+            <TabsList className="mb-7 grid h-11 w-full grid-cols-2 rounded-xl bg-secondary p-1 border-2 border-border shadow-[4px_4px_0px_var(--color-border)]">
               <TabsTrigger value="login" className="rounded-lg text-sm">
                 Iniciar Sesión
               </TabsTrigger>

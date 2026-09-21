@@ -1,7 +1,8 @@
 'use client'
 
+import { Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import { Button } from '@/components/ui/button'
 import {
   discountPct,
   formatPrice,
@@ -19,7 +20,10 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
   const pct = discountPct(product)
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5">
+    <Link 
+      to={`/product/${product.id}`}
+      className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5"
+    >
       <div className="relative aspect-square bg-secondary">
         {pct > 0 && (
           <span className="absolute left-2 top-2 z-10 rounded-md bg-discount px-2 py-1 text-xs font-bold text-discount-foreground shadow-sm">
@@ -67,12 +71,15 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
             size="icon"
             className="h-9 w-9 shrink-0 rounded-full"
             aria-label={`Añadir ${product.name} a la lista`}
-            onClick={() => onAdd?.(product)}
+            onClick={(e) => {
+              e.preventDefault()
+              onAdd?.(product)
+            }}
           >
             <Plus className="h-5 w-5" aria-hidden="true" />
           </Button>
         </div>
       </div>
-    </article>
+    </Link>
   )
 }

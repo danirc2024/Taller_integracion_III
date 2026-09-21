@@ -3,12 +3,14 @@ import { Navigation, Route, Store } from 'lucide-react'
 import { useLayoutContext } from '@/layouts/MainLayout'
 import { ProductCard } from '@/components/ProductCard'
 import { RouteMap, type MapStop } from '@/components/RouteMap'
+import { Footer } from '@/components/Footer'
 import {
   HOME,
   products,
   supermarketById,
 } from '@/data/mock'
 import type { UiProduct as Product } from '@/types'
+import { useCart } from '@/contexts/CartContext'
 
 // Haversine-ish squared distance is enough for ordering nearby stops.
 function dist(a: [number, number], b: [number, number]) {
@@ -50,6 +52,7 @@ function buildRoute(marketIds: string[]): MapStop[] {
 
 export default function Page() {
   const { query, activeMarket } = useLayoutContext()
+  const { addToCart } = useCart()
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -71,7 +74,7 @@ export default function Page() {
   }, [filtered])
 
   const handleAdd = (product: Product) => {
-    console.log('[v0] Producto añadido a la lista:', product.name)
+    addToCart(product)
   }
 
   return (
@@ -117,6 +120,7 @@ export default function Page() {
                 </p>
               </div>
             )}
+            <Footer />
           </div>
         </section>
 
