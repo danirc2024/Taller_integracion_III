@@ -82,15 +82,44 @@ de modificarlo para que el contenedor reciba la lista actualizada.
 
 El spider `jumbo_rsc` procesa todas las categorías guardadas y avanza por sus
 páginas hasta encontrar una respuesta sin productos, con un máximo de 20
-páginas por categoría. Respeta `robots.txt`, usa una identidad identificable
-y mantiene una solicitud simultánea por dominio. `AutoThrottle`, el timeout de
-30 segundos, el máximo de 5 MiB por respuesta y un solo reintento reducen la
-carga y el consumo del contenedor.
+páginas por categoría. Respeta `robots.txt`, usa una identidad identificable,
+mantiene una sola solicitud simultánea por dominio y aplica un delay mínimo de
+2 segundos entre peticiones. La política de politeness se gestiona con
+`AUTOTHROTTLE_ENABLED`, `DOWNLOAD_DELAY`, `CONCURRENT_REQUESTS` y
+`CONCURRENT_REQUESTS_PER_DOMAIN`, con un backoff automático para evitar
+sobrecargar el sitio y el contenedor.
+
+La estrategia de reintentos es conservadora y solo aplica a errores temporales
+como `429`, `500`, `503` y `504`, con `RETRY_TIMES = 3` y factor de backoff de
+2 segundos. Esto evita bucles infinitos ante caídas transitorias y ayuda a
+mantener la extracción estable en servidores con recursos limitados.
+
+Cuando una página responde `404` por fin de paginación, el spider la detecta
+como cierre natural de la iteración y no intenta seguir navegando. Si una
+respuesta llega vacía o con formato inesperado, registra una advertencia en vez
+de emitir datos incorrectos en silencio. Este manejo de errores ayuda a detectar
+cambios del sitio sin dejar de ser resiliente.
 
 Cada producto conserva los campos básicos (`producto`, `precio`, `categoria`,
 `imagen`) y puede incluir `ean_gtin`, `sku`, `precio_normal`, `precio_oferta`,
 `marca`, `formato_crudo`, `mecanica_promocion`, `en_stock` y `url_producto`.
 Los campos no publicados por Jumbo quedan como `null`.
+
+## Política de resiliencia del scraper
+
+El scraper de Jumbo aplica una política responsable para no bloquear al sitio ni
+sobrepasar los límites del servidor:
+
+- 1 request simultáneo por dominio
+- delay mínimo de 2s entre peticiones
+- throttling automático habilitado
+- retries limitados solo para errores temporales
+- backoff progresivo para evitar rebotes de carga
+- fin explícito cuando la página ya no tiene más resultados
+- warnings para respuestas vacías o formatos inesperados
+
+Esto mantiene una extracción cuidadosa, estable y compatible con un entorno
+Docker y hardware con recursos reducidos.
 
 La respuesta con `Accept: text/x-component` (RSC) es un detalle interno de
 Next.js, no una API pública estable. Por eso el spider usa HTML por defecto y

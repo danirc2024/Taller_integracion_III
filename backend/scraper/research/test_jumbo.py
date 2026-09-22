@@ -5,8 +5,10 @@ La implementación vive en ``scraper_core/spiders/jumbo`` para que
 """
 
 import unittest
+from unittest.mock import MagicMock, patch
 
-from scrapy.http import TextResponse
+import scrapy
+from scrapy.http import Request, TextResponse
 
 import scraper_core.settings as settings
 from scraper_core.spiders.jumbo import JumboRscSpider
@@ -102,6 +104,22 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertGreaterEqual(settings.RETRY_BACKOFF_FACTOR, 2)
         self.assertIn(429, settings.RETRY_HTTP_CODES)
         self.assertIn(503, settings.RETRY_HTTP_CODES)
+
+    def test_404_page_stops_pagination_cleanly(self):
+        spider = JumboRscSpider()
+        request = Request(
+            "https://www.jumbo.cl/frutas-y-verduras/verduras?page=2",
+            meta={"category_url": "https://www.jumbo.cl/frutas-y-verduras/verduras", "page": 2},
+        )
+        response = TextResponse(
+            url=request.url,
+            status=404,
+            body=b"",
+            encoding="utf-8",
+            request=request,
+        )
+
+        self.assertEqual(list(spider.parse(response)), [])
 
 
 if __name__ == "__main__":
