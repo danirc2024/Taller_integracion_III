@@ -46,7 +46,3 @@ Es físicamente imposible que OTP *construya* (`--build`) el grafo de rutas dent
 
 ---
 
-## 5. El "Plan Nuclear" (Alternativa recomendada)
-Si a pesar de todo esto OTP sigue chocando con los 2GB, la optimización máxima a la fuerza es **abandonar Java y OTP**. 
-
-Se recomienda fuertemente migrar a **OSRM (Open Source Routing Machine)** o **Valhalla**. Al estar escritos en `C++`, no cargan el mapa en la RAM, sino que usan *Memory-Mapped Files* (mmap). Esto significa que leen el mapa directamente desde el disco duro/SSD a medida que el algoritmo avanza. Pueden rutear un continente entero usando menos de 1GB de RAM.

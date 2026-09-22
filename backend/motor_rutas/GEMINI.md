@@ -1,4 +1,4 @@
-# Microservicio: Motor de Rutas (FastAPI + OR-Tools + OSRM)
+# Microservicio: Motor de Rutas (FastAPI + OR-Tools + OTP)
 
 Puerto: 8001 | Dockerfile: Dockerfile | Entry: uvicorn app.main:app
 
@@ -7,7 +7,7 @@ Puerto: 8001 | Dockerfile: Dockerfile | Entry: uvicorn app.main:app
 ```
 app/main.py                              → FastAPI app, GET / (health check)
 app/core/strategy.py                     → RoutingStrategy(ABC) interfaz base
-app/algorithms/osrm_ortools_strategy.py  → OSRMOrToolsStrategy(RoutingStrategy)
+app/algorithms/otp_ortools_strategy.py  → OTPOrToolsStrategy(RoutingStrategy)
 app/algorithms/prototipo_ruta_ficticia.py → Prototipo standalone con datos ficticios
 tests/test_prototipo_ruta_ficticia.py    → Test del prototipo
 ```
@@ -17,9 +17,9 @@ tests/test_prototipo_ruta_ficticia.py    → Test del prototipo
 - `RoutingStrategy(ABC)` [app/core/strategy.py]: contrato base
   - `calculate_route(origin, destination) → Dict`
   - `optimize_route(origin, waypoints) → Dict`
-- `OSRMOrToolsStrategy(RoutingStrategy)` [app/algorithms/osrm_ortools_strategy.py]
-  - `__init__(osrm_base_url="http://osrm-backend:5000")`
-  - Esqueleto: consulta OSRM para matriz de distancias, OR-Tools para TSP
+- `OTPOrToolsStrategy(RoutingStrategy)` [app/algorithms/otp_ortools_strategy.py]
+  - `__init__(otp_base_url="http://otp-backend:5000")`
+  - Esqueleto: consulta OTP para matriz de distancias, OR-Tools para TSP
 
 ## Prototipo funcional [app/algorithms/prototipo_ruta_ficticia.py]
 
@@ -32,7 +32,7 @@ tests/test_prototipo_ruta_ficticia.py    → Test del prototipo
 
 - fastapi, uvicorn, pydantic
 - ortools >= 9.7.0 (TSP solver)
-- httpx (cliente HTTP async para OSRM)
+- httpx (cliente HTTP async para OTP)
 - SIN osmnx ni networkx (eliminados por OOM en hardware limitado)
 
 ## Rutas FastAPI
@@ -40,9 +40,9 @@ tests/test_prototipo_ruta_ficticia.py    → Test del prototipo
 - `GET /` → mensaje de servicio activo
 - Router de API comentado (app/api/router.py no implementado aún)
 
-## Infraestructura OSRM
+## Infraestructura OTP
 
-- Motor C++ en contenedor Docker separado (osrm-backend:5000)
+- Motor C++ en contenedor Docker separado (otp-backend:5000)
 - Mapa de Temuco descargado via scripts/setup_mapa.sh (Overpass API)
 - Perfil: auto (driving)
 
@@ -53,11 +53,11 @@ tests/test_prototipo_ruta_ficticia.py    → Test del prototipo
 **5 archivos .py** detectados
 
 
-### `app/algorithms/osrm_ortools_strategy.py`
+### `app/algorithms/otp_ortools_strategy.py`
 
 - Imports internos: app.core.strategy
-- **class OSRMOrToolsStrategy(RoutingStrategy)**
-  - `__init__(osrm_base_url: str)`
+- **class OTPOrToolsStrategy(RoutingStrategy)**
+  - `__init__(otp_base_url: str)`
   - `calculate_route(origin: ?, destination: ?) → ?`
   - `optimize_route(origin: ?, waypoints: ?) → ?`
 
