@@ -9,8 +9,12 @@ Scrapy bajo demanda sin modificar los demás microservicios.
 ## Tecnologías y Entorno
 El contenedor ya cuenta con las dependencias necesarias inyectadas en su `Dockerfile`:
 - `Scrapy`: Framework de extracción web.
-- `psycopg2-binary`: Driver oficial para enviar los datos parseados directamente a PostgreSQL.
-- `redis`: Cliente para interactuar con la cola en memoria (para control de duplicados o coordinación).
+- `psycopg2-binary`: Dependencia disponible para la futura integración con PostgreSQL.
+- `redis`: Dependencia disponible para una futura cola distribuida.
+
+Actualmente la cola de refresh usa memoria del proceso (`RefreshQueue`) para
+evitar duplicados durante una ejecución. La persistencia de productos, precios
+y timestamps será responsabilidad de la API cuando esté disponible.
 
 ## Documentación de Uso (Modo Desarrollo)
 
@@ -87,6 +91,36 @@ y mantiene una solicitud simultánea por dominio. `AutoThrottle`, el timeout de
 30 segundos, el máximo de 5 MiB por respuesta y un solo reintento reducen la
 carga y el consumo del contenedor.
 
+### Ejecución local sin persistencia
+
+Para ejecutar el spider real sin generar un archivo JSON ni guardar resultados
+localmente, usa desde `backend/scraper`:
+
+```bash
+python -m scraper_core.runtime
+```
+
+Este comando invoca `scrapy crawl jumbo_rsc` mediante `ScrapyCommandExecutor`.
+La cola de refresh, el TTL y el worker funcionan en memoria durante la
+ejecución. `ScraperResultPublisher` deja preparado el punto de salida para
+enviar los items a la API cuando esté disponible.
+
+La configuración del scheduler puede construirse con los valores que más
+adelante enviará la API:
+
+```python
+from scraper_core.freshness import RefreshScheduler
+
+scheduler = RefreshScheduler.from_config({
+	"enabled": True,
+	"catalog_interval_seconds": 21600,
+	"product_ttl_seconds": 1800,
+})
+```
+
+La API será responsable de persistir productos, precios y `last_updated_at`.
+El scraper no crea un JSON local para reemplazar esa persistencia.
+
 Cada producto conserva los campos básicos (`producto`, `precio`, `categoria`,
 `imagen`) y puede incluir `ean_gtin`, `sku`, `precio_normal`, `precio_oferta`,
 `marca`, `formato_crudo`, `mecanica_promocion`, `en_stock` y `url_producto`.
@@ -97,8 +131,11 @@ Next.js, no una API pública estable. Por eso el spider usa HTML por defecto y
 la extracción está aislada: si Jumbo cambia su formato, registra una
 advertencia en vez de generar datos silenciosamente incorrectos.
 
-## Conectividad
-Tanto la URL de Redis como la URL de la Base de Datos están siendo pasadas dinámicamente al contenedor a través de `docker-compose.yml`. Para conectarte a ellas desde Scrapy (por ejemplo en el archivo `pipelines.py`), solo debes invocar las variables de entorno:
+## Integraciones futuras
+
+Cuando la API y la infraestructura estén listas, las URLs de Redis y de la
+Base de Datos podrán pasarse mediante variables de entorno. El scraper podrá
+leerlas, por ejemplo, así:
 
 ```python
 import os
