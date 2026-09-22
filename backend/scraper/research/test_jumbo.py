@@ -19,6 +19,7 @@ from scraper_core.freshness import (
     should_skip_refresh,
 )
 from scraper_core.output import ScraperResultPublisher
+from scraper_core.runtime import ScrapyCommandExecutor
 from scraper_core.spiders.jumbo import JumboRscSpider
 
 
@@ -235,6 +236,38 @@ class JumboExtractionTest(unittest.TestCase):
 
         self.assertEqual(result["status"], "failed")
         self.assertIn("API no disponible", result["error"])
+
+    def test_refresh_flow_consumes_queue_and_publishes_result(self):
+        queue = RefreshQueue(product_ttl_seconds=1800)
+        queue.enqueue("sku-3", product_url="https://www.jumbo.cl/p/sku-3")
+        published = []
+        publisher = ScraperResultPublisher(lambda item: published.append(item))
+        worker = RefreshWorker(
+            queue,
+            lambda job: publisher.publish(
+                {"sku": job["product_id"], "url": job["product_url"]}
+            ),
+        )
+
+        result = worker.process_next()
+
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(published, [{"sku": "sku-3", "url": "https://www.jumbo.cl/p/sku-3"}])
+
+    def test_scrapy_executor_runs_catalog_without_persisting_output_file(self):
+        commands = []
+
+        def run_command(command, **kwargs):
+            commands.append((command, kwargs))
+            return type("Completed", (), {"returncode": 0, "stdout": "items", "stderr": ""})()
+
+        executor = ScrapyCommandExecutor(command_runner=run_command)
+        result = executor({"product_id": "sku-1"})
+
+        self.assertEqual(result["status"], "completed")
+        self.assertIn("scrapy", commands[0][0])
+        self.assertIn("crawl", commands[0][0])
+        self.assertNotIn("-O", commands[0][0])
 
     def test_scheduler_decides_catalog_and_product_update_flow(self):
         scheduler = RefreshScheduler(catalog_interval_seconds=3600, product_ttl_seconds=1800)
