@@ -168,8 +168,36 @@ class JumboExtractionTest(unittest.TestCase):
                 "catalog_refresh": True,
                 "product_refresh": True,
                 "product_reason": "ttl_exceeded",
+                "manual_trigger": False,
             },
         )
+
+    def test_scheduler_accepts_future_api_configuration(self):
+        scheduler = RefreshScheduler.from_config(
+            {
+                "enabled": True,
+                "catalog_interval_seconds": 7200,
+                "product_ttl_seconds": 900,
+            }
+        )
+
+        self.assertTrue(scheduler.enabled)
+        self.assertEqual(scheduler.catalog_interval_seconds, 7200)
+        self.assertEqual(scheduler.product_ttl_seconds, 900)
+
+    def test_scheduler_can_force_catalog_refresh_from_manual_trigger(self):
+        scheduler = RefreshScheduler.from_config({"enabled": True})
+        recent = datetime.now(timezone.utc)
+
+        plan = scheduler.build_catalog_and_product_plan(
+            recent,
+            "sku-1",
+            recent,
+            force_catalog_refresh=True,
+        )
+
+        self.assertTrue(plan["catalog_refresh"])
+        self.assertTrue(plan["manual_trigger"])
 
 
 if __name__ == "__main__":

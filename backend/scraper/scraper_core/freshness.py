@@ -115,11 +115,31 @@ class RefreshScheduler:
         self,
         catalog_interval_seconds: int = CATALOG_REFRESH_INTERVAL_SECONDS,
         product_ttl_seconds: int = PRODUCT_REFRESH_TTL_SECONDS,
+        enabled: bool = True,
     ):
         self.catalog_interval_seconds = catalog_interval_seconds
         self.product_ttl_seconds = product_ttl_seconds
+        self.enabled = enabled
+
+    @classmethod
+    def from_config(cls, config=None):
+        config = config or {}
+        return cls(
+            catalog_interval_seconds=int(
+                config.get(
+                    "catalog_interval_seconds",
+                    CATALOG_REFRESH_INTERVAL_SECONDS,
+                )
+            ),
+            product_ttl_seconds=int(
+                config.get("product_ttl_seconds", PRODUCT_REFRESH_TTL_SECONDS)
+            ),
+            enabled=bool(config.get("enabled", True)),
+        )
 
     def catalog_needs_refresh(self, last_updated_at):
+        if not self.enabled:
+            return False
         return should_refresh_catalog(
             last_updated_at,
             interval_seconds=self.catalog_interval_seconds,
@@ -127,6 +147,8 @@ class RefreshScheduler:
 
     def product_needs_refresh(self, product_id, last_updated_at):
         del product_id
+        if not self.enabled:
+            return False
         return should_refresh_product(
             last_updated_at,
             ttl_seconds=self.product_ttl_seconds,
@@ -137,15 +159,22 @@ class RefreshScheduler:
         last_catalog_updated_at,
         product_id,
         last_product_updated_at,
+        force_catalog_refresh=False,
     ):
-        catalog_refresh = self.catalog_needs_refresh(last_catalog_updated_at)
+        manual_trigger = bool(force_catalog_refresh)
+        catalog_refresh = manual_trigger or self.catalog_needs_refresh(
+            last_catalog_updated_at
+        )
         product_refresh = self.product_needs_refresh(product_id, last_product_updated_at)
         reason = "fresh"
         if product_refresh:
             reason = "ttl_exceeded"
+        elif not self.enabled and not manual_trigger:
+            reason = "scheduler_disabled"
 
         return {
             "catalog_refresh": catalog_refresh,
             "product_refresh": product_refresh,
             "product_reason": reason,
+            "manual_trigger": manual_trigger,
         }
