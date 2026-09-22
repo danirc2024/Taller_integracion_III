@@ -8,6 +8,7 @@ import unittest
 
 from scrapy.http import TextResponse
 
+import scraper_core.settings as settings
 from scraper_core.spiders.jumbo import JumboRscSpider
 
 
@@ -87,6 +88,13 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertEqual(
             url, "https://www.jumbo.cl/frutas-y-verduras/verduras?page=2"
         )
+
+    def test_scrapy_settings_use_ethic_rate_limit(self):
+        self.assertTrue(settings.AUTOTHROTTLE_ENABLED)
+        self.assertGreaterEqual(settings.DOWNLOAD_DELAY, 2)
+        self.assertEqual(settings.CONCURRENT_REQUESTS, 1)
+        self.assertEqual(settings.CONCURRENT_REQUESTS_PER_DOMAIN, 1)
+        self.assertIn(429, settings.RETRY_HTTP_CODES)
 
 
 if __name__ == "__main__":
