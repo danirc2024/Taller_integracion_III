@@ -5,9 +5,11 @@ La implementación vive en ``scraper_core/spiders/jumbo`` para que
 """
 
 import unittest
+from datetime import datetime, timedelta, timezone
 
 from scrapy.http import TextResponse
 
+from scraper_core.freshness import should_refresh_catalog, should_refresh_product
 from scraper_core.spiders.jumbo import JumboRscSpider
 
 
@@ -87,6 +89,21 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertEqual(
             url, "https://www.jumbo.cl/frutas-y-verduras/verduras?page=2"
         )
+
+    def test_catalog_refresh_is_needed_when_never_updated(self):
+        self.assertTrue(should_refresh_catalog(None))
+
+    def test_catalog_refresh_is_not_needed_while_fresh(self):
+        recent = datetime.now(timezone.utc) - timedelta(minutes=30)
+        self.assertFalse(should_refresh_catalog(recent, interval_seconds=3600))
+
+    def test_product_refresh_is_needed_after_ttl(self):
+        stale = datetime.now(timezone.utc) - timedelta(minutes=45)
+        self.assertTrue(should_refresh_product(stale, ttl_seconds=1800))
+
+    def test_product_refresh_is_not_needed_while_fresh(self):
+        recent = datetime.now(timezone.utc) - timedelta(minutes=10)
+        self.assertFalse(should_refresh_product(recent, ttl_seconds=1800))
 
 
 if __name__ == "__main__":
