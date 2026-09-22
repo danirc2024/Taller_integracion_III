@@ -96,6 +96,13 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertEqual(settings.CONCURRENT_REQUESTS_PER_DOMAIN, 1)
         self.assertIn(429, settings.RETRY_HTTP_CODES)
 
+    def test_scrapy_retry_policy_handles_transient_errors(self):
+        self.assertTrue(settings.RETRY_ENABLED)
+        self.assertGreaterEqual(settings.RETRY_TIMES, 3)
+        self.assertGreaterEqual(settings.RETRY_BACKOFF_FACTOR, 2)
+        self.assertIn(429, settings.RETRY_HTTP_CODES)
+        self.assertIn(503, settings.RETRY_HTTP_CODES)
+
 
 if __name__ == "__main__":
     unittest.main()
