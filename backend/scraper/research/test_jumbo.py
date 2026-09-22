@@ -9,7 +9,12 @@ from datetime import datetime, timedelta, timezone
 
 from scrapy.http import TextResponse
 
-from scraper_core.freshness import should_refresh_catalog, should_refresh_product
+from scraper_core.freshness import (
+    build_refresh_decision,
+    should_refresh_catalog,
+    should_refresh_product,
+    should_skip_refresh,
+)
 from scraper_core.spiders.jumbo import JumboRscSpider
 
 
@@ -104,6 +109,19 @@ class JumboExtractionTest(unittest.TestCase):
     def test_product_refresh_is_not_needed_while_fresh(self):
         recent = datetime.now(timezone.utc) - timedelta(minutes=10)
         self.assertFalse(should_refresh_product(recent, ttl_seconds=1800))
+
+    def test_refresh_decision_marks_stale_product(self):
+        stale = datetime.now(timezone.utc) - timedelta(minutes=45)
+        decision = build_refresh_decision("sku-123", stale, ttl_seconds=1800)
+
+        self.assertEqual(decision["product_id"], "sku-123")
+        self.assertTrue(decision["needs_refresh"])
+        self.assertEqual(decision["reason"], "ttl_exceeded")
+
+    def test_duplicate_refresh_request_is_skipped(self):
+        in_flight = {"sku-123"}
+        self.assertTrue(should_skip_refresh("sku-123", in_flight))
+        self.assertFalse(should_skip_refresh("sku-456", in_flight))
 
 
 if __name__ == "__main__":
