@@ -19,7 +19,7 @@ export function MainLayout() {
   const [activeMarket, setActiveMarket] = useState<string | null>(null);
 
   return (
-    <div className="flex h-dvh flex-col bg-background bg-dotted">
+    <div className="flex h-dvh flex-col bg-background">
       <CartSidebar />
       <SideBar
         open={sidebarOpen}

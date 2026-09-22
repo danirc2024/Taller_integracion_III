@@ -10,7 +10,7 @@ export function AuthVisual() {
           <Leaf className="size-5" />
         </span>
         <span className="font-display text-lg font-bold tracking-tight">
-          PrecioRuta
+          RutaAhorro
         </span>
       </header>
 

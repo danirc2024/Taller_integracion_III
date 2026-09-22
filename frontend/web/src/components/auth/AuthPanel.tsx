@@ -34,11 +34,11 @@ export function AuthPanel() {
   }
 
   return (
-    <div className="relative flex h-full items-center justify-center overflow-y-auto bg-surface px-5 py-10 sm:px-8">
+    <div className="relative flex h-full items-center justify-center overflow-y-auto bg-background px-5 py-10 sm:px-8">
       {/* Street art background without blur */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500 grayscale opacity-30"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500 grayscale opacity-30 dark:opacity-10 dark:mix-blend-screen"
           style={{
             backgroundImage: "url('/street_art_supermarket.jpg')",
           }}
@@ -52,7 +52,7 @@ export function AuthPanel() {
             <Leaf className="size-5 text-primary" />
           </span>
           <span className="font-display text-lg font-bold tracking-tight text-foreground">
-            PrecioRuta
+            RutaAhorro
           </span>
         </div>
 
