@@ -11,6 +11,8 @@ from scrapy.http import TextResponse
 
 from scraper_core.freshness import (
     build_refresh_decision,
+    RefreshQueue,
+    RefreshScheduler,
     should_refresh_catalog,
     should_refresh_product,
     should_skip_refresh,
@@ -122,6 +124,52 @@ class JumboExtractionTest(unittest.TestCase):
         in_flight = {"sku-123"}
         self.assertTrue(should_skip_refresh("sku-123", in_flight))
         self.assertFalse(should_skip_refresh("sku-456", in_flight))
+
+    def test_scheduler_marks_catalog_as_stale_after_interval(self):
+        scheduler = RefreshScheduler(catalog_interval_seconds=3600, product_ttl_seconds=1800)
+        stale = datetime.now(timezone.utc) - timedelta(hours=2)
+
+        self.assertTrue(scheduler.catalog_needs_refresh(stale))
+        self.assertFalse(
+            scheduler.product_needs_refresh(
+                "sku-1",
+                datetime.now(timezone.utc) - timedelta(minutes=10),
+            )
+        )
+
+    def test_queue_skips_duplicate_in_flight_refresh(self):
+        queue = RefreshQueue(product_ttl_seconds=1800)
+
+        queue.mark_started("sku-123")
+        decision = queue.enqueue("sku-123")
+
+        self.assertFalse(decision["needs_refresh"])
+        self.assertEqual(decision["reason"], "in_flight")
+
+    def test_queue_schedules_stale_product_refresh(self):
+        queue = RefreshQueue(product_ttl_seconds=1800)
+        stale = datetime.now(timezone.utc) - timedelta(minutes=45)
+
+        decision = queue.enqueue("sku-777", last_updated_at=stale)
+
+        self.assertTrue(decision["needs_refresh"])
+        self.assertEqual(decision["reason"], "ttl_exceeded")
+
+    def test_scheduler_decides_catalog_and_product_update_flow(self):
+        scheduler = RefreshScheduler(catalog_interval_seconds=3600, product_ttl_seconds=1800)
+        last_catalog = datetime.now(timezone.utc) - timedelta(hours=3)
+        last_product = datetime.now(timezone.utc) - timedelta(minutes=45)
+
+        self.assertTrue(scheduler.catalog_needs_refresh(last_catalog))
+        self.assertTrue(scheduler.product_needs_refresh("sku-99", last_product))
+        self.assertEqual(
+            scheduler.build_catalog_and_product_plan(last_catalog, "sku-99", last_product),
+            {
+                "catalog_refresh": True,
+                "product_refresh": True,
+                "product_reason": "ttl_exceeded",
+            },
+        )
 
 
 if __name__ == "__main__":
