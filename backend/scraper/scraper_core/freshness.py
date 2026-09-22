@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 from datetime import datetime, timezone
 
 
@@ -60,6 +61,7 @@ class RefreshQueue:
     def __init__(self, product_ttl_seconds: int = PRODUCT_REFRESH_TTL_SECONDS):
         self.product_ttl_seconds = product_ttl_seconds
         self._in_flight_refreshes = set()
+        self._pending_refreshes = deque()
 
     @property
     def in_flight_refreshes(self):
@@ -77,7 +79,12 @@ class RefreshQueue:
         self._in_flight_refreshes.discard(product_id)
         return True
 
-    def enqueue(self, product_id, last_updated_at=None):
+    def pop_next(self):
+        if not self._pending_refreshes:
+            return None
+        return self._pending_refreshes.popleft()
+
+    def enqueue(self, product_id, last_updated_at=None, product_url=None):
         if product_id in self._in_flight_refreshes:
             return {
                 "product_id": product_id,
@@ -87,6 +94,9 @@ class RefreshQueue:
 
         if last_updated_at is None or not isinstance(last_updated_at, datetime):
             self.mark_started(product_id)
+            self._pending_refreshes.append(
+                {"product_id": product_id, "product_url": product_url}
+            )
             return {
                 "product_id": product_id,
                 "needs_refresh": True,
@@ -95,6 +105,9 @@ class RefreshQueue:
 
         if should_refresh_product(last_updated_at, ttl_seconds=self.product_ttl_seconds):
             self.mark_started(product_id)
+            self._pending_refreshes.append(
+                {"product_id": product_id, "product_url": product_url}
+            )
             return {
                 "product_id": product_id,
                 "needs_refresh": True,

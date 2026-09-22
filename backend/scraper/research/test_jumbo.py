@@ -155,6 +155,27 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertTrue(decision["needs_refresh"])
         self.assertEqual(decision["reason"], "ttl_exceeded")
 
+    def test_queue_exposes_enqueued_product_for_processing(self):
+        queue = RefreshQueue(product_ttl_seconds=1800)
+        stale = datetime.now(timezone.utc) - timedelta(minutes=45)
+
+        queue.enqueue(
+            "sku-777",
+            last_updated_at=stale,
+            product_url="https://www.jumbo.cl/p/sku-777",
+        )
+        job = queue.pop_next()
+
+        self.assertEqual(
+            job,
+            {
+                "product_id": "sku-777",
+                "product_url": "https://www.jumbo.cl/p/sku-777",
+            },
+        )
+        queue.mark_finished(job["product_id"])
+        self.assertIsNone(queue.pop_next())
+
     def test_scheduler_decides_catalog_and_product_update_flow(self):
         scheduler = RefreshScheduler(catalog_interval_seconds=3600, product_ttl_seconds=1800)
         last_catalog = datetime.now(timezone.utc) - timedelta(hours=3)
