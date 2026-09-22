@@ -121,6 +121,36 @@ class RefreshQueue:
         }
 
 
+class RefreshWorker:
+    """Consume trabajos y delega la ejecución real a un adaptador externo."""
+
+    def __init__(self, queue, executor):
+        self.queue = queue
+        self.executor = executor
+
+    def process_next(self):
+        job = self.queue.pop_next()
+        if job is None:
+            return {"status": "empty"}
+
+        product_id = job["product_id"]
+        try:
+            result = self.executor(job)
+            return {
+                "status": "completed",
+                "product_id": product_id,
+                "result": result,
+            }
+        except Exception as error:
+            return {
+                "status": "failed",
+                "product_id": product_id,
+                "error": str(error),
+            }
+        finally:
+            self.queue.mark_finished(product_id)
+
+
 class RefreshScheduler:
     """Coordina la decisión de refrescar catálogo y productos."""
 

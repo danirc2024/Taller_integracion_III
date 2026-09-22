@@ -13,6 +13,7 @@ from scraper_core.freshness import (
     build_refresh_decision,
     RefreshQueue,
     RefreshScheduler,
+    RefreshWorker,
     should_refresh_catalog,
     should_refresh_product,
     should_skip_refresh,
@@ -175,6 +176,32 @@ class JumboExtractionTest(unittest.TestCase):
         )
         queue.mark_finished(job["product_id"])
         self.assertIsNone(queue.pop_next())
+
+    def test_worker_processes_next_product_and_releases_in_flight_lock(self):
+        queue = RefreshQueue(product_ttl_seconds=1800)
+        queue.enqueue("sku-777", product_url="https://www.jumbo.cl/p/sku-777")
+        processed = []
+        worker = RefreshWorker(queue, lambda job: processed.append(job))
+
+        result = worker.process_next()
+
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(processed[0]["product_id"], "sku-777")
+        self.assertNotIn("sku-777", queue.in_flight_refreshes)
+
+    def test_worker_reports_failure_and_releases_in_flight_lock(self):
+        queue = RefreshQueue(product_ttl_seconds=1800)
+        queue.enqueue("sku-888")
+
+        def fail(_job):
+            raise RuntimeError("fallo de prueba")
+
+        worker = RefreshWorker(queue, fail)
+        result = worker.process_next()
+
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("fallo de prueba", result["error"])
+        self.assertNotIn("sku-888", queue.in_flight_refreshes)
 
     def test_scheduler_decides_catalog_and_product_update_flow(self):
         scheduler = RefreshScheduler(catalog_interval_seconds=3600, product_ttl_seconds=1800)
