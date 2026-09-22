@@ -49,7 +49,7 @@ func main() {
 
 	r.POST("/webhooks/github", func(c *gin.Context) {
 		event := c.GetHeader("X-GitHub-Event")
-		
+
 		var payload map[string]interface{}
 		if err := c.BindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Payload inválido"})
@@ -107,7 +107,7 @@ func handlePush(s *discordgo.Session, channelID string, payload map[string]inter
 		return
 	}
 	pusherName := pusherMap["name"].(string)
-	
+
 	ref, _ := payload["ref"].(string)
 	branch := strings.Replace(ref, "refs/heads/", "", 1)
 
@@ -118,7 +118,7 @@ func handlePush(s *discordgo.Session, channelID string, payload map[string]inter
 // handlePullRequest notifica creación de PR y extrae reviewers/assignees
 func handlePullRequest(s *discordgo.Session, channelID string, payload map[string]interface{}) {
 	action, _ := payload["action"].(string)
-	
+
 	// Solo nos interesan PRs abiertos o cuando se solicita review/asigna (opcional)
 	if action != "opened" && action != "reopened" {
 		return
@@ -165,15 +165,15 @@ func handlePullRequest(s *discordgo.Session, channelID string, payload map[strin
 	}
 
 	msg := fmt.Sprintf("🛠️ **Nuevo Pull Request** por `%s`\n**Título**: %s\n**Link**: %s", author, title, url)
-	
+
 	if len(labelsList) > 0 {
 		msg += fmt.Sprintf("\n**Etiquetas**: %s", strings.Join(labelsList, ", "))
 	}
-	
+
 	if len(assigneesList) > 0 {
 		msg += fmt.Sprintf("\n**Asignados**: %s", strings.Join(assigneesList, " "))
 	}
-	
+
 	if len(reviewersList) > 0 {
 		msg += fmt.Sprintf("\n**Reviewers Solicitados**: %s", strings.Join(reviewersList, " "))
 	}
@@ -186,18 +186,18 @@ func mapGitHubToDiscord(githubUser string) string {
 	// Diccionario estático de miembros del equipo
 	// TODO: En el futuro esto puede venir de un JSON o BD.
 	users := map[string]string{
-		"VicenteMatus": "<@!DISCORD_ID_VICENTE>", // Reemplazar con ID reales ej: <@!123456789>
-		"danirc2024":   "<@!DISCORD_ID_DANIELA>",
-		"RCarrascoO":   "<@!DISCORD_ID_RENATO>",
-		"MarceloMat":   "<@!DISCORD_ID_MARCELO>",
+		"VicenteMatus": "<@!537347874875506698>", // Reemplazar con ID reales ej: <@!123456789>
+		"danirc2024":   "<@!1221186570455879702>",
+		"RCarrascoO":   "<@!410177503592972288>",
+		"MarceloMat":   "<@!467880145877991432>",
 		"FabianS":      "<@!DISCORD_ID_FABIAN>",
-		"EsbanV":       "<@!DISCORD_ID_ESBAN>",
+		"EsbanV":       "<@!265591689211674624>",
 	}
 
 	if discordPing, exists := users[githubUser]; exists {
 		return discordPing
 	}
-	
+
 	// Si no está mapeado, retornar solo el nombre de Github resaltado
 	return "`@" + githubUser + "`"
 }
