@@ -150,6 +150,14 @@ class RefreshWorker:
         finally:
             self.queue.mark_finished(product_id)
 
+    def process_all(self):
+        results = []
+        while True:
+            result = self.process_next()
+            if result["status"] == "empty":
+                return results
+            results.append(result)
+
 
 class RefreshScheduler:
     """Coordina la decisión de refrescar catálogo y productos."""

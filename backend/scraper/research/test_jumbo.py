@@ -203,6 +203,19 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertIn("fallo de prueba", result["error"])
         self.assertNotIn("sku-888", queue.in_flight_refreshes)
 
+    def test_worker_processes_all_pending_products(self):
+        queue = RefreshQueue(product_ttl_seconds=1800)
+        queue.enqueue("sku-1")
+        queue.enqueue("sku-2")
+        processed = []
+        worker = RefreshWorker(queue, lambda job: processed.append(job["product_id"]))
+
+        results = worker.process_all()
+
+        self.assertEqual(processed, ["sku-1", "sku-2"])
+        self.assertEqual([result["status"] for result in results], ["completed", "completed"])
+        self.assertEqual(queue.in_flight_refreshes, set())
+
     def test_scheduler_decides_catalog_and_product_update_flow(self):
         scheduler = RefreshScheduler(catalog_interval_seconds=3600, product_ttl_seconds=1800)
         last_catalog = datetime.now(timezone.utc) - timedelta(hours=3)
