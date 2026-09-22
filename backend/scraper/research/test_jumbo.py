@@ -18,6 +18,7 @@ from scraper_core.freshness import (
     should_refresh_product,
     should_skip_refresh,
 )
+from scraper_core.output import ScraperResultPublisher
 from scraper_core.spiders.jumbo import JumboRscSpider
 
 
@@ -215,6 +216,25 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertEqual(processed, ["sku-1", "sku-2"])
         self.assertEqual([result["status"] for result in results], ["completed", "completed"])
         self.assertEqual(queue.in_flight_refreshes, set())
+
+    def test_result_publisher_sends_item_to_injected_sender(self):
+        sent_items = []
+        publisher = ScraperResultPublisher(lambda item: sent_items.append(item))
+
+        result = publisher.publish({"sku": "sku-1", "precio": 1290.0})
+
+        self.assertEqual(result["status"], "sent")
+        self.assertEqual(sent_items, [{"sku": "sku-1", "precio": 1290.0}])
+
+    def test_result_publisher_reports_api_failure(self):
+        def fail(_item):
+            raise RuntimeError("API no disponible")
+
+        publisher = ScraperResultPublisher(fail)
+        result = publisher.publish({"sku": "sku-1"})
+
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("API no disponible", result["error"])
 
     def test_scheduler_decides_catalog_and_product_update_flow(self):
         scheduler = RefreshScheduler(catalog_interval_seconds=3600, product_ttl_seconds=1800)
