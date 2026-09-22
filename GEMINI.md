@@ -9,11 +9,11 @@ Equipo: 6 integrantes, GitFlow estricto, Scrum semestral (UCT)
 frontend/web/       → React 19 + Vite + TypeScript + Tailwind 4         (puerto 3000)
 backend/api/        → Go 1.26 + Gin + GORM, API Gateway                 (puerto 8080)
 backend/scraper/    → Python + Scrapy, extractor asíncrono               (standby worker)
-backend/motor_rutas/→ Python + FastAPI + OR-Tools + OSRM                 (puerto 8001)
+backend/motor_rutas/→ Python + FastAPI + OR-Tools + OTP                 (puerto 8001)
 backend/ia_conversacional/ → Python + FastAPI + Groq/Gemini              (puerto 8002)
 ```
 
-Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OSRM (rutas C++)
+Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas C++)
 
 ## Base de Datos (3 esquemas PostgreSQL)
 
@@ -192,11 +192,11 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OSRM (rutas
 **5 archivos .py** detectados
 
 
-### `app/algorithms/osrm_ortools_strategy.py`
+### `app/algorithms/otp_ortools_strategy.py`
 
 - Imports internos: app.core.strategy
-- **class OSRMOrToolsStrategy(RoutingStrategy)**
-  - `__init__(osrm_base_url: str)`
+- **class OTPOrToolsStrategy(RoutingStrategy)**
+  - `__init__(otp_base_url: str)`
   - `calculate_route(origin: ?, destination: ?) → ?`
   - `optimize_route(origin: ?, waypoints: ?) → ?`
 
