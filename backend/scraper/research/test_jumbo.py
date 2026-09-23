@@ -5,16 +5,11 @@ La implementación vive en ``scraper_core/spiders/jumbo`` para que
 """
 
 import unittest
-<<<<<<< HEAD
 from datetime import datetime, timedelta, timezone
-=======
-from unittest.mock import MagicMock, patch
->>>>>>> origin/develop
 
 import scrapy
 from scrapy.http import Request, TextResponse
 
-<<<<<<< HEAD
 from scraper_core.freshness import (
     build_refresh_decision,
     RefreshQueue,
@@ -26,9 +21,7 @@ from scraper_core.freshness import (
 )
 from scraper_core.output import ScraperResultPublisher
 from scraper_core.runtime import ScrapyCommandExecutor
-=======
 import scraper_core.settings as settings
->>>>>>> origin/develop
 from scraper_core.spiders.jumbo import JumboRscSpider
 
 
@@ -109,7 +102,6 @@ class JumboExtractionTest(unittest.TestCase):
             url, "https://www.jumbo.cl/frutas-y-verduras/verduras?page=2"
         )
 
-<<<<<<< HEAD
     def test_catalog_refresh_is_needed_when_never_updated(self):
         self.assertTrue(should_refresh_catalog(None))
 
@@ -366,7 +358,7 @@ class JumboExtractionTest(unittest.TestCase):
 
         self.assertTrue(plan["catalog_refresh"])
         self.assertTrue(plan["manual_trigger"])
-=======
+
     def test_scrapy_settings_use_ethic_rate_limit(self):
         self.assertTrue(settings.AUTOTHROTTLE_ENABLED)
         self.assertGreaterEqual(settings.DOWNLOAD_DELAY, 2)
@@ -394,9 +386,8 @@ class JumboExtractionTest(unittest.TestCase):
             encoding="utf-8",
             request=request,
         )
-
         self.assertEqual(list(spider.parse(response)), [])
->>>>>>> origin/develop
+        self.assertEqual(list(spider.parse(response)), [])
 
 
 if __name__ == "__main__":
