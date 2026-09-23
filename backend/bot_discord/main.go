@@ -27,6 +27,12 @@ func main() {
 		log.Fatal("DISCORD_CHANNEL_ID no configurado en entorno")
 	}
 
+	pushChannelID := os.Getenv("DISCORD_PUSH_CHANNEL_ID")
+	if pushChannelID == "" {
+		// Fallback por si no lo configuran de inmediato
+		pushChannelID = channelID
+	}
+
 	// Inicializar Discord
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
@@ -61,7 +67,7 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"status": "Ping recibido"})
 			return
 		case "push":
-			handlePush(dg, channelID, payload)
+			handlePush(dg, pushChannelID, payload)
 		case "pull_request":
 			handlePullRequest(dg, channelID, payload)
 		default:
@@ -132,14 +138,14 @@ func handlePush(s *discordgo.Session, channelID string, payload map[string]inter
 			c := commits[i].(map[string]interface{})
 			msg, _ := c["message"].(string)
 			firstLine := strings.Split(msg, "\n")[0] // Solo la primera línea
-			
+
 			id, _ := c["id"].(string)
 			shortID := id
 			if len(id) > 7 {
 				shortID = id[:7]
 			}
 			url, _ := c["url"].(string)
-			
+
 			// Formato: - [`shortID`](url) Mensaje
 			commitsMsg += fmt.Sprintf("\n- [`%s`](<%s>) %s", shortID, url, firstLine)
 		}
@@ -154,7 +160,7 @@ func handlePush(s *discordgo.Session, channelID string, payload map[string]inter
 	} else {
 		msg = fmt.Sprintf("🚀 **Nuevo Push** de `%s` en la rama `%s`.", pusherName, branch)
 	}
-	
+
 	msg += commitsMsg
 	s.ChannelMessageSend(channelID, msg)
 }
