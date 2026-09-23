@@ -70,6 +70,10 @@ func main() {
 			handlePush(dg, pushChannelID, payload)
 		case "pull_request":
 			handlePullRequest(dg, channelID, payload)
+		case "pull_request_review":
+			handlePullRequestReview(dg, channelID, payload)
+		case "issue_comment":
+			handleIssueComment(dg, channelID, payload)
 		default:
 			log.Printf("Evento de GitHub ignorado: %s", event)
 		}
@@ -237,7 +241,7 @@ func handlePullRequest(s *discordgo.Session, channelID string, payload map[strin
 	case "closed":
 		senderMap, _ := payload["sender"].(map[string]interface{})
 		senderName, _ := senderMap["login"].(string)
-		
+
 		merged, _ := prMap["merged"].(bool)
 		if merged {
 			msg := fmt.Sprintf("✅ **Pull Request Aceptado (Merged)** por `%s`\n**Título**: %s\n**Link**: %s", senderName, title, url)
@@ -283,4 +287,105 @@ func mapGitHubToDiscord(githubUser string) string {
 
 	// Si no está mapeado, retornar solo el nombre de Github resaltado
 	return "`@" + githubUser + "`"
+}
+
+// handlePullRequestReview notifica cuando alguien deja un review (aprueba, rechaza o comenta)
+func handlePullRequestReview(s *discordgo.Session, channelID string, payload map[string]interface{}) {
+	action, _ := payload["action"].(string)
+	if action != "submitted" {
+		return
+	}
+
+	reviewMap, ok := payload["review"].(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	prMap, ok := payload["pull_request"].(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	state, _ := reviewMap["state"].(string) // "approved", "changes_requested", "commented"
+	body, _ := reviewMap["body"].(string)
+	url, _ := reviewMap["html_url"].(string)
+
+	userMap, _ := reviewMap["user"].(map[string]interface{})
+	reviewer, _ := userMap["login"].(string)
+	reviewerDiscord := mapGitHubToDiscord(reviewer)
+
+	numberFloat, _ := prMap["number"].(float64)
+	number := int(numberFloat)
+
+	// Solo notificar si hay comentario o si es una aprobación/rechazo
+	if body == "" && state == "commented" {
+		return
+	}
+
+	var statusEmoji string
+	var statusText string
+
+	switch state {
+	case "approved":
+		statusEmoji = "✅"
+		statusText = "aprobó"
+	case "changes_requested":
+		statusEmoji = "❌"
+		statusText = "solicitó cambios en"
+	case "commented":
+		statusEmoji = "💬"
+		statusText = "comentó en"
+	default:
+		statusEmoji = "📝"
+		statusText = "revisó"
+	}
+
+	msg := fmt.Sprintf("%s **Review**: %s %s el PR #%d\n", statusEmoji, reviewerDiscord, statusText, number)
+	if body != "" {
+		if len(body) > 300 {
+			body = body[:300] + "..."
+		}
+		msg += fmt.Sprintf("> *\"%s\"*\n", body)
+	}
+	msg += fmt.Sprintf("**Link**: <%s>", url)
+
+	s.ChannelMessageSend(channelID, msg)
+}
+
+// handleIssueComment notifica cuando alguien deja un comentario normal en el hilo del PR
+func handleIssueComment(s *discordgo.Session, channelID string, payload map[string]interface{}) {
+	action, _ := payload["action"].(string)
+	if action != "created" {
+		return
+	}
+
+	issueMap, ok := payload["issue"].(map[string]interface{})
+	if !ok {
+		return
+	}
+	if _, isPR := issueMap["pull_request"]; !isPR {
+		return // Ignorar comentarios en issues normales por ahora
+	}
+
+	commentMap, ok := payload["comment"].(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	body, _ := commentMap["body"].(string)
+	url, _ := commentMap["html_url"].(string)
+
+	userMap, _ := commentMap["user"].(map[string]interface{})
+	commenter, _ := userMap["login"].(string)
+	commenterDiscord := mapGitHubToDiscord(commenter)
+
+	numberFloat, _ := issueMap["number"].(float64)
+	number := int(numberFloat)
+
+	if len(body) > 300 {
+		body = body[:300] + "..."
+	}
+
+	msg := fmt.Sprintf("💬 **Nuevo Comentario** de %s en el PR #%d\n> *\"%s\"*\n**Link**: <%s>", commenterDiscord, number, body, url)
+	s.ChannelMessageSend(channelID, msg)
 }
