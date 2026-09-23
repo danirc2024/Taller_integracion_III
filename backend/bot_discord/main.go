@@ -112,10 +112,39 @@ func handlePush(s *discordgo.Session, channelID string, payload map[string]inter
 	branch := strings.Replace(ref, "refs/heads/", "", 1)
 
 	isMerge := false
+	var commitsMsg string
+
 	if headCommit, ok := payload["head_commit"].(map[string]interface{}); ok && headCommit != nil {
 		message, _ := headCommit["message"].(string)
 		if strings.HasPrefix(message, "Merge pull request") || strings.HasPrefix(message, "Merge branch") {
 			isMerge = true
+		}
+	}
+
+	if commits, ok := payload["commits"].([]interface{}); ok && len(commits) > 0 {
+		commitsMsg = "\n**Commits:**"
+		// Limitar a 5 commits para no hacer spam si empujan muchos de golpe
+		limit := len(commits)
+		if limit > 5 {
+			limit = 5
+		}
+		for i := 0; i < limit; i++ {
+			c := commits[i].(map[string]interface{})
+			msg, _ := c["message"].(string)
+			firstLine := strings.Split(msg, "\n")[0] // Solo la primera línea
+			
+			id, _ := c["id"].(string)
+			shortID := id
+			if len(id) > 7 {
+				shortID = id[:7]
+			}
+			url, _ := c["url"].(string)
+			
+			// Formato: - [`shortID`](url) Mensaje
+			commitsMsg += fmt.Sprintf("\n- [`%s`](<%s>) %s", shortID, url, firstLine)
+		}
+		if len(commits) > 5 {
+			commitsMsg += fmt.Sprintf("\n*... y %d commits más.*", len(commits)-5)
 		}
 	}
 
@@ -125,6 +154,8 @@ func handlePush(s *discordgo.Session, channelID string, payload map[string]inter
 	} else {
 		msg = fmt.Sprintf("🚀 **Nuevo Push** de `%s` en la rama `%s`.", pusherName, branch)
 	}
+	
+	msg += commitsMsg
 	s.ChannelMessageSend(channelID, msg)
 }
 
