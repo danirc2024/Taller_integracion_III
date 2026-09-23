@@ -81,6 +81,7 @@ services:
       - PORT=8081
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-missing}
       - DISCORD_CHANNEL_ID=${DISCORD_CHANNEL_ID:-missing}
+      - DISCORD_PUSH_CHANNEL_ID=${DISCORD_PUSH_CHANNEL_ID:-}
     ports:
       - "8081:8081"
     deploy:
