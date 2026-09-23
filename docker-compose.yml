@@ -71,6 +71,27 @@ services:
     networks:
       - microservices_net
 
+  # 5. Bot de Discord (Gestión y Notificaciones Webhooks)
+  bot_discord:
+    build:
+      context: ./backend/bot_discord
+      dockerfile: Dockerfile
+    container_name: discord_scrum_bot
+    environment:
+      - PORT=8081
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-missing}
+      - DISCORD_CHANNEL_ID=${DISCORD_CHANNEL_ID:-missing}
+    ports:
+      - "8081:8081"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 200M
+    restart: unless-stopped
+    networks:
+      - microservices_net
+
 networks:
   microservices_net:
     driver: bridge

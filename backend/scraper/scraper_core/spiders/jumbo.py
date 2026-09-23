@@ -14,6 +14,7 @@ class JumboRscSpider(scrapy.Spider):
     )
     category_file = Path(__file__).parents[2] / "research" / "jumbo_categories.txt"
     max_pages = 20
+    handle_httpstatus_list = [404]
 
     custom_settings = {
         "LOG_LEVEL": "INFO",
@@ -29,11 +30,21 @@ class JumboRscSpider(scrapy.Spider):
         products = self._extract_products(response)
         category_url = response.meta.get("category_url", response.url)
         category = urlparse(category_url).path.rstrip("/").split("/")[-1]
+        page = int(response.meta.get("page", 1))
+
+        if response.status == 404:
+            self.logger.info(
+                "Fin de paginación para %s en page=%s",
+                category_url,
+                page,
+            )
+            return
 
         if not products:
             self.logger.warning(
-                "No se encontraron productos en %s; el formato del sitio pudo cambiar",
+                "No se encontraron productos en %s (status=%s); el formato del sitio pudo cambiar",
                 response.url,
+                response.status,
             )
 
         for product in products:
@@ -54,7 +65,6 @@ class JumboRscSpider(scrapy.Spider):
                 "categoria": category,
             }
 
-        page = int(response.meta.get("page", 1))
         if products and page < self.max_pages:
             next_url = self._page_url(category_url, page + 1)
             yield scrapy.Request(

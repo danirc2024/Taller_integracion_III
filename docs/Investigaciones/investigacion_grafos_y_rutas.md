@@ -12,7 +12,7 @@ El objetivo del módulo de rutas y grafos es determinar una alternativa de compr
 
 El sistema debe permitir considerar diferentes medios de transporte, incluyendo transporte público, vehículo particular, bicicleta y desplazamiento a pie, siempre que estos se encuentren contemplados dentro del alcance funcional del proyecto. 
 
-Debido a que el proyecto debe soportar transporte público, se modificó la propuesta tecnológica inicial basada en OSRM. La solución actual considera principalmente la integración de **OpenTripPlanner (OTP)** , datos **GTFS de la DTPR para Temuco** , **OpenStreetMap (OSM)** y **Google OR-Tools** . 
+Debido a que el proyecto debe soportar transporte público, se modificó la propuesta tecnológica inicial basada en OTP. La solución actual considera principalmente la integración de **OpenTripPlanner (OTP)** , datos **GTFS de la DTPR para Temuco** , **OpenStreetMap (OSM)** y **Google OR-Tools** . 
 
 Esta arquitectura permite separar claramente las responsabilidades: OTP se encarga de calcular los desplazamientos e itinerarios, mientras que OR-Tools se utiliza para optimizar la alternativa de compra considerando los costos obtenidos. 
 
@@ -454,7 +454,7 @@ La arquitectura recomendada para el módulo de rutas y optimización es:
 
 - **Leaflet:** herramienta de visualización cartográfica en el frontend. 
 
-Con esta arquitectura se evita depender de OSRM como motor independiente y se prioriza una solución capaz de incorporar transporte público de manera nativa mediante GTFS. 
+Con esta arquitectura se evita depender de OTP como motor independiente y se prioriza una solución capaz de incorporar transporte público de manera nativa mediante GTFS. 
 
 Además, se mantiene una separación clara entre el cálculo de itinerarios y la optimización de la decisión de compra, permitiendo que el sistema considere diferentes medios de transporte y que la alternativa final sea determinada según el costo total y las restricciones establecidas por las reglas de negocio. 
 
