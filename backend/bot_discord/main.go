@@ -235,12 +235,15 @@ func handlePullRequest(s *discordgo.Session, channelID string, payload map[strin
 		s.ChannelMessageSend(channelID, msg)
 
 	case "closed":
+		senderMap, _ := payload["sender"].(map[string]interface{})
+		senderName, _ := senderMap["login"].(string)
+		
 		merged, _ := prMap["merged"].(bool)
 		if merged {
-			msg := fmt.Sprintf("✅ **Pull Request Aceptado (Merged)** por `%s`\n**Título**: %s\n**Link**: %s", author, title, url)
+			msg := fmt.Sprintf("✅ **Pull Request Aceptado (Merged)** por `%s`\n**Título**: %s\n**Link**: %s", senderName, title, url)
 			s.ChannelMessageSend(channelID, msg)
 		} else {
-			msg := fmt.Sprintf("❌ **Pull Request Rechazado/Cerrado** por `%s`\n**Título**: %s\n**Link**: %s", author, title, url)
+			msg := fmt.Sprintf("❌ **Pull Request Rechazado/Cerrado** por `%s`\n**Título**: %s\n**Link**: %s", senderName, title, url)
 			s.ChannelMessageSend(channelID, msg)
 		}
 
