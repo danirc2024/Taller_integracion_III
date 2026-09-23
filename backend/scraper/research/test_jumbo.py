@@ -103,6 +103,10 @@ class JumboExtractionTest(unittest.TestCase):
     def test_catalog_refresh_is_needed_when_never_updated(self):
         self.assertTrue(should_refresh_catalog(None))
 
+    def test_catalog_refresh_handles_naive_datetime_without_type_error(self):
+        naive = datetime.now() - timedelta(hours=2)
+        self.assertTrue(should_refresh_catalog(naive, interval_seconds=3600))
+
     def test_catalog_refresh_is_not_needed_while_fresh(self):
         recent = datetime.now(timezone.utc) - timedelta(minutes=30)
         self.assertFalse(should_refresh_catalog(recent, interval_seconds=3600))
@@ -205,6 +209,26 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertIn("fallo de prueba", result["error"])
         self.assertNotIn("sku-888", queue.in_flight_refreshes)
 
+    def test_worker_propagates_structured_failure_from_executor(self):
+        queue = RefreshQueue(product_ttl_seconds=1800)
+        queue.enqueue("sku-999", product_url="https://www.jumbo.cl/p/sku-999")
+
+        def fail(job):
+            return {
+                "status": "failed",
+                "product_id": job["product_id"],
+                "error": "API no disponible",
+                "result": None,
+            }
+
+        worker = RefreshWorker(queue, fail)
+        result = worker.process_next()
+
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["product_id"], "sku-999")
+        self.assertIn("API no disponible", result["error"])
+        self.assertNotIn("sku-999", queue.in_flight_refreshes)
+
     def test_worker_processes_all_pending_products(self):
         queue = RefreshQueue(product_ttl_seconds=1800)
         queue.enqueue("sku-1")
@@ -268,6 +292,26 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertIn("scrapy", commands[0][0])
         self.assertIn("crawl", commands[0][0])
         self.assertNotIn("-O", commands[0][0])
+
+    def test_scrapy_executor_targets_product_url_for_queued_job(self):
+        commands = []
+
+        def run_command(command, **kwargs):
+            commands.append((command, kwargs))
+            return type("Completed", (), {"returncode": 0, "stdout": "item", "stderr": ""})()
+
+        executor = ScrapyCommandExecutor(command_runner=run_command)
+        result = executor(
+            {
+                "product_id": "sku-42",
+                "product_url": "https://www.jumbo.cl/frutas-y-verduras/verduras?product=sku-42",
+            }
+        )
+
+        self.assertEqual(result["status"], "completed")
+        self.assertIn("-a", commands[0][0])
+        self.assertIn("product_url=https://www.jumbo.cl/frutas-y-verduras/verduras?product=sku-42", commands[0][0])
+        self.assertIn("JOBDIR=", " ".join(commands[0][0]))
 
     def test_scheduler_decides_catalog_and_product_update_flow(self):
         scheduler = RefreshScheduler(catalog_interval_seconds=3600, product_ttl_seconds=1800)
