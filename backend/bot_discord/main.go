@@ -247,14 +247,15 @@ func handlePullRequest(s *discordgo.Session, channelID string, payload map[strin
 	case "review_requested":
 		if reqRev, ok := payload["requested_reviewer"].(map[string]interface{}); ok {
 			reviewer := reqRev["login"].(string)
-			msg := fmt.Sprintf("👀 **Review Solicitado** en el PR #%d\nSe ha solicitado la revisión de %s.\n**Link**: %s", number, mapGitHubToDiscord(reviewer), url)
+			// Las URL entre <> evitan que Discord genere la caja gigante de previsualización
+			msg := fmt.Sprintf("👀 **Review Solicitado** en el PR #%d\nSe ha solicitado la revisión de %s.\n**Link**: <%s>", number, mapGitHubToDiscord(reviewer), url)
 			s.ChannelMessageSend(channelID, msg)
 		}
 
 	case "labeled":
 		if labelMap, ok := payload["label"].(map[string]interface{}); ok {
 			labelName := labelMap["name"].(string)
-			msg := fmt.Sprintf("🏷️ **Nueva Etiqueta** en el PR #%d\nSe añadió la etiqueta `%s`.\n**Link**: %s", number, labelName, url)
+			msg := fmt.Sprintf("🏷️ **Nueva Etiqueta** en el PR #%d\nSe añadió la etiqueta `%s`.\n**Link**: <%s>", number, labelName, url)
 			s.ChannelMessageSend(channelID, msg)
 		}
 	}
@@ -269,7 +270,8 @@ func mapGitHubToDiscord(githubUser string) string {
 		"RCarrascoO": "<@!410177503592972288>",
 		"chelo132":   "<@!467880145877991432>",
 		"FabianS":    "<@!DISCORD_ID_FABIAN>",
-		"EsbanV":     "<@!265591689211674624>",
+		"EsbanV":     "<@!265591689211674624>", // ID de Esban
+		"Web":        "<@!265591689211674624>", // Mapeo para su otro nick de GitHub
 	}
 
 	if discordPing, exists := users[githubUser]; exists {
