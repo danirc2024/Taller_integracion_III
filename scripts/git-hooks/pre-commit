@@ -1,0 +1,64 @@
+#!/bin/bash
+# ──────────────────────────────────────────────────────────────────
+# Hook pre-commit: Regenera mapas de contexto IA automáticamente
+# cuando se modifican archivos fuente (.py, .go, .ts, .tsx)
+#
+# Este hook se ejecuta ANTES de que el commit se finalice,
+# así los archivos actualizados se incluyen en el mismo commit.
+# ──────────────────────────────────────────────────────────────────
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null)
+
+if [ -z "$STAGED" ]; then
+    exit 0
+fi
+
+NEEDS_UPDATE=false
+for pattern in "backend/api/.*\.go$" "backend/ia_conversacional/.*\.py$" "backend/motor_rutas/.*\.py$" "backend/scraper/.*\.py$" "frontend/web/src/.*\.tsx?$"; do
+    if echo "$STAGED" | grep -qE "$pattern"; then
+        NEEDS_UPDATE=true
+        break
+    fi
+done
+
+if [ "$NEEDS_UPDATE" = false ]; then
+    exit 0
+fi
+
+echo "🧠 Actualizando mapas de contexto IA..."
+
+# Buscar Python 3 disponible
+PYTHON=""
+for cmd in python3 python; do
+    if command -v "$cmd" &>/dev/null; then
+        PYTHON="$cmd"
+        break
+    fi
+done
+
+if [ -z "$PYTHON" ]; then
+    echo "⚠️  Python no encontrado, saltando actualización de mapas IA."
+    exit 0
+fi
+
+# Ejecutar generador desde la raíz del repo
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+"$PYTHON" "$REPO_ROOT/scripts/gen_service_map.py" 2>/dev/null
+
+if [ $? -eq 0 ]; then
+    # Agregar archivos actualizados al commit
+    git add "$REPO_ROOT/GEMINI.md" \
+            "$REPO_ROOT/CLAUDE.md" \
+            "$REPO_ROOT/.github/copilot-instructions.md" \
+            2>/dev/null
+
+    for svc in backend/api backend/ia_conversacional backend/motor_rutas backend/scraper frontend/web; do
+        for f in GEMINI.md CLAUDE.md; do
+            [ -f "$REPO_ROOT/$svc/$f" ] && git add "$REPO_ROOT/$svc/$f" 2>/dev/null
+        done
+    done
+
+    echo "✅ Mapas de contexto IA actualizados e incluidos en el commit."
+fi
+
+exit 0

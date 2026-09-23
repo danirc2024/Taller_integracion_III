@@ -101,7 +101,7 @@ El backend funciona como el enrutador central y nervioso de la red de microservi
 
 ## **4.2. Microservicio de Optimización Espacial y Algoritmia** 
 
-El pilar diferenciador de esta plataforma recae en cruzar el ahorro neto con la logística de desplazamiento. ¿Vale la pena viajar 15 kilómetros en automóvil cruzando la ciudad para ahorrar $1.000 en un kilo de arroz? Para responder matemáticamente a esto, el ecosistema integra un microservicio dedicado a la algoritmia espacial sobre mapas de geolocalización (ej. integrando Google Maps API, Mapbox o motores open-source como OSRM). 
+El pilar diferenciador de esta plataforma recae en cruzar el ahorro neto con la logística de desplazamiento. ¿Vale la pena viajar 15 kilómetros en automóvil cruzando la ciudad para ahorrar $1.000 en un kilo de arroz? Para responder matemáticamente a esto, el ecosistema integra un microservicio dedicado a la algoritmia espacial sobre mapas de geolocalización (ej. integrando Google Maps API, Mapbox o motores open-source como OTP). 
 
 Este módulo ejecuta algoritmos de optimización de recorridos (derivados del Problema del Viajante o grafos heurísticos tipo A*) para trazar la distancia física y el tráfico hacia la sucursal del supermercado. Posteriormente, evalúa el consumo estimado de bencina (en base al rendimiento del vehículo configurado por el usuario) o tarifas de transporte público para calcular el .<sup>A</sup> horro Real”. 
 

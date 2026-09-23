@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/GUIA_PULL_REQUESTS.md",
+                "file": "docs/Investigaciones/Informe_competencias_y_Bsale.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "GUIA_PULL_REQUESTS"
+              "title": "Informe_competencias_y_Bsale"
             }
           }
         ]
@@ -190,9 +190,20 @@
   },
   "active": "b9965e7eb96fd132",
   "lastOpenFiles": [
+    "docs/Investigaciones/informe_tecnico_ia_y_implementacion.md",
+    "docs/Investigaciones/Informe_competencias_y_Bsale.md",
+    "docs/Investigaciones/02_Arquitectura_Hibrida_IA.md",
+    "docs/Investigaciones/01_Pre_Entendimiento_Alucinaciones.md",
+    "docs/Investigaciones/Endpoints_API.md",
+    "docs/Investigaciones/Investigacion_Inyecciones_SQL_Go.md",
+    "docs/Investigaciones/investigacion_grafos.md",
+    "docs/Investigaciones/investigacion protección del usuario.md",
+    "docs/Investigaciones/investigacion_grafos_y_rutas.md",
+    "docs/Investigaciones/Investigacion_de_supermercado.md",
+    "docs/Investigaciones/Investigacion_Web_Scrapping.md",
+    "docs/GUIA_PULL_REQUESTS.md",
     "docs/guia_pull_requests_informe.tex",
     "docs/Investigaciones/Arquitectura_Servidor_y_Dependencias.md",
-    "docs/GUIA_PULL_REQUESTS.md",
     "docs/Diagramas/README.md",
     "docs/FLUJO_GITHUB.md",
     "docs/Diagramas/secuencia_superadmin.puml",

@@ -12,7 +12,7 @@ El alcance del módulo está acotado por las restricciones operativas de la infr
 
 # **2 Análisis y Comparación de Herramientas de Mapas y Rutas** 
 
-## **2.1 OSRM (Open Source Routing Machine)** 
+## **2.1 OTP (OpenTripPlanner)** 
 
 Motor de enrutamiento C++ de alto rendimiento dise˜nado para ejecutarse sobre datos geográficos de OpenStreetMap (OSM). 
 
@@ -36,7 +36,7 @@ Librería de Python que permite descargar, modelar y analizar redes viales de Op
 
 **Ventajas:** Integración 100 % nativa con Python, alta flexibilidad para modificar pesos de las aristas (ej. aplicar penalizaciones por tráfico o estado de vías). 
 
-**Desventajas:** Alto consumo de memoria RAM al cargar el grafo completo de una ciudad en memoria; tiempos de respuesta más lentos que OSRM en cálculo de rutas complejas. 
+**Desventajas:** Alto consumo de memoria RAM al cargar el grafo completo de una ciudad en memoria; tiempos de respuesta más lentos que OTP en cálculo de rutas complejas. 
 
 **Costo:** Gratuito y Open Source. 
 
@@ -68,7 +68,7 @@ Motor de enrutamiento basado en Java que ofrece soporte para datos de OpenStreet
 
 **Costo:** Open Source en servidor local; API Cloud con capa gratuita muy acotada. **Facilidad de Integración:** Alta mediante API REST JSON. **Precisión:** Alta. 
 
-**Recomendación:** Buena opción alternativa a OSRM si se requiriese resolver VRP avanzado en servidor propio. 
+**Recomendación:** Buena opción alternativa a OTP si se requiriese resolver VRP avanzado en servidor propio. 
 
 2 
 
@@ -90,7 +90,7 @@ Herramientas de renderizado cartográfico para interfaz de usuario. Folium permi
 
 |**Herramienta**|**Costo**|**Facilidad**<br>**(Python)**|**Precisión**|**Integración**<br>**Backend**|**Escalabilidad**|
 |---|---|---|---|---|---|
-|OSRM<br>(Docker<br>Local)|Gratuito|Alta|Alta|Excelente<br>(REST)|Alta (Con-<br>tenedor)|
+|OTP<br>(Docker<br>Local)|Gratuito|Alta|Alta|Excelente<br>(REST)|Alta (Con-<br>tenedor)|
 |OSMnx +|Gratuito|Muy Alta|Alta|Nativa|Media|
 |NetworkX||||(Python)|(RAM)|
 |Google Maps<br>API|Pago (Capa<br>limit.)|Muy Alta|Excelente|Excelente|Alta<br>(Cloud)|
@@ -114,7 +114,7 @@ El problema de optimizar las compras en múltiples supermercados exige resolver 
 
 ### **3.1.1 Dijkstra / A*** 
 
-**Uso:** Empleados por los motores viales (como OSRM) para calcular la ruta más corta sobre el grafo vial entre dos coordenadas. _A_<sup>_∗_</sup> acelera la búsqueda mediante heurísticas euclidianas. 
+**Uso:** Empleados por los motores viales (como OTP) para calcular la ruta más corta sobre el grafo vial entre dos coordenadas. _A_<sup>_∗_</sup> acelera la búsqueda mediante heurísticas euclidianas. 
 
 3 
 
@@ -134,19 +134,19 @@ Para _N ≤_ 10 supermercados (caso real donde un usuario raramente visitará m�
 
 ## **3.2 Algoritmo Recomendado** 
 
-Se recomienda utilizar Google OR-Tools (Módulo Routing) en Python impulsado por una Matriz de Distancias y Tiempos calculada vía OSRM. 
+Se recomienda utilizar Google OR-Tools (Módulo Routing) en Python impulsado por una Matriz de Distancias y Tiempos calculada vía OTP. 
 
 ### **Justificación:** 
 
 - **Tama˜no acotado del problema:** En la práctica, el número de supermercados a visitar oscila entre _N_ = 2 y _N_ = 6. OR-Tools ejecuta solucionadores TSP exactos o de recocido simulado (Simulated Annealing) de forma instantánea. 
 
-- **Integración:** OR-Tools es una librería madura de Python que toma como entrada directamente la matriz cuadrada devuelta por OSRM. 
+- **Integración:** OR-Tools es una librería madura de Python que toma como entrada directamente la matriz cuadrada devuelta por OTP. 
 
 # **4 Recomendación Final** 
 
 ## **4.1 Stack Tecnológico Recomendado** 
 
-- **Servidor de Rutas:** OSRM (Open Source Routing Machine) alojado en un contenedor Docker con la extracción del mapa local preprocesado. Garantiza costo cero y respuestas ultrarrápidas. 
+- **Servidor de Rutas:** OTP (OpenTripPlanner) alojado en un contenedor Docker con la extracción del mapa local preprocesado. Garantiza costo cero y respuestas ultrarrápidas. 
 
 - **Visualización Frontend:** Leaflet en la aplicación web para pintar las capas de mapas de OpenStreetMap y la línea de la ruta óptima (GeoJSON). 
 
@@ -158,7 +158,7 @@ Se recomienda utilizar Google OR-Tools (Módulo Routing) en Python impulsado por
 
 2. Boeing, G. (2017). OSMnx: New met hods for acquiring, constructing, analyzing, and visualizing complex street networks. _Computers, Environment and Urban Systems_ , 65, 126-139. 
 
-3. Google Developers. (2024). OR-Tools: Routing Suite for Python. https://developers.google.com/optimization/routing 4. Project OSRM. (2024). Open Source Routing Machine API Documentation. http://projectosrm.org/docs/v5.5.1/api/ 
+3. Google Developers. (2024). OR-Tools: Routing Suite for Python. https://developers.google.com/optimization/routing 4. Project OTP. (2024). OpenTripPlanner API Documentation. http://projectotp.org/docs/v5.5.1/api/ 
 
 5 
 

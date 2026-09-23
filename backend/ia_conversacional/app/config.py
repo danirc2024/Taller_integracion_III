@@ -1,8 +1,6 @@
 """
 Configuracion central: carga el .env, define rutas y agrupa todas las
-constantes de los proveedores de IA (endpoints, modelos) en un solo
-lugar. Si manana se agrega un tercer proveedor o se cambia un modelo,
-este es el unico archivo que hay que tocar.
+constantes de los proveedores de IA (endpoints, modelos) 
 """
 
 import os

@@ -1,17 +1,18 @@
 # Dockerfile para Frontend (React + Vite) - Entorno de Desarrollo
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
-# Instalar dependencias primero para aprovechar la caché de capas de Docker
+# Instalar dependencias automáticamente basándose en el package.json
 COPY package.json package-lock.json* ./
+RUN npm install -g npm@latest
 RUN npm install
 
-# Copiar el resto del código fuente
+# Copiar el resto del código fuente del cliente React
 COPY . .
 
-# Exponer el puerto configurado en Vite
+# Exponer el puerto de desarrollo de Vite (3000)
 EXPOSE 3000
 
-# Iniciar el servidor de desarrollo de Vite
-CMD ["npm", "run", "dev"]
+# Iniciar servidor de desarrollo de Vite expuesto a todas las interfaces
+CMD ["npm", "run", "dev", "--", "--host"]

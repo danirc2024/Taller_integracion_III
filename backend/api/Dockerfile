@@ -1,20 +1,23 @@
-# Plantilla Base para API Gateway (FastAPI)
-FROM python:3.11-slim
+# Dockerfile para Backend API Gateway (Golang) - Entorno de Desarrollo
+FROM golang:1.26-alpine
 
-# Evitar que Python escriba archivos .pyc y forzar el volcado de stdout/stderr para ver logs
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# Instalar git y utilidades de compilación necesarias para Go y Air
+RUN apk add --no-cache git gcc musl-dev
+
+# Instalar Air para Live-Reloading / Hot-Reload automático en desarrollo
+RUN go install github.com/air-verse/air@latest
 
 WORKDIR /app
 
-# Instalar dependencias
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copiar archivos de definición de módulos e instalar dependencias (aprovechando la caché de capas)
+COPY go.mod go.sum* ./
+RUN go mod download
 
-# Copiar el código fuente
+# Copiar el resto del código fuente del backend en Go
 COPY . .
 
-EXPOSE 8000
+# Exponer el puerto configurado para el backend en Go (8080)
+EXPOSE 8080
 
-# Comando para Desarrollo (con recarga automática)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Iniciar el servidor con Air para recarga automática en desarrollo
+CMD ["air"]

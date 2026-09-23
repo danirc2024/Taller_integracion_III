@@ -18,6 +18,7 @@ from app.ia_definiciones import definicion_funcion_filtros, definicion_funcion_f
 from app.productos import ProductoRepositorio
 from app.proveedores.gemini_proveedor import GeminiProveedor
 from app.proveedores.groq_proveedor import GroqProveedor
+from app.proveedores.fallback_proveedor import FallbackProveedor
 from app.routers.chat import crear_router_chat
 from app.routers.productos import crear_router_productos
 from app.utils import RespuestaUTF8, fix_encoding_consola
@@ -29,11 +30,6 @@ app = FastAPI(
     default_response_class=RespuestaUTF8,
 )
 
-# --------------------------------------------------------------------------
-# el frontend arcaico es un HTML suelto (file:// o servido por un
-# server estatico simple, en otro puerto que 127.0.0.1:8000) haciendo
-# fetch() directo a estos endpoints
-# --------------------------------------------------------------------------
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,10 +38,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --------------------------------------------------------------------------
-# dependencias: catalogo de productos + un proveedor de IA por cada uno de
-# los dos servicios que se estan comparando
-# --------------------------------------------------------------------------
 
 repositorio_productos = ProductoRepositorio(config.PRODUCTOS_PATH)
 
@@ -63,10 +55,19 @@ proveedor_gemini = GeminiProveedor(
     modelo=config.GEMINI_MODEL,
     definicion_funcion=definicion_funcion_filtros_gemini,
 )
-
+proveedor_fallback = FallbackProveedor(
+    proveedores=[
+        proveedor_gemini,
+        proveedor_groq,    
+    ],
+    max_retries_primario=4,   
+    max_retries_secundario=1,   
+    backoff_base=1.5,           
+    timeout=30.0,               
+)
 # --------------------------------------------------------------------------
 # Routers
 # --------------------------------------------------------------------------
 
 app.include_router(crear_router_productos(repositorio_productos))
-app.include_router(crear_router_chat(repositorio_productos, proveedor_groq, proveedor_gemini))
+app.include_router(crear_router_chat(repositorio_productos, proveedor_groq, proveedor_gemini, proveedor_fallback))
