@@ -30,6 +30,70 @@
                 }
             }
         },
+        "/api/v1/auth/login": {
+            "post": {
+                "description": "Verifica credenciales de acceso, valida cuenta activa y proveedor OAuth",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Inicio de sesión local de usuario",
+                "parameters": [
+                    {
+                        "description": "Credenciales de acceso",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/register": {
             "post": {
                 "description": "Valida complejidad de contraseña, encripta con bcrypt y crea usuario inactivo con token UUID de verificación",
@@ -84,6 +148,56 @@
         }
     },
     "definitions": {
+        "handlers.LoginRequest": {
+            "type": "object",
+            "required": [
+                "correo",
+                "password"
+            ],
+            "properties": {
+                "correo": {
+                    "type": "string",
+                    "example": "usuario.test@uct.cl"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "PasswordSegura123!"
+                }
+            }
+        },
+        "handlers.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "correo": {
+                    "type": "string",
+                    "example": "usuario.test@uct.cl"
+                },
+                "esta_activo": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "id": {
+                    "type": "string",
+                    "example": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+                },
+                "mensaje": {
+                    "type": "string",
+                    "example": "Inicio de sesión exitoso."
+                },
+                "nombre_completo": {
+                    "type": "string",
+                    "example": "Vicente Matu"
+                },
+                "rol": {
+                    "type": "string",
+                    "example": "registrado"
+                },
+                "url_avatar": {
+                    "type": "string",
+                    "example": "https://ejemplo.com/avatar.jpg"
+                }
+            }
+        },
         "handlers.RegistroRequest": {
             "type": "object",
             "required": [

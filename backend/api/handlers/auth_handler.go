@@ -27,6 +27,23 @@ type RegistroResponse struct {
 	Mensaje           string `json:"mensaje" example:"Usuario registrado con éxito. Se requiere confirmar el correo electrónico antes de iniciar sesión."`
 }
 
+// LoginRequest DTO de entrada para autenticación de usuario
+type LoginRequest struct {
+	Correo   string `json:"correo" binding:"required,email" example:"usuario.test@uct.cl"`
+	Password string `json:"password" binding:"required" example:"PasswordSegura123!"`
+}
+
+// LoginResponse DTO con la información básica del usuario autenticado
+type LoginResponse struct {
+	ID             string  `json:"id" example:"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"`
+	Correo         string  `json:"correo" example:"usuario.test@uct.cl"`
+	NombreCompleto string  `json:"nombre_completo" example:"Vicente Matu"`
+	Rol            string  `json:"rol" example:"registrado"`
+	EstaActivo     bool    `json:"esta_activo" example:"true"`
+	URLAvatar      *string `json:"url_avatar,omitempty" example:"https://ejemplo.com/avatar.jpg"`
+	Mensaje        string  `json:"mensaje" example:"Inicio de sesión exitoso."`
+}
+
 // AuthHandler gestiona las peticiones HTTP del módulo de autenticación
 type AuthHandler struct {
 	authService services.AuthService
@@ -85,5 +102,51 @@ func (h *AuthHandler) RegistrarUsuario(c *gin.Context) {
 		EstaActivo:        creado.EstaActivo,
 		TokenVerificacion: creado.TokenVerificacion.String(),
 		Mensaje:           creado.Mensaje,
+	})
+}
+
+// LoginUsuario godoc
+// @Summary      Inicio de sesión local de usuario
+// @Description  Verifica credenciales de acceso, valida cuenta activa y proveedor OAuth
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        payload body LoginRequest true "Credenciales de acceso"
+// @Success      200  {object}  LoginResponse
+// @Failure      400  {object}  middleware.RespuestaError
+// @Failure      401  {object}  middleware.RespuestaError
+// @Failure      403  {object}  middleware.RespuestaError
+// @Failure      429  {object}  middleware.RespuestaError
+// @Failure      500  {object}  middleware.RespuestaError
+// @Router       /api/v1/auth/login [post]
+func (h *AuthHandler) LoginUsuario(c *gin.Context) {
+	var req LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		middleware.ResponderError(c, http.StatusBadRequest, "Datos de inicio de sesión inválidos o incompletos.", err)
+		return
+	}
+
+	usuario, err := h.authService.LoginWithContext(c.Request.Context(), req.Correo, req.Password)
+	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrCredencialesInvalidas):
+			// Estrictamente 401 Unauthorized para credenciales incorrectas o usuario inexistente
+			middleware.ResponderError(c, http.StatusUnauthorized, "Credenciales incorrectas.", err)
+		case errors.Is(err, services.ErrCuentaInactiva):
+			middleware.ResponderError(c, http.StatusForbidden, err.Error(), err)
+		default:
+			middleware.ResponderError(c, http.StatusInternalServerError, "Error interno durante la autenticación.", err)
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, LoginResponse{
+		ID:             usuario.ID.String(),
+		Correo:         usuario.Correo,
+		NombreCompleto: usuario.NombreCompleto,
+		Rol:            usuario.Rol,
+		EstaActivo:     usuario.EstaActivo,
+		URLAvatar:      usuario.URLAvatar,
+		Mensaje:        "Inicio de sesión exitoso.",
 	})
 }

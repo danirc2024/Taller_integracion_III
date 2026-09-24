@@ -114,3 +114,81 @@ func TestAuthService_RegistroExitoso(t *testing.T) {
 		t.Errorf("Esperaba ErrCorreoDuplicado, obtuve: %v", errDuplicado)
 	}
 }
+
+func TestAuthService_Login(t *testing.T) {
+	repo := newMockUsuarioRepository()
+	service := services.NewAuthService(repo)
+
+	// Hashear password para usuario de prueba
+	hashValido, _ := utils.HashPassword("PasswordSegura123!")
+	googleID := "google-oauth-12345"
+
+	// 1. Usuario activo normal
+	repo.usuarios["activo@uct.cl"] = &infrastructure.Usuario{
+		Correo:         "activo@uct.cl",
+		PasswordHash:   &hashValido,
+		NombreCompleto: "Usuario Activo",
+		EstaActivo:     true,
+		Rol:            "registrado",
+	}
+
+	// 2. Usuario registrado vía Google (sin password_hash)
+	repo.usuarios["google@uct.cl"] = &infrastructure.Usuario{
+		GoogleID:       &googleID,
+		Correo:         "google@uct.cl",
+		PasswordHash:   nil,
+		NombreCompleto: "Usuario Google",
+		EstaActivo:     true,
+		Rol:            "registrado",
+	}
+
+	// 3. Usuario inactivo
+	repo.usuarios["inactivo@uct.cl"] = &infrastructure.Usuario{
+		Correo:         "inactivo@uct.cl",
+		PasswordHash:   &hashValido,
+		NombreCompleto: "Usuario Inactivo",
+		EstaActivo:     false,
+		Rol:            "registrado",
+	}
+
+	t.Run("Usuario inexistente", func(t *testing.T) {
+		u, err := service.Login("noexiste@uct.cl", "CualquierClave123!")
+		if u != nil || !errors.Is(err, services.ErrCredencialesInvalidas) {
+			t.Fatalf("Esperaba ErrCredencialesInvalidas, obtuve: %v", err)
+		}
+	})
+
+	t.Run("Usuario con PasswordHash nulo (sin panic)", func(t *testing.T) {
+		u, err := service.Login("google@uct.cl", "PasswordSegura123!")
+		if u != nil || !errors.Is(err, services.ErrCredencialesInvalidas) {
+			t.Fatalf("Esperaba ErrCredencialesInvalidas para password_hash nulo, obtuve: %v", err)
+		}
+	})
+
+	t.Run("Cuenta inactiva pendiente de confirmacion", func(t *testing.T) {
+		u, err := service.Login("inactivo@uct.cl", "PasswordSegura123!")
+		if u != nil || !errors.Is(err, services.ErrCuentaInactiva) {
+			t.Fatalf("Esperaba ErrCuentaInactiva, obtuve: %v", err)
+		}
+		if err.Error() != "La cuenta requiere verificación de correo" {
+			t.Errorf("Mensaje de error inesperado: %s", err.Error())
+		}
+	})
+
+	t.Run("Contraseña incorrecta", func(t *testing.T) {
+		u, err := service.Login("activo@uct.cl", "PasswordIncorrecta999!")
+		if u != nil || !errors.Is(err, services.ErrCredencialesInvalidas) {
+			t.Fatalf("Esperaba ErrCredencialesInvalidas, obtuve: %v", err)
+		}
+	})
+
+	t.Run("Login exitoso", func(t *testing.T) {
+		u, err := service.Login("ACTIVO@UCT.CL ", "PasswordSegura123!")
+		if err != nil {
+			t.Fatalf("Error inesperado en login: %v", err)
+		}
+		if u == nil || u.Correo != "activo@uct.cl" {
+			t.Fatalf("Usuario devuelto inválido")
+		}
+	})
+}
