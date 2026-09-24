@@ -66,10 +66,23 @@ Para implementar esta función cuando el equipo esté listo, se deben seguir est
 2. **Función de Envío**:
    ```go
    func enviarAlertaDiscord(supermercado, errDesc, url string) {
-       // Realizar POST request a http://bot_discord:8081/webhooks/scraper
-       // (Al estar en la misma red Docker, usa el nombre del contenedor como host)
+       // Realizar POST request al Bot
    }
    ```
 
+## 5. Arquitectura Distribuida: Cluster Universitario vs Servidor Local (Pentium)
+Es altamente probable que el proyecto final se despliegue en un Cluster de la Universidad. Los clusters universitarios suelen tener firewalls estrictos que **bloquean puertos entrantes**, lo que haría imposible recibir los Webhooks de GitHub.
+
+Por lo tanto, la arquitectura recomendada es **Distribuida**:
+- **Scraper, API y Base de Datos**: Viven en el Cluster de la Universidad (aprovechando su alta potencia de procesamiento).
+- **Bot de Discord**: Se queda alojado en tu servidor Pentium local.
+
+**¿Cómo se comunican?**
+Como el Scraper estará en la Universidad, no podrá usar la red interna de Docker (`microservices_net`) para hablar con el Bot. En su lugar, el Scraper hará el *POST request* a través de internet usando tu dominio No-IP:
+`http://lsanehost.zapto.org:8081/webhooks/scraper`
+
+**Seguridad (API Key):**
+Para evitar que hackers descubran la URL y saturen el canal de Discord enviando alertas falsas, agregaremos un **Token de Seguridad (Secret)**. El Scraper de la Universidad enviará un header `X-Scraper-Secret: tu_contraseña_secreta`, y el Bot de Discord en el Pentium solo enviará la alerta si esa contraseña coincide.
+
 ## Conclusión
-Con esta implementación, la infraestructura pasa de ser puramente reactiva (darnos cuenta del error porque los precios de la app están vacíos) a ser **proactiva**. El Bot de Discord se convierte en un centro unificado de notificaciones, separando la parte social (GitHub, PRs, Commits) de la parte operativa (Monitoreo de Salud de Microservicios).
+Con esta implementación híbrida, la infraestructura se vuelve profesional y tolerante a fallos. El Bot alojado en tu Pentium actuará como la **Torre de Control Independiente**, capaz de monitorear la salud de los servicios alojados en el cluster de la Universidad y alertar inmediatamente ante protecciones anti-bot de los supermercados.
