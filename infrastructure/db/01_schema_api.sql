@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS api.usuarios (
     rol VARCHAR(30) NOT NULL DEFAULT 'registrado',
     cuota_tokens_ia INTEGER NOT NULL DEFAULT 1000,
     esta_activo BOOLEAN NOT NULL DEFAULT true,
+    token_verificacion UUID,
     creado_el TIMESTAMP NOT NULL DEFAULT NOW(),
     actualizado_el TIMESTAMP NOT NULL DEFAULT NOW()
 );

@@ -20,8 +20,9 @@ type Usuario struct {
 	URLAvatar      *string   `gorm:"type:varchar(500)" json:"url_avatar,omitempty"`
 	Rol            string    `gorm:"type:varchar(30);default:'registrado';not null" json:"rol"`
 	CuotaTokensIA  int       `gorm:"default:1000;not null" json:"cuota_tokens_ia"`
-	EstaActivo     bool      `gorm:"default:true;not null" json:"esta_activo"`
-	CreadoEl       time.Time `gorm:"default:now();not null" json:"creado_el"`
+	EstaActivo        bool       `gorm:"default:true;not null" json:"esta_activo"`
+	TokenVerificacion *uuid.UUID `gorm:"type:uuid" json:"token_verificacion,omitempty"`
+	CreadoEl          time.Time  `gorm:"default:now();not null" json:"creado_el"`
 	ActualizadoEl  time.Time `gorm:"default:now();not null" json:"actualizado_el"`
 }
 
