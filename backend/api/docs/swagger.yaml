@@ -1,4 +1,58 @@
 basePath: /
+definitions:
+  handlers.RegistroRequest:
+    properties:
+      correo:
+        example: usuario.test@uct.cl
+        type: string
+      nombre_completo:
+        example: Vicente Matu
+        type: string
+      password:
+        example: PasswordSegura123!
+        type: string
+    required:
+    - correo
+    - nombre_completo
+    - password
+    type: object
+  handlers.RegistroResponse:
+    properties:
+      correo:
+        example: usuario.test@uct.cl
+        type: string
+      esta_activo:
+        example: false
+        type: boolean
+      id:
+        example: a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d
+        type: string
+      mensaje:
+        example: Usuario registrado con éxito. Se requiere confirmar el correo electrónico
+          antes de iniciar sesión.
+        type: string
+      nombre_completo:
+        example: Vicente Matu
+        type: string
+      rol:
+        example: registrado
+        type: string
+      token_verificacion:
+        example: f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+        type: string
+    type: object
+  middleware.RespuestaError:
+    properties:
+      detalle:
+        description: Información técnica u origen del error
+        type: string
+      estado:
+        description: Código numérico del estado HTTP (400, 404, 500, etc.)
+        type: integer
+      mensaje:
+        description: Mensaje descriptivo amigable para el cliente
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -20,4 +74,39 @@ paths:
       summary: Muestra mensaje de bienvenida
       tags:
       - root
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Valida complejidad de contraseña, encripta con bcrypt y crea usuario
+        inactivo con token UUID de verificación
+      parameters:
+      - description: Datos de registro
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RegistroRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.RegistroResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.RespuestaError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/middleware.RespuestaError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.RespuestaError'
+      summary: Registrar nuevo usuario con verificación
+      tags:
+      - auth
 swagger: "2.0"

@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/danirc2024/Taller_integracion_III/backend/api/docs"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/routes"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -64,6 +65,10 @@ func setupRouter() *gin.Engine {
 	r.GET("/", RootHandler)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Grupo de rutas de la API v1
+	v1 := r.Group("/api/v1")
+	routes.RegistrarRutasAuth(v1, DB)
 
 	return r
 }
