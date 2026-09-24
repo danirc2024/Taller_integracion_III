@@ -27,6 +27,12 @@ func main() {
 		log.Fatal("DISCORD_CHANNEL_ID no configurado en entorno")
 	}
 
+	pushChannelID := os.Getenv("DISCORD_PUSH_CHANNEL_ID")
+	if pushChannelID == "" {
+		// Fallback por si no lo configuran de inmediato
+		pushChannelID = channelID
+	}
+
 	// Inicializar Discord
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
@@ -61,9 +67,13 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"status": "Ping recibido"})
 			return
 		case "push":
-			handlePush(dg, channelID, payload)
+			handlePush(dg, pushChannelID, payload)
 		case "pull_request":
 			handlePullRequest(dg, channelID, payload)
+		case "pull_request_review":
+			handlePullRequestReview(dg, channelID, payload)
+		case "issue_comment":
+			handleIssueComment(dg, channelID, payload)
 		default:
 			log.Printf("Evento de GitHub ignorado: %s", event)
 		}
@@ -111,18 +121,57 @@ func handlePush(s *discordgo.Session, channelID string, payload map[string]inter
 	ref, _ := payload["ref"].(string)
 	branch := strings.Replace(ref, "refs/heads/", "", 1)
 
-	msg := fmt.Sprintf("🚀 **Nuevo Push** de `%s` en la rama `%s`.", pusherName, branch)
+	isMerge := false
+	var commitsMsg string
+
+	if headCommit, ok := payload["head_commit"].(map[string]interface{}); ok && headCommit != nil {
+		message, _ := headCommit["message"].(string)
+		if strings.HasPrefix(message, "Merge pull request") || strings.HasPrefix(message, "Merge branch") {
+			isMerge = true
+		}
+	}
+
+	if commits, ok := payload["commits"].([]interface{}); ok && len(commits) > 0 {
+		commitsMsg = "\n**Commits:**"
+		// Limitar a 5 commits para no hacer spam si empujan muchos de golpe
+		limit := len(commits)
+		if limit > 5 {
+			limit = 5
+		}
+		for i := 0; i < limit; i++ {
+			c := commits[i].(map[string]interface{})
+			msg, _ := c["message"].(string)
+			firstLine := strings.Split(msg, "\n")[0] // Solo la primera línea
+
+			id, _ := c["id"].(string)
+			shortID := id
+			if len(id) > 7 {
+				shortID = id[:7]
+			}
+			url, _ := c["url"].(string)
+
+			// Formato: - [`shortID`](url) Mensaje
+			commitsMsg += fmt.Sprintf("\n- [`%s`](<%s>) %s", shortID, url, firstLine)
+		}
+		if len(commits) > 5 {
+			commitsMsg += fmt.Sprintf("\n*... y %d commits más.*", len(commits)-5)
+		}
+	}
+
+	var msg string
+	if isMerge {
+		msg = fmt.Sprintf("🔀 **Merge Realizado** por `%s` en la rama `%s`.", pusherName, branch)
+	} else {
+		msg = fmt.Sprintf("🚀 **Nuevo Push** de `%s` en la rama `%s`.", pusherName, branch)
+	}
+
+	msg += commitsMsg
 	s.ChannelMessageSend(channelID, msg)
 }
 
-// handlePullRequest notifica creación de PR y extrae reviewers/assignees
+// handlePullRequest notifica creación de PR, labels, reviews y merges
 func handlePullRequest(s *discordgo.Session, channelID string, payload map[string]interface{}) {
 	action, _ := payload["action"].(string)
-
-	// Solo nos interesan PRs abiertos o cuando se solicita review/asigna (opcional)
-	if action != "opened" && action != "reopened" {
-		return
-	}
 
 	prMap, ok := payload["pull_request"].(map[string]interface{})
 	if !ok {
@@ -134,64 +183,102 @@ func handlePullRequest(s *discordgo.Session, channelID string, payload map[strin
 	userMap, _ := prMap["user"].(map[string]interface{})
 	author, _ := userMap["login"].(string)
 
-	// Extraer Assignees
-	var assigneesList []string
-	if assignees, ok := prMap["assignees"].([]interface{}); ok {
-		for _, a := range assignees {
-			assigneeMap := a.(map[string]interface{})
-			login := assigneeMap["login"].(string)
-			assigneesList = append(assigneesList, mapGitHubToDiscord(login))
+	// Convertir PR number a float64 (JSON genérico) y luego a int
+	numberFloat, ok := prMap["number"].(float64)
+	number := 0
+	if ok {
+		number = int(numberFloat)
+	}
+
+	switch action {
+	case "opened", "reopened":
+		// Extraer Assignees
+		var assigneesList []string
+		if assignees, ok := prMap["assignees"].([]interface{}); ok {
+			for _, a := range assignees {
+				assigneeMap := a.(map[string]interface{})
+				login := assigneeMap["login"].(string)
+				assigneesList = append(assigneesList, mapGitHubToDiscord(login))
+			}
+		}
+
+		// Extraer Requested Reviewers
+		var reviewersList []string
+		if reviewers, ok := prMap["requested_reviewers"].([]interface{}); ok {
+			for _, r := range reviewers {
+				reviewerMap := r.(map[string]interface{})
+				login := reviewerMap["login"].(string)
+				reviewersList = append(reviewersList, mapGitHubToDiscord(login))
+			}
+		}
+
+		// Extraer Labels
+		var labelsList []string
+		if labels, ok := prMap["labels"].([]interface{}); ok {
+			for _, l := range labels {
+				labelMap := l.(map[string]interface{})
+				name := labelMap["name"].(string)
+				labelsList = append(labelsList, "`"+name+"`")
+			}
+		}
+
+		msg := fmt.Sprintf("🛠️ **Nuevo Pull Request** por `%s`\n**Título**: %s\n**Link**: %s", author, title, url)
+
+		if len(labelsList) > 0 {
+			msg += fmt.Sprintf("\n**Etiquetas**: %s", strings.Join(labelsList, ", "))
+		}
+
+		if len(assigneesList) > 0 {
+			msg += fmt.Sprintf("\n**Asignados**: %s", strings.Join(assigneesList, " "))
+		}
+
+		if len(reviewersList) > 0 {
+			msg += fmt.Sprintf("\n**Reviewers Solicitados**: %s", strings.Join(reviewersList, " "))
+		}
+
+		s.ChannelMessageSend(channelID, msg)
+
+	case "closed":
+		senderMap, _ := payload["sender"].(map[string]interface{})
+		senderName, _ := senderMap["login"].(string)
+
+		merged, _ := prMap["merged"].(bool)
+		if merged {
+			msg := fmt.Sprintf("✅ **Pull Request Aceptado (Merged)** por `%s`\n**Título**: %s\n**Link**: %s", senderName, title, url)
+			s.ChannelMessageSend(channelID, msg)
+		} else {
+			msg := fmt.Sprintf("❌ **Pull Request Rechazado/Cerrado** por `%s`\n**Título**: %s\n**Link**: %s", senderName, title, url)
+			s.ChannelMessageSend(channelID, msg)
+		}
+
+	case "review_requested":
+		if reqRev, ok := payload["requested_reviewer"].(map[string]interface{}); ok {
+			reviewer := reqRev["login"].(string)
+			// Las URL entre <> evitan que Discord genere la caja gigante de previsualización
+			msg := fmt.Sprintf("👀 **Review Solicitado** en el PR #%d\nSe ha solicitado la revisión de %s.\n**Link**: <%s>", number, mapGitHubToDiscord(reviewer), url)
+			s.ChannelMessageSend(channelID, msg)
+		}
+
+	case "labeled":
+		if labelMap, ok := payload["label"].(map[string]interface{}); ok {
+			labelName := labelMap["name"].(string)
+			msg := fmt.Sprintf("🏷️ **Nueva Etiqueta** en el PR #%d\nSe añadió la etiqueta `%s`.\n**Link**: <%s>", number, labelName, url)
+			s.ChannelMessageSend(channelID, msg)
 		}
 	}
-
-	// Extraer Requested Reviewers
-	var reviewersList []string
-	if reviewers, ok := prMap["requested_reviewers"].([]interface{}); ok {
-		for _, r := range reviewers {
-			reviewerMap := r.(map[string]interface{})
-			login := reviewerMap["login"].(string)
-			reviewersList = append(reviewersList, mapGitHubToDiscord(login))
-		}
-	}
-
-	// Extraer Labels
-	var labelsList []string
-	if labels, ok := prMap["labels"].([]interface{}); ok {
-		for _, l := range labels {
-			labelMap := l.(map[string]interface{})
-			name := labelMap["name"].(string)
-			labelsList = append(labelsList, "`"+name+"`")
-		}
-	}
-
-	msg := fmt.Sprintf("🛠️ **Nuevo Pull Request** por `%s`\n**Título**: %s\n**Link**: %s", author, title, url)
-
-	if len(labelsList) > 0 {
-		msg += fmt.Sprintf("\n**Etiquetas**: %s", strings.Join(labelsList, ", "))
-	}
-
-	if len(assigneesList) > 0 {
-		msg += fmt.Sprintf("\n**Asignados**: %s", strings.Join(assigneesList, " "))
-	}
-
-	if len(reviewersList) > 0 {
-		msg += fmt.Sprintf("\n**Reviewers Solicitados**: %s", strings.Join(reviewersList, " "))
-	}
-
-	s.ChannelMessageSend(channelID, msg)
 }
 
 // mapGitHubToDiscord traduce usuarios de Github a IDs de Discord o nombres
 func mapGitHubToDiscord(githubUser string) string {
 	// Diccionario estático de miembros del equipo
-	// TODO: En el futuro esto puede venir de un JSON o BD.
 	users := map[string]string{
-		"VicenteMatus": "<@!537347874875506698>", // Reemplazar con ID reales ej: <@!123456789>
-		"danirc2024":   "<@!1221186570455879702>",
-		"RCarrascoO":   "<@!410177503592972288>",
-		"MarceloMat":   "<@!467880145877991432>",
-		"FabianS":      "<@!DISCORD_ID_FABIAN>",
-		"EsbanV":       "<@!265591689211674624>",
+		"VichoMatus": "<@!537347874875506698>",
+		"danirc2024": "<@!1221186570455879702>",
+		"RCarrascoO": "<@!410177503592972288>",
+		"chelo132":   "<@!467880145877991432>",
+		"FabianS":    "<@!DISCORD_ID_FABIAN>",
+		"EsbanV":     "<@!265591689211674624>", // ID de Esban
+		"Web":        "<@!265591689211674624>", // Mapeo para su otro nick de GitHub
 	}
 
 	if discordPing, exists := users[githubUser]; exists {
@@ -200,4 +287,105 @@ func mapGitHubToDiscord(githubUser string) string {
 
 	// Si no está mapeado, retornar solo el nombre de Github resaltado
 	return "`@" + githubUser + "`"
+}
+
+// handlePullRequestReview notifica cuando alguien deja un review (aprueba, rechaza o comenta)
+func handlePullRequestReview(s *discordgo.Session, channelID string, payload map[string]interface{}) {
+	action, _ := payload["action"].(string)
+	if action != "submitted" {
+		return
+	}
+
+	reviewMap, ok := payload["review"].(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	prMap, ok := payload["pull_request"].(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	state, _ := reviewMap["state"].(string) // "approved", "changes_requested", "commented"
+	body, _ := reviewMap["body"].(string)
+	url, _ := reviewMap["html_url"].(string)
+
+	userMap, _ := reviewMap["user"].(map[string]interface{})
+	reviewer, _ := userMap["login"].(string)
+	reviewerDiscord := mapGitHubToDiscord(reviewer)
+
+	numberFloat, _ := prMap["number"].(float64)
+	number := int(numberFloat)
+
+	// Solo notificar si hay comentario o si es una aprobación/rechazo
+	if body == "" && state == "commented" {
+		return
+	}
+
+	var statusEmoji string
+	var statusText string
+
+	switch state {
+	case "approved":
+		statusEmoji = "✅"
+		statusText = "aprobó"
+	case "changes_requested":
+		statusEmoji = "❌"
+		statusText = "solicitó cambios en"
+	case "commented":
+		statusEmoji = "💬"
+		statusText = "comentó en"
+	default:
+		statusEmoji = "📝"
+		statusText = "revisó"
+	}
+
+	msg := fmt.Sprintf("%s **Review**: %s %s el PR #%d\n", statusEmoji, reviewerDiscord, statusText, number)
+	if body != "" {
+		if len(body) > 300 {
+			body = body[:300] + "..."
+		}
+		msg += fmt.Sprintf("> *\"%s\"*\n", body)
+	}
+	msg += fmt.Sprintf("**Link**: <%s>", url)
+
+	s.ChannelMessageSend(channelID, msg)
+}
+
+// handleIssueComment notifica cuando alguien deja un comentario normal en el hilo del PR
+func handleIssueComment(s *discordgo.Session, channelID string, payload map[string]interface{}) {
+	action, _ := payload["action"].(string)
+	if action != "created" {
+		return
+	}
+
+	issueMap, ok := payload["issue"].(map[string]interface{})
+	if !ok {
+		return
+	}
+	if _, isPR := issueMap["pull_request"]; !isPR {
+		return // Ignorar comentarios en issues normales por ahora
+	}
+
+	commentMap, ok := payload["comment"].(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	body, _ := commentMap["body"].(string)
+	url, _ := commentMap["html_url"].(string)
+
+	userMap, _ := commentMap["user"].(map[string]interface{})
+	commenter, _ := userMap["login"].(string)
+	commenterDiscord := mapGitHubToDiscord(commenter)
+
+	numberFloat, _ := issueMap["number"].(float64)
+	number := int(numberFloat)
+
+	if len(body) > 300 {
+		body = body[:300] + "..."
+	}
+
+	msg := fmt.Sprintf("💬 **Nuevo Comentario** de %s en el PR #%d\n> *\"%s\"*\n**Link**: <%s>", commenterDiscord, number, body, url)
+	s.ChannelMessageSend(channelID, msg)
 }
