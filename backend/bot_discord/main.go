@@ -276,7 +276,6 @@ func mapGitHubToDiscord(githubUser string) string {
 		"danirc2024": "<@!1221186570455879702>",
 		"RCarrascoO": "<@!410177503592972288>",
 		"chelo132":   "<@!467880145877991432>",
-		"FabianS":    "<@!DISCORD_ID_FABIAN>",
 		"EsbanV":     "<@!265591689211674624>", // ID de Esban
 		"Web":        "<@!265591689211674624>", // Mapeo para su otro nick de GitHub
 	}
