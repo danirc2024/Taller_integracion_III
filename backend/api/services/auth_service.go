@@ -18,6 +18,10 @@ var (
 	ErrPasswordInvalido = errors.New("la contraseña debe tener al menos 8 caracteres, una letra mayúscula, un número y un símbolo especial")
 	// ErrCorreoDuplicado se emite cuando ya existe un usuario con el mismo correo
 	ErrCorreoDuplicado = errors.New("el correo electrónico ya se encuentra registrado")
+	// ErrCredencialesInvalidas se emite genéricamente cuando el correo o contraseña son incorrectos
+	ErrCredencialesInvalidas = errors.New("Credenciales incorrectas")
+	// ErrCuentaInactiva se emite cuando la cuenta aún no ha sido activada mediante correo
+	ErrCuentaInactiva = errors.New("La cuenta requiere verificación de correo")
 )
 
 // RegistroDTO contiene los parámetros requeridos para el registro de un usuario
@@ -41,6 +45,8 @@ type UsuarioCreadoDTO struct {
 // AuthService define los casos de uso para la autenticación e identidad de usuarios
 type AuthService interface {
 	Registrar(ctx context.Context, input RegistroDTO) (*UsuarioCreadoDTO, error)
+	Login(correo, password string) (*infrastructure.Usuario, error)
+	LoginWithContext(ctx context.Context, correo, password string) (*infrastructure.Usuario, error)
 }
 
 type authService struct {
@@ -140,4 +146,41 @@ func (s *authService) Registrar(ctx context.Context, input RegistroDTO) (*Usuari
 		TokenVerificacion: tokenVerificacion,
 		Mensaje:           "Usuario registrado con éxito. Se requiere confirmar el correo electrónico antes de iniciar sesión.",
 	}, nil
+}
+
+// Login ejecuta la autenticación de un usuario con contexto por defecto
+func (s *authService) Login(correo, password string) (*infrastructure.Usuario, error) {
+	return s.LoginWithContext(context.Background(), correo, password)
+}
+
+// LoginWithContext ejecuta la autenticación verificando credenciales y estado de forma segura
+func (s *authService) LoginWithContext(ctx context.Context, correo, password string) (*infrastructure.Usuario, error) {
+	// 1. Buscar al usuario por correo usando el repositorio
+	correoNormalizado := strings.ToLower(strings.TrimSpace(correo))
+	usuario, err := s.usuarioRepo.FindByEmail(ctx, correoNormalizado)
+	if err != nil {
+		return nil, fmt.Errorf("error al buscar usuario: %w", err)
+	}
+	if usuario == nil {
+		// Error genérico para no revelar si el correo existe o no
+		return nil, ErrCredencialesInvalidas
+	}
+
+	// 2. Prevención de Panic por puntero nulo:
+	// Si el usuario no tiene contraseña local (PasswordHash nulo o vacío), NO llamar a bcrypt y retornar de inmediato
+	if usuario.PasswordHash == nil || *usuario.PasswordHash == "" {
+		return nil, ErrCredencialesInvalidas
+	}
+
+	// 3. Validación de Activación: verificar si EstaActivo es true
+	if !usuario.EstaActivo {
+		return nil, ErrCuentaInactiva
+	}
+
+	// 4. Validación de Credenciales: comparar contraseña con utils.CheckPasswordHash de forma segura
+	if !utils.CheckPasswordHash(password, *usuario.PasswordHash) {
+		return nil, ErrCredencialesInvalidas
+	}
+
+	return usuario, nil
 }
