@@ -1,13 +1,12 @@
 ::: titlepage
-**Marco Legal y Propuesta de\
-Términos y Condiciones de Uso de la\
-Plataforma RutaAhorro**\
-**Primera versión**\
-Daniela Romero\
-Renato Carrasco\
-Vicente Matus\
-Esban Vejar\
-Fabián Sanchez
+**Marco Legal y Propuesta de
+Términos y Condiciones de Uso de la
+Plataforma RutaAhorro**
+**Primera versión**
+Daniela Romero
+Renato Carrasco
+Vicente Matus
+Esban Vejar
 
 *Documento de investigación y propuesta preliminar. Su contenido deberá
 ser revisado jurídicamente antes de utilizarse como instrumento
@@ -44,19 +43,13 @@ destinados a:
 
 - limitar la extracción automatizada y masiva de información desde
   RutaAhorro;
-
 - proteger los puntos de acceso críticos de la plataforma;
-
 - diferenciar el comportamiento de usuarios legítimos respecto de
   patrones automatizados o abusivos;
-
 - restringir el acceso según el tipo de usuario;
-
 - detectar intentos de extracción sistemática;
-
 - establecer consecuencias frente al incumplimiento de las condiciones
   de uso;
-
 - complementar las medidas técnicas mediante una base contractual y
   jurídica.
 
@@ -111,15 +104,10 @@ la plataforma.
 La protección debe considerar, entre otros elementos:
 
 - software desarrollado por el equipo;
-
 - interfaz y elementos originales de presentación;
-
 - estructura y organización propia de la información;
-
 - bases de datos y mecanismos de organización cuando corresponda;
-
 - contenido original desarrollado para la plataforma;
-
 - algoritmos, configuraciones y componentes internos que no sean
   públicos.
 
@@ -163,13 +151,9 @@ La aceptación deberá quedar asociada, cuando técnicamente sea posible,
 a:
 
 - identificador de la cuenta;
-
 - fecha y hora de aceptación;
-
 - versión de los Términos y Condiciones;
-
 - versión de la Política de Privacidad correspondiente;
-
 - registro técnico necesario para acreditar la aceptación.
 
 Este mecanismo resulta preferible al denominado *browsewrap*, donde las
@@ -183,7 +167,9 @@ previenen, otras dificultan, otras detectan y otras permiten responder
 ante comportamientos abusivos.
 
   **Mecanismo**                 **Función principal**                      **Tipo de protección**
-  ----------------------------- ------------------------------------------ ----------------------------
+
+---
+
   Rate Limiting                 Limitar cantidad de solicitudes            Prevención
   HMAC                          Proteger determinados endpoints            Autenticación / integridad
   JA3/JA4 y Fingerprinting      Detectar clientes o patrones sospechosos   Detección
@@ -207,11 +193,8 @@ Las solicitudes pueden asociarse a distintos identificadores,
 dependiendo del contexto:
 
 - dirección IP;
-
 - token de autenticación;
-
 - identificador de usuario;
-
 - cliente o sesión.
 
 Por ejemplo, si un endpoint tiene configurado un límite de 60
@@ -236,13 +219,9 @@ firmado HMAC-SHA256.
 La solicitud puede incluir información como:
 
 - método HTTP;
-
 - ruta solicitada;
-
 - timestamp;
-
 - nonce;
-
 - otros parámetros relevantes.
 
 El servidor verifica posteriormente la firma antes de procesar la
@@ -275,15 +254,10 @@ durante el establecimiento de la conexión y las solicitudes HTTP.
 Entre las señales que pueden utilizarse se encuentran:
 
 - huellas TLS como JA3 o JA4;
-
 - características de HTTP/2;
-
 - User-Agent;
-
 - frecuencia de solicitudes;
-
 - secuencia de endpoints consultados;
-
 - patrones temporales de las solicitudes.
 
 Por ejemplo, una solicitud que declara corresponder a un navegador
@@ -310,11 +284,8 @@ detecte señales de automatización.
 Por ejemplo, una combinación de:
 
 - alta frecuencia de solicitudes;
-
 - navegación poco compatible con el comportamiento normal;
-
 - múltiples solicitudes en intervalos extremadamente regulares;
-
 - ausencia de determinadas características esperadas del cliente;
 
 podría aumentar el nivel de validación requerido.
@@ -353,22 +324,15 @@ prohibidas.
 Entre ellas se propone incluir:
 
 - extracción masiva de información;
-
 - utilización de bots, crawlers o scrapers para obtener información de
   RutaAhorro;
-
 - automatización de consultas fuera de los mecanismos proporcionados por
   la plataforma;
-
 - extracción sistemática de catálogos;
-
 - extracción sistemática de precios o disponibilidad;
-
 - utilización abusiva de los endpoints;
-
 - intento de eludir mecanismos de autenticación, autorización o
   limitación de solicitudes;
-
 - ingeniería inversa destinada a obtener o reconstruir componentes
   internos protegidos, salvo cuando la legislación aplicable establezca
   una excepción.
@@ -405,15 +369,11 @@ sensibilidad.
 
 Se propone diferenciar:
 
-1.  endpoints públicos de consulta;
-
-2.  endpoints que requieren autenticación;
-
-3.  endpoints asociados a funcionalidades de usuario;
-
-4.  endpoints administrativos;
-
-5.  endpoints internos entre servicios.
+1. endpoints públicos de consulta;
+2. endpoints que requieren autenticación;
+3. endpoints asociados a funcionalidades de usuario;
+4. endpoints administrativos;
+5. endpoints internos entre servicios.
 
 Los endpoints administrativos e internos no deberán exponerse
 innecesariamente a Internet.
@@ -434,25 +394,20 @@ La respuesta frente a comportamiento sospechoso deberá ser progresiva.
 
 Se propone el siguiente esquema conceptual:
 
-1.  **Exceso de solicitudes:** aplicar Rate Limiting y responder
-    mediante HTTP 429 cuando corresponda.
-
-2.  **Comportamiento sospechoso:** aumentar el nivel de validación y,
-    cuando corresponda, solicitar una validación adicional mediante
-    Turnstile u otro mecanismo equivalente.
-
-3.  **Persistencia del comportamiento:** registrar el evento, aumentar
-    las restricciones y limitar temporalmente el acceso.
-
-4.  **Intento de acceso no autorizado:** rechazar la solicitud y
-    registrar el evento de seguridad.
-
-5.  **Violación de los Términos y Condiciones:** suspender o revocar las
-    credenciales correspondientes de acuerdo con las condiciones
-    establecidas y la legislación aplicable.
-
-6.  **Detección mediante Honeytoken:** generar una alerta y realizar una
-    evaluación antes de aplicar medidas de bloqueo permanentes.
+1. **Exceso de solicitudes:** aplicar Rate Limiting y responder
+   mediante HTTP 429 cuando corresponda.
+2. **Comportamiento sospechoso:** aumentar el nivel de validación y,
+   cuando corresponda, solicitar una validación adicional mediante
+   Turnstile u otro mecanismo equivalente.
+3. **Persistencia del comportamiento:** registrar el evento, aumentar
+   las restricciones y limitar temporalmente el acceso.
+4. **Intento de acceso no autorizado:** rechazar la solicitud y
+   registrar el evento de seguridad.
+5. **Violación de los Términos y Condiciones:** suspender o revocar las
+   credenciales correspondientes de acuerdo con las condiciones
+   establecidas y la legislación aplicable.
+6. **Detección mediante Honeytoken:** generar una alerta y realizar una
+   evaluación antes de aplicar medidas de bloqueo permanentes.
 
 Un bloqueo automático permanente basado únicamente en una señal
 individual no se recomienda, debido al riesgo de falsos positivos.
@@ -463,7 +418,9 @@ La estrategia propuesta se relaciona directamente con los requisitos
 existentes del proyecto.
 
   **ID**    **Elemento**                            **Relación con anti-scraping**
-  --------- --------------------------------------- --------------------------------------------------------------------------------------------------------------------------
+
+---
+
   RN-11     Control de acceso y modelo de usuario   Define las funcionalidades disponibles según el tipo de usuario y restringe las operaciones que requieren autenticación.
   RN-14     Capacidad de procesamiento              Permite limitar operaciones que superen la capacidad de procesamiento configurada.
   RNF-11    Transmisión segura                      Protege las comunicaciones entre cliente y servidor.
@@ -502,9 +459,8 @@ excesiva sobre el sistema.
 
 Debe distinguirse entre:
 
-1.  proteger RutaAhorro frente al scraping realizado por terceros; y
-
-2.  realizar scraping desde RutaAhorro hacia sitios de terceros.
+1. proteger RutaAhorro frente al scraping realizado por terceros; y
+2. realizar scraping desde RutaAhorro hacia sitios de terceros.
 
 El hecho de que RutaAhorro establezca mecanismos anti-scraping no
 significa que pueda aplicar exactamente las mismas reglas a todas las
@@ -513,17 +469,11 @@ fuentes externas.
 Para cada fuente deberán evaluarse individualmente aspectos como:
 
 - condiciones de uso del sitio;
-
 - existencia de autenticación;
-
 - mecanismos técnicos destinados a impedir accesos automatizados;
-
 - frecuencia de actualización;
-
 - cantidad de solicitudes necesarias;
-
 - estabilidad del método de extracción;
-
 - información estrictamente necesaria para el funcionamiento de
   RutaAhorro.
 
@@ -594,44 +544,25 @@ implementación.
 La versión definitiva de los Términos y Condiciones podría organizarse
 de la siguiente manera:
 
-1.  Identificación del proveedor y descripción del servicio.
-
-2.  Definiciones.
-
-3.  Aceptación de los Términos y Condiciones.
-
-4.  Registro y gestión de cuentas.
-
-5.  Tipos de usuarios y permisos.
-
-6.  Uso permitido de la plataforma.
-
-7.  Uso automatizado y política anti-scraping.
-
-8.  Límites de utilización de la API.
-
-9.  Propiedad intelectual y elementos protegibles.
-
+1. Identificación del proveedor y descripción del servicio.
+2. Definiciones.
+3. Aceptación de los Términos y Condiciones.
+4. Registro y gestión de cuentas.
+5. Tipos de usuarios y permisos.
+6. Uso permitido de la plataforma.
+7. Uso automatizado y política anti-scraping.
+8. Límites de utilización de la API.
+9. Propiedad intelectual y elementos protegibles.
 10. Información proveniente de terceros.
-
 11. Funcionamiento del asistente de Inteligencia Artificial.
-
 12. Precios, promociones y disponibilidad.
-
 13. Resultados de optimización y rutas.
-
 14. Limitaciones de responsabilidad.
-
 15. Suspensión y terminación de cuentas.
-
 16. Medidas frente al incumplimiento.
-
 17. Modificaciones de los Términos.
-
 18. Política de privacidad.
-
 19. Legislación aplicable y jurisdicción.
-
 20. Información de contacto.
 
 # Conclusiones
@@ -665,25 +596,20 @@ La estrategia propuesta constituye una primera base técnica y jurídica
 para el proyecto y deberá ser validada posteriormente mediante pruebas
 de seguridad, pruebas de carga y revisión jurídica especializada.
 
-# Referencias {#referencias .unnumbered}
+# Referencias
 
-1.  Biblioteca del Congreso Nacional de Chile. *Ley N° 21.459: Establece
-    normas sobre delitos informáticos, deroga la Ley N° 19.223 y
-    modifica otros cuerpos legales con el objeto de adecuarlos al
-    Convenio de Budapest.*
-
-2.  Biblioteca del Congreso Nacional de Chile. *Ley N° 17.336 sobre
-    Propiedad Intelectual.*
-
-3.  Biblioteca del Congreso Nacional de Chile. *Ley N° 19.628 sobre
-    Protección de la Vida Privada.*
-
-4.  Biblioteca del Congreso Nacional de Chile. *Ley N° 19.496: Establece
-    normas sobre protección de los derechos de los consumidores.*
-
-5.  Biblioteca del Congreso Nacional de Chile. *Ley N° 19.799 sobre
-    documentos electrónicos, firma electrónica y servicios de
-    certificación de dicha firma.*
-
-6.  Documentación técnica del proyecto RutaAhorro. *Requerimientos
-    Funcionales, Reglas de Negocio y Requerimientos No Funcionales.*
+1. Biblioteca del Congreso Nacional de Chile. *Ley N° 21.459: Establece
+   normas sobre delitos informáticos, deroga la Ley N° 19.223 y
+   modifica otros cuerpos legales con el objeto de adecuarlos al
+   Convenio de Budapest.*
+2. Biblioteca del Congreso Nacional de Chile. *Ley N° 17.336 sobre
+   Propiedad Intelectual.*
+3. Biblioteca del Congreso Nacional de Chile. *Ley N° 19.628 sobre
+   Protección de la Vida Privada.*
+4. Biblioteca del Congreso Nacional de Chile. *Ley N° 19.496: Establece
+   normas sobre protección de los derechos de los consumidores.*
+5. Biblioteca del Congreso Nacional de Chile. *Ley N° 19.799 sobre
+   documentos electrónicos, firma electrónica y servicios de
+   certificación de dicha firma.*
+6. Documentación técnica del proyecto RutaAhorro. *Requerimientos
+   Funcionales, Reglas de Negocio y Requerimientos No Funcionales.*

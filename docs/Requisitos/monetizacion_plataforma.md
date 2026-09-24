@@ -5,9 +5,6 @@ Daniela Romero
 Renato Carrasco
 Vicente Matus
 Esban Vejar
-Fabián Sanchez
-
-
 
 # Propósito del documento
 
