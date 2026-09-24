@@ -1,5 +1,13 @@
 # Investigación: Alertas Tempranas de Caídas del Scraper vía Discord
 
+**Autores:**
+- Renato Carrasco
+- Daniela Romero
+- Vicente Matus
+- Marcelo Matamala
+- Esban Vejar
+
+
 ## 1. El Problema: Caídas Silenciosas
 El módulo Scraper tiene la misión crítica de extraer información de precios de supermercados externos. Estas páginas (Jumbo, Santa Isabel, etc.) pueden mutar su DOM (Document Object Model) o cambiar sus mecanismos Anti-Bot sin previo aviso.
 
