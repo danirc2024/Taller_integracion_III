@@ -114,8 +114,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Verifica credenciales de acceso, valida cuenta activa y proveedor
-        OAuth
+      description: Verifica credenciales de acceso, valida cuenta activa y emite token
+        JWT firmado
       parameters:
       - description: Credenciales de acceso
         in: body
@@ -151,6 +151,25 @@ paths:
           schema:
             $ref: '#/definitions/middleware.RespuestaError'
       summary: Inicio de sesión local de usuario
+      tags:
+      - auth
+  /api/v1/auth/me:
+    get:
+      description: Endpoint protegido para verificar identidad y claims extraídos
+        del token JWT
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/middleware.RespuestaError'
+      summary: Perfil del usuario autenticado
       tags:
       - auth
   /api/v1/auth/register:

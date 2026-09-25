@@ -38,7 +38,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/login": {
             "post": {
-                "description": "Verifica credenciales de acceso, valida cuenta activa y proveedor OAuth",
+                "description": "Verifica credenciales de acceso, valida cuenta activa y emite token JWT firmado",
                 "consumes": [
                     "application/json"
                 ],
@@ -93,6 +93,33 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/me": {
+            "get": {
+                "description": "Endpoint protegido para verificar identidad y claims extraídos del token JWT",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Perfil del usuario autenticado",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/middleware.RespuestaError"
                         }
