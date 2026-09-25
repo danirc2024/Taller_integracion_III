@@ -4,7 +4,6 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
-@custom-variant dark (@media (prefers-color-scheme: dark), &:is(.dark *));
 
 :root {
   --background: oklch(0.9582 0.0152 90.2357);
@@ -231,7 +230,14 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
+@utility container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+  max-width: 1300px;
+}
+
+/* @media (prefers-color-scheme: dark) {
   :root:not(.light) {
     --background: oklch(0.2747 0.0139 57.6523);
     --foreground: oklch(0.9239 0.0190 83.0636);
@@ -266,7 +272,7 @@
     --sidebar-border: oklch(0.3795 0.0181 57.1280);
     --sidebar-ring: oklch(0.7264 0.0581 66.6967);
 
-    /* App custom variables */
+     App custom variables 
     --discount: oklch(0.5471 0.1438 32.9149);
     --discount-foreground: oklch(1.0000 0 0);
     --brand: oklch(0.7264 0.0581 66.6967);
@@ -282,4 +288,4 @@
     --panel-muted: rgba(255, 255, 255, 0.6);
     --panel-accent: var(--brand);
   }
-}
+} */
