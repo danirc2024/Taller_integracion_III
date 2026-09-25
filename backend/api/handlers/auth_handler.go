@@ -6,6 +6,7 @@ import (
 
 	"github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/services"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -107,7 +108,7 @@ func (h *AuthHandler) RegistrarUsuario(c *gin.Context) {
 
 // LoginUsuario godoc
 // @Summary      Inicio de sesión local de usuario
-// @Description  Verifica credenciales de acceso, valida cuenta activa y proveedor OAuth
+// @Description  Verifica credenciales de acceso, valida cuenta activa y emite token JWT firmado
 // @Tags         auth
 // @Accept       json
 // @Produce      json
@@ -130,7 +131,6 @@ func (h *AuthHandler) LoginUsuario(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrCredencialesInvalidas):
-			// Estrictamente 401 Unauthorized para credenciales incorrectas o usuario inexistente
 			middleware.ResponderError(c, http.StatusUnauthorized, "Credenciales incorrectas.", err)
 		case errors.Is(err, services.ErrCuentaInactiva):
 			middleware.ResponderError(c, http.StatusForbidden, err.Error(), err)
@@ -140,6 +140,16 @@ func (h *AuthHandler) LoginUsuario(c *gin.Context) {
 		return
 	}
 
+	// Emisión del JWT centralizado (provider siempre es 'local' en login nativo)
+	tokenString, err := utils.GenerarToken(usuario.ID.String(), usuario.Rol, "local")
+	if err != nil {
+		middleware.ResponderError(c, http.StatusInternalServerError, "Error generando token de autorización.", err)
+		return
+	}
+
+	// Inyectar cookie segura HttpOnly contra ataques XSS (duración: 24h = 86400s)
+	c.SetCookie("jwt", tokenString, 86400, "/", "", false, true)
+
 	c.JSON(http.StatusOK, LoginResponse{
 		ID:             usuario.ID.String(),
 		Correo:         usuario.Correo,
@@ -148,5 +158,26 @@ func (h *AuthHandler) LoginUsuario(c *gin.Context) {
 		EstaActivo:     usuario.EstaActivo,
 		URLAvatar:      usuario.URLAvatar,
 		Mensaje:        "Inicio de sesión exitoso.",
+	})
+}
+
+// PerfilUsuario godoc
+// @Summary      Perfil del usuario autenticado
+// @Description  Endpoint protegido para verificar identidad y claims extraídos del token JWT
+// @Tags         auth
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Failure      401  {object}  middleware.RespuestaError
+// @Router       /api/v1/auth/me [get]
+func (h *AuthHandler) PerfilUsuario(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+	rol, _ := c.Get("rol")
+	provider, _ := c.Get("provider")
+
+	c.JSON(http.StatusOK, gin.H{
+		"user_id":  userID,
+		"rol":      rol,
+		"provider": provider,
+		"mensaje":  "Acceso autorizado a ruta protegida con JWT.",
 	})
 }
