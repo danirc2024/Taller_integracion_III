@@ -25,7 +25,7 @@ export function LandingHero() {
           </p>
 
           <div className="landing-hero__cta">
-            <Link className={buttonVariants({ size: "lg" })} to="/onboarding">
+            <Link className={buttonVariants({ size: "lg" })} to="/dashboard">
                 Comenzar gratis <ArrowRight />
             </Link>
             <a className={buttonVariants({ variant: "outline", size: "lg" })} href="#como-funciona">Ver cómo funciona</a>

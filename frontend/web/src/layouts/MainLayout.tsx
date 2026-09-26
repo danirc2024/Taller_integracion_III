@@ -37,7 +37,7 @@ export function MainLayout() {
         onMenuClick={() => setSidebarOpen(true)}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {/* Main Content Area */}
         <Outlet context={{ query, activeMarket } satisfies LayoutContextType} />
       </div>
