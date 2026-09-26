@@ -30,7 +30,7 @@ export function MainLayout() {
           setSidebarOpen(false);
         }}
       />
-
+      
       <TopNav
         query={query}
         onQueryChange={setQuery}
@@ -41,8 +41,6 @@ export function MainLayout() {
         {/* Main Content Area */}
         <Outlet context={{ query, activeMarket } satisfies LayoutContextType} />
       </div>
-
-      <BottomNav active="dashboard" />
     </div>
   );
 }
