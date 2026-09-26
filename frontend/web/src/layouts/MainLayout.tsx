@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Outlet, useOutletContext } from "react-router-dom";
 import { TopNav } from "@/components/TopNav";
 import { SideBar } from "@/components/Sidebar";
-import BottomNav from "@/components/BottomNav";
+import { CartSidebar } from "@/components/CartSidebar";
 
 type LayoutContextType = {
   query: string;
@@ -20,6 +20,7 @@ export function MainLayout() {
 
   return (
     <div className="flex h-dvh flex-col bg-background">
+      <CartSidebar />
       <SideBar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -29,19 +30,17 @@ export function MainLayout() {
           setSidebarOpen(false);
         }}
       />
-
+      
       <TopNav
         query={query}
         onQueryChange={setQuery}
         onMenuClick={() => setSidebarOpen(true)}
       />
 
-      {/* pb-16 reserva espacio para el BottomNav fijo y evita tapar contenido */}
-      <div className="flex min-h-0 flex-1 flex-col pb-16">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        {/* Main Content Area */}
         <Outlet context={{ query, activeMarket } satisfies LayoutContextType} />
       </div>
-
-      <BottomNav active="dashboard" />
     </div>
   );
 }
