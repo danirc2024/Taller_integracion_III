@@ -203,7 +203,7 @@ export function SideBar({
  <Link
  to="/chat"
  onClick={onClose}
- className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-primary dark:text-primary bg-primary dark:bg-primary hover:bg-primary dark:hover:bg-primary transition-colors"
+ className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-primary-foreground bg-primary dark:bg-primary hover:bg-primary/90 dark:hover:bg-primary/90 transition-colors"
  >
  <Bot className="h-4.5 w-4.5"aria-hidden="true"/>
  Chat Inteligente

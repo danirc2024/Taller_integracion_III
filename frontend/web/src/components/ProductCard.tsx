@@ -37,10 +37,8 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
   const savings = product.originalPrice - product.price
 
   return (
-    <Link
-      to={`/product/${product.id}`}
-      className="product-card group"
-    >
+    <article className="product-card group">
+      <Link to={`/product/${product.id}`} className="flex flex-1 flex-col">
       {/* ---------- Imagen ---------- */}
       <div className="product-card__media">
         {pct > 0 && (
@@ -85,19 +83,20 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
           )}
         </div>
 
-        {/* Precio + acción */}
-        <div className="product-card__footer">
-          <div className="product-card__price">
-            <span className="product-card__price-main">
-              {formatPrice(product.price)}
-            </span>
-            {pct > 0 && (
-              <span className="product-card__price-old">
-                {formatPrice(product.originalPrice)}
-              </span>
-            )}
-          </div>
+      </div>
+      </Link>
 
+      <div className="product-card__footer">
+        <div className="product-card__price">
+          <span className="product-card__price-main">
+            {formatPrice(product.price)}
+          </span>
+          {pct > 0 && (
+            <span className="product-card__price-old">
+              {formatPrice(product.originalPrice)}
+            </span>
+          )}
+        </div>
           <Button
             size="icon"
             className="h-9 w-9 shrink-0 rounded-full"
@@ -110,8 +109,7 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
           >
             <Plus className="h-5 w-5" aria-hidden="true" />
           </Button>
-        </div>
       </div>
-    </Link>
+    </article>
   )
 }

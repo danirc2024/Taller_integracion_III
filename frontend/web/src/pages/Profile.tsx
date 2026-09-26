@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { User, ShieldAlert, CreditCard, Car, Bus, Apple, Leaf, Utensils, TrendingUp, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { mockUser } from '@/data/mock';
@@ -31,16 +31,16 @@ export default function Profile() {
                 <div className="max-w-2xl mx-auto space-y-8">
 
                     {/* User Tier / Account Info */}
-                    <section className="bg-gradient-to-r from-secondary to-background rounded-2xl p-6 text-primary-foreground shadow-lg flex items-center gap-5">
+                    <section className="bg-gradient-to-r from-secondary to-background rounded-2xl p-6 text-foreground shadow-lg flex items-center gap-5">
                         <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center shrink-0 border-2 border-white/30">
-                            <User className="h-8 w-8 text-primary-foreground" />
+                            <User className="h-8 w-8 text-foreground" />
                         </div>
                         <div>
                             <h2 className="text-xl font-bold">{mockUser.nombreCompleto}</h2>
-                            <p className="text-primary text-sm mt-1 flex items-center gap-1.5">
+                            <p className="text-muted-foreground text-sm mt-1 flex items-center gap-1.5">
                                 <ShieldAlert className="h-4 w-4" /> Cuota: {mockUser.cuotaTokensIa}/5 consultas IA
                             </p>
-                            <button className="mt-3 bg-white text-primary px-4 py-1.5 rounded-full text-xs font-bold hover:bg-primary transition-colors">
+                            <button className="mt-3 bg-white text-primary px-4 py-1.5 rounded-full text-xs font-bold hover:bg-primary hover:text-primary-foreground transition-colors">
                                 Mejorar a Colaborador
                             </button>
                         </div>

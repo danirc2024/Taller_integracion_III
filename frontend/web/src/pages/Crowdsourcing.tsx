@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ShieldCheck, MapPin, Store, Camera, ThumbsUp, ThumbsDown, CheckCircle2, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+import { ShieldCheck, MapPin, Store, ThumbsUp, ThumbsDown, CheckCircle2, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { products, supermarketById, mockUser } from '@/data/mock';
 import { formatPrice } from '@/data/mock';
@@ -40,20 +40,20 @@ export default function Crowdsourcing() {
  <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
  <div className="max-w-2xl mx-auto space-y-6">
 
- <div className="bg-gradient-to-br from-secondary to-background rounded-2xl p-6 text-primary-foreground shadow-lg relative overflow-hidden">
+ <div className="bg-gradient-to-br from-secondary to-background rounded-2xl p-6 text-foreground shadow-lg relative overflow-hidden">
  <div className="relative z-10">
  <h2 className="text-xl font-bold flex items-center gap-2"><ShieldCheck className="h-6 w-6"/> Rango: {mockUser.rol === 'admin' ? 'Administrador' : 'Explorador'}</h2>
- <p className="text-primary-foreground/90 text-sm mt-2 max-w-sm leading-relaxed">
+ <p className="text-foreground/90 text-sm mt-2 max-w-sm leading-relaxed">
  Valida 2 misiones más hoy para desbloquear el rango **Colaborador** y obtener consultas IA ilimitadas.
  </p>
 
  <div className="mt-5">
- <div className="flex justify-between text-xs font-bold mb-1.5 text-primary-foreground">
+ <div className="flex justify-between text-xs font-bold mb-1.5 text-foreground">
  <span>Progreso Semanal</span>
  <span>3 / 5</span>
  </div>
  <div className="h-2 bg-background rounded-full overflow-hidden border border-border">
- <div className="h-full bg-primary-foreground rounded-full w-[60%]"></div>
+ <div className="h-full bg-primary rounded-full w-[60%]"></div>
  </div>
  </div>
  </div>

@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Menu, MapPin, Search, ShoppingBasket, SlidersHorizontal, Bot, User, LogOut, ArrowLeft } from 'lucide-react'
+import { Menu, MapPin, Search, ShoppingBasket, SlidersHorizontal, Bot, User, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 type TopNavProps = {
     query: string
@@ -13,7 +13,6 @@ type TopNavProps = {
 
 export function TopNav({ query, onQueryChange, onMenuClick }: TopNavProps) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const navigate = useNavigate();
 
     return (
         <header className="sticky top-0 z-[500] border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
