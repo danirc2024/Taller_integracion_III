@@ -9,7 +9,7 @@ participant "Frontend Web (React)" as UI
 participant "API Gateway (FastAPI)" as API
 database "PostgreSQL / PostGIS" as DB
 participant "Servicio IA Conversacional" as AI
-participant "Motor de Rutas (OSRM)" as RouteEngine
+participant "Motor de Rutas (OTP)" as RouteEngine
 
 autonumber 400
 
@@ -60,7 +60,7 @@ box "4. Optimización de Ruta de Compra y Traslado (ucRuta, ucHorarios, Costos)"
     API -> DB : Obtener catálogo, stock verificado y precios por sucursal dentro del rango
     DB --> API : Precios por tienda y ubicaciones
     
-    API -> RouteEngine : POST /solve-tsp (Matriz de distancias OSRM, tiendas, costo traslado)
+    API -> RouteEngine : POST /solve-tsp (Matriz de distancias OTP, tiendas, costo traslado)
     RouteEngine -> RouteEngine : Calcular TSP, costo de traslado vs costo de canasta (Única vs Multitienda)
     RouteEngine --> API : Ruta óptima (Matriz de paradas, horarios de atención, ahorro neto)
     

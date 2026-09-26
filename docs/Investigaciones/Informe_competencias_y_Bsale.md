@@ -214,7 +214,7 @@ El error crítico de PreciosGanga, no dejar iniciar sesión durante la prueba, e
 
 ### **10.3 Límites algorítmicos de Grocery Routes** 
 
-Está confirmado directamente en la descripción oficial de la app: su “Best Price Routing” se limita a sugerir una tienda para todo el pedido, o dividir la lista entre dos tiendas para maximizar el ahorro. No hay evidencia de que ejecute ningún cálculo sobre una red vial real ni que considere el costo de combustible del trayecto; es una heurística de partición de lista, no un algoritmo de ruta geoespacial. Esto refuerza que integrar OR-Tools para resolver el problema del vendedor viajero sobre una matriz de distancias real vía OSRM es una ventaja técnica genuina frente a todo lo evaluado, no solo frente a los competidores chilenos. 
+Está confirmado directamente en la descripción oficial de la app: su “Best Price Routing” se limita a sugerir una tienda para todo el pedido, o dividir la lista entre dos tiendas para maximizar el ahorro. No hay evidencia de que ejecute ningún cálculo sobre una red vial real ni que considere el costo de combustible del trayecto; es una heurística de partición de lista, no un algoritmo de ruta geoespacial. Esto refuerza que integrar OR-Tools para resolver el problema del vendedor viajero sobre una matriz de distancias real vía OTP es una ventaja técnica genuina frente a todo lo evaluado, no solo frente a los competidores chilenos. 
 
 ## **11 Bsale y herramientas de gestión para el retailer** 
 

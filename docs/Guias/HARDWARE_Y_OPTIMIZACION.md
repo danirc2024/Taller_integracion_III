@@ -13,6 +13,10 @@ Los procesos matemáticos o de red agresivos pueden hacer que el procesador alca
   - **Límite RAM**: `2GB`
   - **Límite CPU**: `0.8` (80% de un núcleo).
   - *Justificación*: Procesar grafos espaciales (NetworkX / OSMnx) es carga pesada para la CPU. El límite garantiza que la API Gateway no se caiga por culpa de que el motor de rutas asfixie el hardware.
+- **Bot de Discord (Scrum Master y Alertas)**: 
+  - **Límite RAM**: `100MB`
+  - **Límite CPU**: `0.2` (20% de un núcleo).
+  - *Justificación*: El bot, desarrollado en Go (`discordgo`), es una herramienta de gestión y comunicación extremadamente ligera. Sus responsabilidades incluyen escuchar eventos para enviar avisos de pusheos en Git, listar PR activos, notificar asignaciones o cierres de tareas desde Linear, e incluir botones para gatillar el web scraping manual. Al ser impulsado por eventos I/O asíncronos y no procesar grandes volúmenes de memoria, asignarle más recursos del procesador básico sería innecesario.
 
 > *La Base de Datos (PostgreSQL) y el API Gateway no tienen límites estrictos para asegurar que no sufran latencias en las peticiones web, confiando en que su uso es estable.*
 

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ShieldCheck, MapPin, Store, Camera, ThumbsUp, ThumbsDown, CheckCircle2, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+import { ShieldCheck, MapPin, Store, ThumbsUp, ThumbsDown, CheckCircle2, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { products, supermarketById, mockUser } from '@/data/mock';
 import { formatPrice } from '@/data/mock';

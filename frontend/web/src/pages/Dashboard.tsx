@@ -33,10 +33,14 @@ export default function Page() {
     return ids.size
   }, [filtered])
 
+<<<<<<< HEAD
+  const [cartCount, setCartCount] = useState(0)
+
   const handleAdd = (product: Product) => {
     addToCart(product)
   }
 
+>>>>>>> 55760b2e678d13f47544c642fad970ef6124e2d4
   return (
     <div className="relative flex flex-1 w-full h-full bg-background overflow-hidden">
       {/* Fondo de imagen geométrica vibrante */}

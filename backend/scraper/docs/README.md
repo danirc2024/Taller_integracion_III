@@ -2,76 +2,169 @@
 
 Este microservicio está destinado a extraer de manera asíncrona los catálogos de productos y ofertas desde sitios web de supermercados, implementando el framework **Scrapy**. 
 
-A través de la configuración global de Docker, el contenedor de este servicio (`web_scraper_alimentos`) tiene límites estrictos de consumo (1 CPU, 3GB RAM) para asegurar que la alta carga de procesamiento durante el raspado masivo no paralice tu equipo base (Pentium).
+La imagen del scraper se construye de forma independiente porque el
+`docker-compose.yml` actual no incluye este servicio. Esto permite ejecutar
+Scrapy bajo demanda sin modificar los demás microservicios.
 
 ## Tecnologías y Entorno
 El contenedor ya cuenta con las dependencias necesarias inyectadas en su `Dockerfile`:
 - `Scrapy`: Framework de extracción web.
-- `psycopg2-binary`: Driver oficial para enviar los datos parseados directamente a PostgreSQL.
-- `redis`: Cliente para interactuar con la cola en memoria (para control de duplicados o coordinación).
+- `psycopg2-binary`: Dependencia disponible para la futura integración con PostgreSQL.
+- `redis`: Dependencia disponible para una futura cola distribuida.
+
+Actualmente la cola de refresh usa memoria del proceso (`RefreshQueue`) para
+evitar duplicados durante una ejecución. La persistencia de productos, precios
+y timestamps será responsabilidad de la API cuando esté disponible.
 
 ## Documentación de Uso (Modo Desarrollo)
 
-A diferencia de FastAPI, **Scrapy no es un servidor web permanente**. Es un entorno de ejecución de _scripts_ (Spiders). Por lo tanto, este contenedor está programado para iniciarse en modo "Standby" (espera silenciosa), permitiendo que el desarrollador invoque comandos a demanda.
-
-Para trabajar, todos los comandos se deben lanzar apuntando al contenedor activo mediante `docker compose exec`.
-
-### 1. Inicializar el proyecto Scrapy
-Si aún no has andamiado la estructura estándar de Scrapy (pipelines, items, settings), ejecuta este comando desde la consola de tu computadora:
+A diferencia de FastAPI, **Scrapy no es un servidor web permanente**. Es un
+entorno de ejecución de _scripts_ (Spiders). Desde la raíz del repositorio,
+construye la imagen actual así:
 
 ```bash
-docker compose exec scraper_supermercados scrapy startproject scraper_core .
+docker build -t taller-integracion-scraper:local ./backend/scraper
 ```
-*(El punto al final es importante para generarlo en el directorio actual `/app` del contenedor).*
+
+### 1. Inicializar el proyecto Scrapy
+Si aún no has andamiado la estructura estándar de Scrapy, ejecuta el comando
+desde el directorio `backend/scraper` usando el entorno local:
+
+```bash
+scrapy startproject scraper_core .
+```
 
 ### 2. Crear un nuevo "Spider" (Bot recolector)
 Para generar el archivo de un bot que escanee un supermercado ficticio:
 
 ```bash
-docker compose exec scraper_supermercados scrapy genspider ejemplo_supermercado misupermercado.com
+docker run --rm taller-integracion-scraper:local \
+	scrapy genspider ejemplo_supermercado misupermercado.com
 ```
 
 ### 3. Ejecutar la recolección de datos
 Cuando el desarrollador haya programado su araña (ej. `ejemplo_supermercado`), puede disparar la recolección lanzando:
 
 ```bash
-docker compose exec scraper_supermercados scrapy crawl ejemplo_supermercado
+docker run --rm taller-integracion-scraper:local \
+	scrapy crawl ejemplo_supermercado
 ```
 
 Para Jumbo:
 
 ```bash
-docker compose exec scraper_supermercados scrapy crawl jumbo_rsc -O /tmp/jumbo.json
+docker run --rm \
+	-v "$PWD:/salida" \
+	taller-integracion-scraper:local \
+	scrapy crawl jumbo_rsc \
+	-s JOBDIR= \
+	-O /salida/jumbo.json
 ```
+
+El archivo queda en `jumbo.json` dentro de la carpeta desde la que se ejecuta
+el comando. Para obtener una prueba de un solo producto, agrega
+`-s CLOSESPIDER_ITEMCOUNT=1`.
 
 La lista persistente está en `research/jumbo_categories.txt`. Para agregar una
 categoría y ejecutar todas las URLs guardadas:
 
 ```bash
-docker compose exec scraper_supermercados scrapy crawl jumbo_rsc \
+docker run --rm \
+	-v "$PWD/backend/scraper:/app" \
+	-v "$PWD:/salida" \
+	taller-integracion-scraper:local \
+	scrapy crawl jumbo_rsc \
 	-a add_url="https://www.jumbo.cl/ruta-de-la-categoria" \
-	-O /tmp/jumbo.json
+	-s JOBDIR= \
+	-O /salida/jumbo.json
 ```
 
 El comando agrega la URL sólo si no existe. Ejecuta el comando una vez por cada
 nueva categoría, o edita directamente el archivo dejando una URL pública por
-línea. El volumen de Docker conserva la lista al recrear el contenedor.
+línea. Como el archivo no se monta como volumen, reconstruye la imagen después
+de modificarlo para que el contenedor reciba la lista actualizada.
 
-El spider `jumbo_rsc` consulta la categoría de verduras una sola vez por
-ejecución. Respeta `robots.txt`, usa una identidad identificable y mantiene
-una solicitud simultánea por dominio. `AutoThrottle`, el timeout de 30
-segundos, el máximo de 5 MiB por respuesta y un solo reintento reducen la
-carga y el consumo del contenedor.
+El spider `jumbo_rsc` procesa todas las categorías guardadas y avanza por sus
+páginas hasta encontrar una respuesta sin productos, con un máximo de 20
+páginas por categoría. Respeta `robots.txt`, usa una identidad identificable,
+mantiene una sola solicitud simultánea por dominio y aplica un delay mínimo de
+2 segundos entre peticiones. La política de politeness se gestiona con
+`AUTOTHROTTLE_ENABLED`, `DOWNLOAD_DELAY`, `CONCURRENT_REQUESTS` y
+`CONCURRENT_REQUESTS_PER_DOMAIN`, con un backoff automático para evitar
+sobrecargar el sitio y el contenedor.
+
+La estrategia de reintentos es conservadora y solo aplica a errores temporales
+como `429`, `500`, `503` y `504`, con `RETRY_TIMES = 3` y factor de backoff de
+2 segundos. Esto evita bucles infinitos ante caídas transitorias y ayuda a
+mantener la extracción estable en servidores con recursos limitados.
+
+Cuando una página responde `404` por fin de paginación, el spider la detecta
+como cierre natural de la iteración y no intenta seguir navegando. Si una
+respuesta llega vacía o con formato inesperado, registra una advertencia en vez
+de emitir datos incorrectos en silencio. Este manejo de errores ayuda a detectar
+cambios del sitio sin dejar de ser resiliente.
+
+### Ejecución local sin persistencia
+
+Para ejecutar el spider real sin generar un archivo JSON ni guardar resultados
+localmente, usa desde `backend/scraper`:
+
+```bash
+python -m scraper_core.runtime
+```
+
+Este comando invoca `scrapy crawl jumbo_rsc` mediante `ScrapyCommandExecutor`.
+La cola de refresh, el TTL y el worker funcionan en memoria durante la
+ejecución. `ScraperResultPublisher` deja preparado el punto de salida para
+enviar los items a la API cuando esté disponible.
+
+La configuración del scheduler puede construirse con los valores que más
+adelante enviará la API:
+
+```python
+from scraper_core.freshness import RefreshScheduler
+
+scheduler = RefreshScheduler.from_config({
+	"enabled": True,
+	"catalog_interval_seconds": 21600,
+	"product_ttl_seconds": 1800,
+})
+```
+
+La API será responsable de persistir productos, precios y `last_updated_at`.
+El scraper no crea un JSON local para reemplazar esa persistencia.
+
+Cada producto conserva los campos básicos (`producto`, `precio`, `categoria`,
+`imagen`) y puede incluir `ean_gtin`, `sku`, `precio_normal`, `precio_oferta`,
+`marca`, `formato_crudo`, `mecanica_promocion`, `en_stock` y `url_producto`.
+Los campos no publicados por Jumbo quedan como `null`.
+
+## Política de resiliencia del scraper
+
+El scraper de Jumbo aplica una política responsable para no bloquear al sitio ni
+sobrepasar los límites del servidor:
+
+- 1 request simultáneo por dominio
+- delay mínimo de 2s entre peticiones
+- throttling automático habilitado
+- retries limitados solo para errores temporales
+- backoff progresivo para evitar rebotes de carga
+- fin explícito cuando la página ya no tiene más resultados
+- warnings para respuestas vacías o formatos inesperados
+
+Esto mantiene una extracción cuidadosa, estable y compatible con un entorno
+Docker y hardware con recursos reducidos.
 
 La respuesta con `Accept: text/x-component` (RSC) es un detalle interno de
 Next.js, no una API pública estable. Por eso el spider usa HTML por defecto y
-la extracción de nombres está aislada: si Jumbo cambia su formato, registra
-una advertencia en vez de generar datos silenciosamente incorrectos. La URL
-actual no implementa paginación; agregarla requiere confirmar primero el
-enlace o endpoint público que el sitio entregue.
+la extracción está aislada: si Jumbo cambia su formato, registra una
+advertencia en vez de generar datos silenciosamente incorrectos.
 
-## Conectividad
-Tanto la URL de Redis como la URL de la Base de Datos están siendo pasadas dinámicamente al contenedor a través de `docker-compose.yml`. Para conectarte a ellas desde Scrapy (por ejemplo en el archivo `pipelines.py`), solo debes invocar las variables de entorno:
+## Integraciones futuras
+
+Cuando la API y la infraestructura estén listas, las URLs de Redis y de la
+Base de Datos podrán pasarse mediante variables de entorno. El scraper podrá
+leerlas, por ejemplo, así:
 
 ```python
 import os

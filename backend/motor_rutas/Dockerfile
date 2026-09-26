@@ -7,7 +7,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Al migrar de OSMnx a OSRM/OR-Tools, ya no necesitamos instalar compiladores 
+# Al migrar de OSMnx a OTP/OR-Tools, ya no necesitamos instalar compiladores 
 # pesados de C++ (gcc, g++, libspatialindex) en la imagen de Python.
 # Esto hace que el contenedor levante mucho mas rapido y ligero.
 
