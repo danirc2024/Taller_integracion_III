@@ -102,7 +102,7 @@ Una salida estándar informando las versiones de compilación correspondientes, 
    ```bash
    cp .env.example .env
    ```
-2. **Generar el Mapa Físico (OSRM):** El motor de rutas espaciales requiere un mapa de tu ciudad compilado localmente. Antes de levantar Docker por primera vez, ejecuta el script automático (por defecto descargará Temuco, Chile):
+2. **Generar el Mapa Físico (OTP):** El motor de rutas espaciales requiere un mapa de tu ciudad compilado localmente. Antes de levantar Docker por primera vez, ejecuta el script automático (por defecto descargará Temuco, Chile):
    ```bash
    ./scripts/setup_mapa.sh
    ```
