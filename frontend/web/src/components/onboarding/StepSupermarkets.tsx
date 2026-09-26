@@ -14,8 +14,6 @@ const CHAINS: Chain[] = [
   { id: "jumbo", name: "Jumbo", color: "oklch(0.6 0.22 145)" },
   { id: "santa-isabel", name: "Santa Isabel", color: "oklch(0.62 0.2 25)" },
   { id: "unimarc", name: "Unimarc", color: "oklch(0.6 0.2 15)" },
-  { id: "tottus", name: "Tottus", color: "oklch(0.62 0.2 40)" },
-  { id: "acuenta", name: "aCuenta", color: "oklch(0.65 0.18 85)" },
 ]
 
 interface StepSupermarketsProps {

@@ -8,12 +8,15 @@ import RouteViewer from "./pages/RouteViewer";
 import Profile from "./pages/Profile";
 import Crowdsourcing from "./pages/Crowdsourcing";
 import History from "./pages/History";
+import ProductDetail from "./pages/ProductDetail";
 import { MainLayout } from "./layouts/MainLayout";
+import { CartProvider } from "./contexts/CartContext";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <CartProvider>
+      <BrowserRouter>
+        <Routes>
         <Route path="/" element={<Home />} />
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
@@ -22,11 +25,13 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/colaborador" element={<Crowdsourcing />} />
           <Route path="/history" element={<History />} />
+          <Route path="/product/:id" element={<ProductDetail />} />
         </Route>
         <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<Onboarding />} />
       </Routes>
     </BrowserRouter>
+    </CartProvider>
   );
 }
 

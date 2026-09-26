@@ -1,6 +1,7 @@
 'use client'
 
-import { Plus } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Plus, TrendingDown, Package, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   discountPct,
@@ -14,64 +15,100 @@ type ProductCardProps = {
   onAdd?: (product: Product) => void
 }
 
+/* Simulamos estado de stock a partir del id (mock determinista) */
+function getStockState(product: Product) {
+  const hash = product.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+  if (hash % 7 === 0) return 'out'
+  if (hash % 4 === 0) return 'low'
+  return 'in'
+}
+
+const STOCK_UI = {
+  in:  { label: 'En stock',  cls: 'tag tag--in',  icon: Package      },
+  low: { label: 'Stock bajo', cls: 'tag tag--low', icon: AlertCircle  },
+  out: { label: 'Sin stock',  cls: 'tag tag--out', icon: AlertCircle  },
+} as const
+
 export function ProductCard({ product, onAdd }: ProductCardProps) {
   const market = supermarketById(product.supermarketId)
   const pct = discountPct(product)
+  const stock = getStockState(product)
+  const StockIcon = STOCK_UI[stock].icon
+  const savings = product.originalPrice - product.price
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5">
-      <div className="relative aspect-square bg-secondary">
+    <article className="product-card group">
+      <Link to={`/product/${product.id}`} className="flex flex-1 flex-col">
+      {/* ---------- Imagen ---------- */}
+      <div className="product-card__media">
         {pct > 0 && (
-          <span className="absolute left-2 top-2 z-10 rounded-md bg-discount px-2 py-1 text-xs font-bold text-discount-foreground shadow-sm">
-            -{pct}%
-          </span>
+          <span className="product-card__discount">-{pct}%</span>
         )}
-        <span className="absolute right-2 top-2 z-10 flex items-center gap-1.5 rounded-full border border-border bg-card/90 py-1 pl-1 pr-2.5 text-xs font-medium shadow-sm backdrop-blur">
+
+        <span className="product-card__market">
           <img
             src={market.logo || '/placeholder.svg'}
             alt={`Logo de ${market.name}`}
-            className="h-5 w-5 rounded-full object-contain"
+            className="product-card__market-logo"
           />
           {market.name}
         </span>
+
         <img
           src={product.image || '/placeholder.svg'}
           alt={product.name}
-          className="h-full w-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
+          className="product-card__img"
         />
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <div className="flex-1">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            {product.brand}
-          </p>
-          <h3 className="text-pretty text-sm font-semibold leading-snug">
-            {product.name}
-          </h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">{product.unit}</p>
+      {/* ---------- Contenido ---------- */}
+      <div className="product-card__body">
+        <div className="product-card__head">
+          <p className="product-card__brand">{product.brand}</p>
+          <h3 className="product-card__name">{product.name}</h3>
+          <p className="product-card__unit">{product.unit}</p>
         </div>
 
-        <div className="flex items-end justify-between gap-2">
-          <div className="flex flex-col leading-none">
-            <span className="font-mono text-xl font-bold tracking-tight">
-              {formatPrice(product.price)}
+        {/* Meta: stock + ahorro */}
+        <div className="product-card__meta">
+          <span className={STOCK_UI[stock].cls}>
+            <StockIcon className="h-3 w-3" />
+            {STOCK_UI[stock].label}
+          </span>
+          {pct > 0 && (
+            <span className="tag tag--save">
+              <TrendingDown className="h-3 w-3" />
+              Ahorras {formatPrice(savings)}
             </span>
-            {pct > 0 && (
-              <span className="mt-1 font-mono text-xs text-muted-foreground line-through">
-                {formatPrice(product.originalPrice)}
-              </span>
-            )}
-          </div>
+          )}
+        </div>
+
+      </div>
+      </Link>
+
+      <div className="product-card__footer">
+        <div className="product-card__price">
+          <span className="product-card__price-main">
+            {formatPrice(product.price)}
+          </span>
+          {pct > 0 && (
+            <span className="product-card__price-old">
+              {formatPrice(product.originalPrice)}
+            </span>
+          )}
+        </div>
           <Button
             size="icon"
             className="h-9 w-9 shrink-0 rounded-full"
             aria-label={`Añadir ${product.name} a la lista`}
-            onClick={() => onAdd?.(product)}
+            disabled={stock === 'out'}
+            onClick={(e) => {
+              e.preventDefault()
+              onAdd?.(product)
+            }}
           >
             <Plus className="h-5 w-5" aria-hidden="true" />
           </Button>
-        </div>
       </div>
     </article>
   )
