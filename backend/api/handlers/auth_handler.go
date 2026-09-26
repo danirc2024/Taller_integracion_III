@@ -148,7 +148,7 @@ func (h *AuthHandler) LoginUsuario(c *gin.Context) {
 	}
 
 	// Inyectar cookie segura HttpOnly contra ataques XSS (duración: 24h = 86400s)
-	c.SetCookie("jwt", tokenString, 86400, "/", "", false, true)
+	c.SetCookie("jwt", tokenString, 86400, "/", "", true, true)
 
 	c.JSON(http.StatusOK, LoginResponse{
 		ID:             usuario.ID.String(),
