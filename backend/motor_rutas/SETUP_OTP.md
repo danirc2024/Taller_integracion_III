@@ -1,6 +1,6 @@
-# Configuración OSRM para Temuco/Araucanía
+# Configuración OTP para Temuco/Araucanía
 
-Este documento explica cómo configurar y ejecutar OSRM (Open Source Routing Machine) para la optimización de rutas en Temuco y la región de Araucanía.
+Este documento explica cómo configurar y ejecutar OTP (OpenTripPlanner) para la optimización de rutas en Temuco y la región de Araucanía.
 
 ## Requisitos Previos
 
@@ -12,7 +12,7 @@ Este documento explica cómo configurar y ejecutar OSRM (Open Source Routing Mac
 
 > [!WARNING]
 > **ATENCIÓN DEL EQUIPO DE ARQUITECTURA (EVITAR CRASH DE RAM):**
-> Los scripts anteriores (`setup_mapa.ps1` y `setup_mapa.sh` locales) descargaban el mapa de todo Chile (`chile-latest.osm.pbf`). Compilar el mapa de un país completo con OSRM consume entre **4 a 8 GB de memoria RAM** en ráfagas, lo que causaba que el servidor principal (Pentium) y los contenedores Docker colapsaran por OOM (Out of Memory).
+> Los scripts anteriores (`setup_mapa.ps1` y `setup_mapa.sh` locales) descargaban el mapa de todo Chile (`chile-latest.osm.pbf`). Compilar el mapa de un país completo con OTP consume entre **4 a 8 GB de memoria RAM** en ráfagas, lo que causaba que el servidor principal (Pentium) y los contenedores Docker colapsaran por OOM (Out of Memory).
 >
 > **Solución aplicada:**
 > Los scripts viejos fueron eliminados. Ahora DEBEN utilizar el script unificado `scripts/setup_mapa.sh` ubicado en la raíz del proyecto. Éste se comunica con la API satelital Overpass para descargar **estrictamente** las calles de Temuco (Bounding Box), reduciendo el consumo de RAM a menos de 50MB.
@@ -41,14 +41,14 @@ Este script:
 
 1. Crea el directorio `/data`
 2. Descarga datos OpenStreetMap de Chile (~300-500 MB)
-3. Extrae características del mapa con `osrm-extract`
-4. Contrata el grafo con `osrm-contract` (~10-30 min)
-5.  Genera los archivos `.osrm` necesarios
+3. Extrae características del mapa con `otp-extract`
+4. Contrata el grafo con `otp-contract` (~10-30 min)
+5.  Genera los archivos `.otp` necesarios
 
 **Ejemplo de salida:**
 
 ```
-=== Configuración de OSRM para Temuco/Araucanía ===
+=== Configuración de OTP para Temuco/Araucanía ===
 
 1. Creando directorio de datos...
 ✓ Directorio creado en: .../backend/motor_rutas/data
@@ -72,17 +72,17 @@ Desde el raíz del proyecto:
 docker compose up -d
 ```
 
-Verifica que OSRM esté corriendo:
+Verifica que OTP esté corriendo:
 
 ```bash
-docker ps | grep osrm
+docker ps | grep otp
 ```
 
 Deberías ver algo como:
 
 ```
 CONTAINER ID   IMAGE                        STATUS          PORTS
-abc123def456   osrm/osrm-backend:latest    Up 2 minutes    0.0.0.0:5000->5000/tcp
+abc123def456   otp/otp-backend:latest    Up 2 minutes    0.0.0.0:5000->5000/tcp
 ```
 
 ### Paso 3: Verificar que Funciona
@@ -90,7 +90,7 @@ abc123def456   osrm/osrm-backend:latest    Up 2 minutes    0.0.0.0:5000->5000/tc
 Prueba una ruta de ejemplo en Temuco:
 
 ```bash
-# Consulta OSRM (ruta de ejemplo entre dos puntos en Temuco)
+# Consulta OTP (ruta de ejemplo entre dos puntos en Temuco)
 curl "http://localhost:5000/route/v1/driving/-72.5898,-38.7369;-72.6004,-38.7456?overview=full"
 ```
 
@@ -164,9 +164,9 @@ Luego intenta nuevamente:
 
 Asegúrate de tener la versión correcta del script `setup_mapa.ps1`. Descárgalo nuevamente o verifica que no tenga caracteres extraños.
 
-### El contenedor OSRM no inicia
+### El contenedor OTP no inicia
 
-Verifica que `data/mapa.osrm*` exista:
+Verifica que `data/mapa.otp*` exista:
 
 ```bash
 ls -la backend/motor_rutas/data/
@@ -175,17 +175,17 @@ ls -la backend/motor_rutas/data/
 Deberías ver:
 
 ```
--rw-r--r--  mapa.osrm
--rw-r--r--  mapa.osrm.mld
+-rw-r--r--  mapa.otp
+-rw-r--r--  mapa.otp.mld
 ```
 
 Si faltan, ejecuta nuevamente `setup_mapa.sh`.
 
 ### Lentitud en el procesamiento (>30 min)
 
-Es normal en CPUs antiguas. OSRM necesita procesar ~300 mil km² de vías. Paciencia.
+Es normal en CPUs antiguas. OTP necesita procesar ~300 mil km² de vías. Paciencia.
 
-## 📡 API OSRM Disponible
+## 📡 API OTP Disponible
 
 Desde cualquier servicio Docker o tu máquina local:
 
@@ -215,6 +215,6 @@ curl "http://localhost:5000/table/v1/driving/-72.5898,-38.7369;-72.6004,-38.7456
 
 ## 📚 Documentación Adicional
 
-- [OSRM API Documentation](http://project-osrm.org/docs/v5.24.0/api-docs/)
+- [OTP API Documentation](http://project-otp.org/docs/v5.24.0/api-docs/)
 - [OpenStreetMap Wiki](https://wiki.openstreetmap.org/)
 - [Geofabrik Downloads](http://download.geofabrik.de/)

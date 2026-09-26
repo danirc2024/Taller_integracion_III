@@ -1,7 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useRef, useState, useEffect } from 'react'
 import {
-  ArrowLeft,
   Store,
   Plus,
   ShoppingCart,

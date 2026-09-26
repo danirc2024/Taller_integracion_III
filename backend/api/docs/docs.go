@@ -35,6 +35,273 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/auth/login": {
+            "post": {
+                "description": "Verifica credenciales de acceso, valida cuenta activa y emite token JWT firmado",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Inicio de sesión local de usuario",
+                "parameters": [
+                    {
+                        "description": "Credenciales de acceso",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/me": {
+            "get": {
+                "description": "Endpoint protegido para verificar identidad y claims extraídos del token JWT",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Perfil del usuario autenticado",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/register": {
+            "post": {
+                "description": "Valida complejidad de contraseña, encripta con bcrypt y crea usuario inactivo con token UUID de verificación",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Registrar nuevo usuario con verificación",
+                "parameters": [
+                    {
+                        "description": "Datos de registro",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RegistroRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RegistroResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handlers.LoginRequest": {
+            "type": "object",
+            "required": [
+                "correo",
+                "password"
+            ],
+            "properties": {
+                "correo": {
+                    "type": "string",
+                    "example": "usuario.test@uct.cl"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "PasswordSegura123!"
+                }
+            }
+        },
+        "handlers.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "correo": {
+                    "type": "string",
+                    "example": "usuario.test@uct.cl"
+                },
+                "esta_activo": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "id": {
+                    "type": "string",
+                    "example": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+                },
+                "mensaje": {
+                    "type": "string",
+                    "example": "Inicio de sesión exitoso."
+                },
+                "nombre_completo": {
+                    "type": "string",
+                    "example": "Vicente Matu"
+                },
+                "rol": {
+                    "type": "string",
+                    "example": "registrado"
+                },
+                "url_avatar": {
+                    "type": "string",
+                    "example": "https://ejemplo.com/avatar.jpg"
+                }
+            }
+        },
+        "handlers.RegistroRequest": {
+            "type": "object",
+            "required": [
+                "correo",
+                "nombre_completo",
+                "password"
+            ],
+            "properties": {
+                "correo": {
+                    "type": "string",
+                    "example": "usuario.test@uct.cl"
+                },
+                "nombre_completo": {
+                    "type": "string",
+                    "example": "Vicente Matu"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "PasswordSegura123!"
+                }
+            }
+        },
+        "handlers.RegistroResponse": {
+            "type": "object",
+            "properties": {
+                "correo": {
+                    "type": "string",
+                    "example": "usuario.test@uct.cl"
+                },
+                "esta_activo": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "id": {
+                    "type": "string",
+                    "example": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+                },
+                "mensaje": {
+                    "type": "string",
+                    "example": "Usuario registrado con éxito. Se requiere confirmar el correo electrónico antes de iniciar sesión."
+                },
+                "nombre_completo": {
+                    "type": "string",
+                    "example": "Vicente Matu"
+                },
+                "rol": {
+                    "type": "string",
+                    "example": "registrado"
+                },
+                "token_verificacion": {
+                    "type": "string",
+                    "example": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+                }
+            }
+        },
+        "middleware.RespuestaError": {
+            "type": "object",
+            "properties": {
+                "detalle": {
+                    "description": "Información técnica u origen del error",
+                    "type": "string"
+                },
+                "estado": {
+                    "description": "Código numérico del estado HTTP (400, 404, 500, etc.)",
+                    "type": "integer"
+                },
+                "mensaje": {
+                    "description": "Mensaje descriptivo amigable para el cliente",
+                    "type": "string"
+                }
+            }
         }
     }
 }`

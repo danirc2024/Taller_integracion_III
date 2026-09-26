@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	_ "github.com/danirc2024/Taller_integracion_III/backend/api/docs"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/routes"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/driver/postgres"
@@ -14,6 +19,7 @@ import (
 )
 
 var DB *gorm.DB
+var RDB *redis.Client
 
 func initDB() {
 	dsn := os.Getenv("DB_URL")
@@ -31,8 +37,56 @@ func initDB() {
 	log.Println("Conexión a la base de datos establecida exitosamente.")
 }
 
+func initRedis() {
+	redisURL := os.Getenv("REDIS_URL")
+	var opt *redis.Options
+	var err error
+
+	if redisURL != "" {
+		opt, err = redis.ParseURL(redisURL)
+		if err != nil {
+			log.Printf("Advertencia: No se pudo parsear REDIS_URL (%v), usando configuración por defecto", err)
+			opt = &redis.Options{Addr: "localhost:6379"}
+		}
+	} else {
+		redisHost := os.Getenv("REDIS_HOST")
+		if redisHost == "" {
+			redisHost = "localhost"
+		}
+		redisPort := os.Getenv("REDIS_PORT")
+		if redisPort == "" {
+			redisPort = "6379"
+		}
+		opt = &redis.Options{
+			Addr: redisHost + ":" + redisPort,
+		}
+	}
+
+	RDB = redis.NewClient(opt)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := RDB.Ping(ctx).Err(); err != nil {
+		log.Printf("Aviso: No se pudo conectar a Redis (%v). Rate limiting operará en modo fail-open.", err)
+	} else {
+		log.Println("Conexión a Redis establecida exitosamente.")
+	}
+}
+
 func setupRouter() *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+
+	// Logger por defecto y Middleware Global de Errores
+	r.Use(gin.Logger())
+	r.Use(middleware.ErrorHandler())
+
+	// Habilitar detección de métodos HTTP no permitidos
+	r.HandleMethodNotAllowed = true
+
+	// Manejadores estandarizados para 404 (NoRoute) y 405 (NoMethod)
+	r.NoRoute(middleware.NotFoundHandler())
+	r.NoMethod(middleware.MethodNotAllowedHandler())
 
 	// Configuración básica de CORS para desarrollo
 	r.Use(func(c *gin.Context) {
@@ -52,6 +106,10 @@ func setupRouter() *gin.Engine {
 	r.GET("/", RootHandler)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Grupo de rutas de la API v1
+	v1 := r.Group("/api/v1")
+	routes.RegistrarRutasAuth(v1, DB, RDB)
 
 	return r
 }
@@ -77,6 +135,7 @@ func RootHandler(c *gin.Context) {
 // @BasePath        /
 func main() {
 	initDB()
+	initRedis()
 
 	r := setupRouter()
 
