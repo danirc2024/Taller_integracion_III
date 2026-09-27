@@ -42,5 +42,7 @@ spec:
                 secretKeyRef:
                   name: db-secret
                   key: POSTGRES_DB
+            - name: DB_URL
+              value: "postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable"
             - name: REDIS_URL
               value: "redis://redis:6379/0"
