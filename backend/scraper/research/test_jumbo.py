@@ -4,8 +4,14 @@ La implementación vive en ``scraper_core/spiders/jumbo`` para que
 ``scrapy crawl jumbo_rsc`` y esta prueba no puedan divergir.
 """
 
+import json
+import sys
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime, timedelta, timezone
+from io import StringIO
+from pathlib import Path
+from unittest.mock import patch
 
 import scrapy
 from scrapy.http import Request, TextResponse
@@ -20,7 +26,7 @@ from scraper_core.freshness import (
     should_skip_refresh,
 )
 from scraper_core.output import ScraperResultPublisher
-from scraper_core.runtime import ScrapyCommandExecutor
+from scraper_core.runtime import ScrapyCommandExecutor, main as scraper_runtime_main
 import scraper_core.settings as settings
 from scraper_core.spiders.jumbo import JumboRscSpider
 
@@ -101,6 +107,66 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertEqual(
             url, "https://www.jumbo.cl/frutas-y-verduras/verduras?page=2"
         )
+
+    def test_product_url_starts_one_request_without_category_pagination(self):
+        product_url = "https://www.jumbo.cl/p/lechuga"
+        spider = JumboRscSpider(product_url=product_url)
+        spider.start_urls = ["https://www.jumbo.cl/frutas-y-verduras/verduras"]
+
+        requests = list(spider.start_requests())
+
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(requests[0].url, product_url)
+        self.assertEqual(requests[0].callback, spider.parse_product)
+
+    def test_product_url_rejects_untrusted_domains(self):
+        with self.assertRaises(ValueError):
+            JumboRscSpider._validate_product_url("https://example.com/product/1")
+
+    def test_parse_product_returns_one_item_without_pagination(self):
+        product_url = "https://www.jumbo.cl/p/lechuga"
+        response = TextResponse(
+            url=product_url,
+            request=Request(product_url, meta={"product_url": product_url}),
+            body=(
+                b'<script type="application/ld+json">'
+                b'{"@type":"Product","name":"Lechuga","url":"https://www.jumbo.cl/p/lechuga",'
+                b'"offers":{"price":"990"}}'
+                b'</script>'
+            ),
+            encoding="utf-8",
+        )
+
+        items = list(JumboRscSpider().parse_product(response))
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["producto"], "Lechuga")
+        self.assertEqual(items[0]["precio"], 990.0)
+        self.assertEqual(items[0]["url_producto"], product_url)
+        self.assertEqual(items[0]["categoria"], "producto")
+
+    def test_parse_product_selects_requested_product_from_json_ld_graph(self):
+        product_url = "https://www.jumbo.cl/p/lechuga"
+        response = TextResponse(
+            url=product_url,
+            request=Request(product_url, meta={"product_url": product_url}),
+            body=(
+                b'<script type="application/ld+json">'
+                b'{"@graph":['
+                b'{"@type":"Product","name":"Tomate","url":"/p/tomate",'
+                b'"offers":{"price":"1200"}},'
+                b'{"@type":"Product","name":"Lechuga","url":"/p/lechuga",'
+                b'"offers":{"price":"990"}}]}'
+                b'</script>'
+            ),
+            encoding="utf-8",
+        )
+
+        items = list(JumboRscSpider().parse_product(response))
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["producto"], "Lechuga")
+        self.assertEqual(items[0]["precio"], 990.0)
 
     def test_catalog_refresh_is_needed_when_never_updated(self):
         self.assertTrue(should_refresh_catalog(None))
@@ -280,20 +346,53 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertEqual(result["status"], "completed")
         self.assertEqual(published, [{"sku": "sku-3", "url": "https://www.jumbo.cl/p/sku-3"}])
 
-    def test_scrapy_executor_runs_catalog_without_persisting_output_file(self):
+    def test_scrapy_executor_returns_structured_catalog_items(self):
         commands = []
 
         def run_command(command, **kwargs):
             commands.append((command, kwargs))
+            output_path = Path(command[command.index("-O") + 1])
+            output_path.write_text(
+                json.dumps({"sku": "sku-1", "precio": 1290.0}) + "\n",
+                encoding="utf-8",
+            )
             return type("Completed", (), {"returncode": 0, "stdout": "items", "stderr": ""})()
 
         executor = ScrapyCommandExecutor(command_runner=run_command)
-        result = executor({"product_id": "sku-1"})
+        result = executor({})
 
         self.assertEqual(result["status"], "completed")
+        self.assertEqual(result["items"], [{"sku": "sku-1", "precio": 1290.0}])
         self.assertIn("scrapy", commands[0][0])
         self.assertIn("crawl", commands[0][0])
-        self.assertNotIn("-O", commands[0][0])
+        self.assertIn("-O", commands[0][0])
+        self.assertIn("jsonlines", commands[0][0])
+
+    def test_runtime_cli_emits_extracted_items_as_jsonlines(self):
+        item = {"sku": "sku-42", "precio": 990.0}
+        stdout = StringIO()
+        stderr = StringIO()
+
+        with patch("scraper_core.runtime.ScrapyCommandExecutor") as executor_class:
+            executor_class.return_value.return_value = {
+                "status": "completed",
+                "stdout": "scrapy stdout\n",
+                "stderr": "scrapy stderr\n",
+                "items": [item],
+            }
+            with patch.object(
+                sys,
+                "argv",
+                ["scraper-runtime", "--product-url", "https://www.jumbo.cl/p/42"],
+            ):
+                with redirect_stdout(stdout), redirect_stderr(stderr):
+                    scraper_runtime_main()
+
+        executor_class.return_value.assert_called_once_with(
+            {"product_url": "https://www.jumbo.cl/p/42"}
+        )
+        self.assertEqual(stdout.getvalue(), json.dumps(item, ensure_ascii=False) + "\n")
+        self.assertEqual(stderr.getvalue(), "scrapy stderr\nscrapy stdout\n")
 
     def test_scrapy_executor_targets_product_url_for_queued_job(self):
         commands = []
@@ -314,6 +413,12 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertIn("-a", commands[0][0])
         self.assertIn("product_url=https://www.jumbo.cl/frutas-y-verduras/verduras?product=sku-42", commands[0][0])
         self.assertIn("JOBDIR=", " ".join(commands[0][0]))
+
+    def test_scrapy_executor_rejects_product_id_without_url(self):
+        executor = ScrapyCommandExecutor(command_runner=lambda *_args, **_kwargs: None)
+
+        with self.assertRaisesRegex(ValueError, "requiere product_url"):
+            executor({"product_id": "sku-42"})
 
     def test_scheduler_decides_catalog_and_product_update_flow(self):
         scheduler = RefreshScheduler(catalog_interval_seconds=3600, product_ttl_seconds=1800)

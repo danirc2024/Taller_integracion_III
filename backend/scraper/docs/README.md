@@ -106,17 +106,34 @@ cambios del sitio sin dejar de ser resiliente.
 
 ### Ejecución local sin persistencia
 
-Para ejecutar el spider real sin generar un archivo JSON ni guardar resultados
-localmente, usa desde `backend/scraper`:
+Desde `backend/scraper`, el runtime ejecuta el scraping masivo de las categorías
+configuradas y entrega cada producto extraído como una línea JSON por `stdout`.
+Los mensajes de Scrapy se mantienen en `stderr`:
 
 ```bash
 python -m scraper_core.runtime
 ```
 
-Este comando invoca `scrapy crawl jumbo_rsc` mediante `ScrapyCommandExecutor`.
-La cola de refresh, el TTL y el worker funcionan en memoria durante la
-ejecución. `ScraperResultPublisher` deja preparado el punto de salida para
-enviar los items a la API cuando esté disponible.
+Para actualizar un producto concreto, pasa su URL pública de Jumbo:
+
+```bash
+python -m scraper_core.runtime --product-url "https://www.jumbo.cl/ruta-del-producto"
+```
+
+También se puede ejecutar Scrapy directamente y exportar a un archivo:
+
+```bash
+scrapy crawl jumbo_rsc \
+	-a product_url="https://www.jumbo.cl/ruta-del-producto" \
+	-O producto.jsonl
+```
+
+El modo puntual solicita solo la URL recibida y no continúa con la paginación
+de categorías. La URL se limita a `jumbo.cl` y `www.jumbo.cl`. El runtime
+captura los items en un feed JSONL temporal y retorna los objetos en
+`result["items"]`; no los persiste en la base de datos ni los publica en la API.
+La cola de refresh, el TTL y el worker siguen siendo componentes en memoria que
+deben ser invocados por quien integre el servicio.
 
 La configuración del scheduler puede construirse con los valores que más
 adelante enviará la API:

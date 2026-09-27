@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import argparse
+import json
 import shutil
 import subprocess
+import sys
 import tempfile
+from pathlib import Path
 
 
 class ScrapyCommandExecutor:
@@ -14,8 +18,22 @@ class ScrapyCommandExecutor:
 
     def __call__(self, job):
         job = job or {}
-        jobdir = tempfile.mkdtemp(prefix="scrapy-jobdir-")
-        command = ["scrapy", "crawl", self.spider_name, "-s", f"JOBDIR={jobdir}"]
+        if job.get("product_id") and not job.get("product_url"):
+            raise ValueError("Un scraping puntual requiere product_url")
+
+        jobdir = Path(tempfile.mkdtemp(prefix="scrapy-jobdir-"))
+        output_path = jobdir / "items.jsonl"
+        command = [
+            "scrapy",
+            "crawl",
+            self.spider_name,
+            "-s",
+            f"JOBDIR={jobdir}",
+            "-O",
+            str(output_path),
+            "-t",
+            "jsonlines",
+        ]
 
         if job.get("product_url"):
             command.extend(["-a", f"product_url={job['product_url']}"])
@@ -29,21 +47,44 @@ class ScrapyCommandExecutor:
                 text=True,
                 check=False,
             )
+            if completed.returncode != 0:
+                error = completed.stderr.strip() or "Scrapy terminó con error"
+                raise RuntimeError(error)
+
+            items = []
+            if output_path.exists():
+                with output_path.open(encoding="utf-8") as output_file:
+                    items = [json.loads(line) for line in output_file if line.strip()]
         finally:
             shutil.rmtree(jobdir, ignore_errors=True)
 
-        if completed.returncode != 0:
-            error = completed.stderr.strip() or "Scrapy terminó con error"
-            raise RuntimeError(error)
         return {
             "status": "completed",
             "stdout": completed.stdout,
+            "stderr": completed.stderr,
+            "items": items,
         }
 
 
 def main():
-    result = ScrapyCommandExecutor()({})
-    print(result["stdout"], end="")
+    parser = argparse.ArgumentParser(description="Ejecuta spiders de supermercados")
+    parser.add_argument("--product-url")
+    parser.add_argument("--product-id")
+    args = parser.parse_args()
+    if args.product_id and not args.product_url:
+        parser.error("--product-id requiere --product-url")
+
+    job = {
+        key: value
+        for key, value in vars(args).items()
+        if value is not None
+    }
+    result = ScrapyCommandExecutor()(job)
+    for output in (result.get("stderr"), result.get("stdout")):
+        if output:
+            print(output, end="", file=sys.stderr)
+    for item in result["items"]:
+        print(json.dumps(item, ensure_ascii=False))
 
 
 if __name__ == "__main__":
