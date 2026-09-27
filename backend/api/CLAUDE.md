@@ -60,8 +60,33 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 
 ## Mapa auto-generado: API Gateway (Go + Gin)
 
-**3 archivos .go** detectados
+**22 archivos .go** detectados
 
+
+### `cmd/seed_productos/main.go` (package main)
+
+- Structs: productoSemilla
+- `main()`
+
+### `domain/producto.go` (package domain)
+
+- Structs: FiltroProductosDTO, ProductoDTO, MetadatosPaginacionDTO, PaginaProductosDTO, HistorialPrecioDTO, ProductoDetalleDTO
+
+### `handlers/auth_handler.go` (package handlers)
+
+- Structs: RegistroRequest, RegistroResponse, LoginRequest, LoginResponse, AuthHandler
+- `NewAuthHandler(authService services.AuthService) *AuthHandler`
+- `(AuthHandler).RegistrarUsuario(c *gin.Context)`
+- `(AuthHandler).LoginUsuario(c *gin.Context)`
+- `(AuthHandler).PerfilUsuario(c *gin.Context)`
+
+### `handlers/producto_handler.go` (package handlers)
+
+- Structs: ProductoHandler
+- `NewProductoHandler(service services.ProductoService) *ProductoHandler`
+- `(ProductoHandler).ObtenerProductos(c *gin.Context)`
+- `(ProductoHandler).BuscarProductos(c *gin.Context)`
+- `(ProductoHandler).ObtenerDetalleProducto(c *gin.Context)`
 
 ### `infrastructure/models.go` (package infrastructure)
 
@@ -70,10 +95,116 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 ### `main.go` (package main)
 
 - `initDB()`
+- `initRedis()`
 - `setupRouter() *gin.Engine`
 - `RootHandler(c *gin.Context)`
 - `main()`
 
+### `middleware/error_handler.go` (package middleware)
+
+- Structs: RespuestaError
+- `ErrorHandler() gin.HandlerFunc`
+- `NotFoundHandler() gin.HandlerFunc`
+- `MethodNotAllowedHandler() gin.HandlerFunc`
+- `ResponderError(c *gin.Context, estado int, mensaje string, err error)`
+
+### `middleware/jwt_auth.go` (package middleware)
+
+- `RequireAuth() gin.HandlerFunc`
+
+### `middleware/rate_limit.go` (package middleware)
+
+- `RateLimiterIP(rdb *redis.Client, prefijo string, maxIntentos int64, ventana time.Duration) gin.HandlerFunc`
+- `RateLimitLogin(rdb *redis.Client) gin.HandlerFunc`
+
+### `repositories/producto_repository.go` (package repositories)
+
+- Structs: gormProductoRepository
+- `NewProductoRepository(db *gorm.DB) ProductoRepository`
+- `(gormProductoRepository).Listar(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoDTO, int64, error)`
+- `(gormProductoRepository).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
+
+### `repositories/usuario_repository.go` (package repositories)
+
+- Structs: gormUsuarioRepository
+- `NewUsuarioRepository(db *gorm.DB) UsuarioRepository`
+- `(gormUsuarioRepository).FindByEmail(ctx context.Context, email string) (*infrastructure.Usuario, error)`
+- `(gormUsuarioRepository).Create(ctx context.Context, usuario *infrastructure.Usuario) error`
+
+### `routes/auth_routes.go` (package routes)
+
+- `RegistrarRutasAuth(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client)`
+
+### `routes/producto_routes.go` (package routes)
+
+- `RegistrarRutasProductos(rg *gin.RouterGroup, db *gorm.DB)`
+
+### `services/auth_service.go` (package services)
+
+- Structs: RegistroDTO, UsuarioCreadoDTO, authService
+- `NewAuthService(usuarioRepo repositories.UsuarioRepository) AuthService`
+- `validarComplejidadPassword(password string) error`
+- `(authService).Registrar(ctx context.Context, input RegistroDTO) (*UsuarioCreadoDTO, error)`
+- `(authService).Login(correo, password string) (*infrastructure.Usuario, error)`
+- `(authService).LoginWithContext(ctx context.Context, correo, password string) (*infrastructure.Usuario, error)`
+
+### `services/producto_service.go` (package services)
+
+- Structs: productoService
+- `NewProductoService(repo repositories.ProductoRepository) ProductoService`
+- `(productoService).ObtenerCatalogo(ctx context.Context, filtro domain.FiltroProductosDTO) (*domain.PaginaProductosDTO, error)`
+- `(productoService).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
+
+### `tests/auth_service_test.go` (package tests)
+
+- Structs: mockUsuarioRepository
+- `newMockUsuarioRepository() *mockUsuarioRepository`
+- `(mockUsuarioRepository).FindByEmail(ctx context.Context, email string) (*infrastructure.Usuario, error)`
+- `(mockUsuarioRepository).Create(ctx context.Context, usuario *infrastructure.Usuario) error`
+- `TestAuthService_PasswordComplexity(t *testing.T)`
+- `TestAuthService_RegistroExitoso(t *testing.T)`
+- `TestAuthService_Login(t *testing.T)`
+
+### `tests/jwt_test.go` (package tests)
+
+- `TestJWT_GenerarYValidarToken(t *testing.T)`
+- `TestJWT_TokenInvalido(t *testing.T)`
+- `TestMiddleware_RequireAuth(t *testing.T)`
+
+### `tests/middleware_test.go` (package tests)
+
+- `init()`
+- `setupTestRouter() *gin.Engine`
+- `TestNotFoundHandler(t *testing.T)`
+- `TestMethodNotAllowedHandler(t *testing.T)`
+- `TestPanicRecoveryHandler(t *testing.T)`
+- `TestResponderError(t *testing.T)`
+
+### `tests/producto_handler_test.go` (package tests)
+
+- `TestProductoHandler_ObtenerProductos(t *testing.T)`
+- `TestProductoHandler_BuscarProductos(t *testing.T)`
+- `TestProductoHandler_ObtenerDetalleProducto(t *testing.T)`
+
+### `tests/producto_service_test.go` (package tests)
+
+- Structs: mockProductoRepository
+- `(mockProductoRepository).Listar(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoDTO, int64, error)`
+- `(mockProductoRepository).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
+- `TestProductoService_ValoresPorDefecto(t *testing.T)`
+- `TestProductoService_SanitizacionYLimites(t *testing.T)`
+- `TestProductoService_Busqueda_Minimo3Caracteres(t *testing.T)`
+- `TestProductoService_ObtenerPorID(t *testing.T)`
+
+### `utils/jwt.go` (package utils)
+
+- Structs: JWTClaims
+- `getJWTSecret() []byte`
+- `GenerarToken(usuarioID, rol, provider string) (string, error)`
+- `ValidarToken(tokenString string) (*jwt.Token, error)`
+
 ### `utils/security.go` (package utils)
 
 - `SanitizarInputBusqueda(input string) string`
+- `HashPassword(password string) (string, error)`
+- `CheckPasswordHash(password, hash string) bool`

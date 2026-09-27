@@ -75,7 +75,7 @@ src/
 
 ## Mapa auto-generado: Frontend (React + TypeScript)
 
-**44 archivos activos** (excluidos kebab-case obsoletos)
+**55 archivos activos** (excluidos kebab-case obsoletos)
 
 
 ### `core/routes.ts`
@@ -109,7 +109,7 @@ src/
 ### `App.tsx`
 
 - Exports: App
-- Imports locales: ./layouts/MainLayout, ./pages/Chatbot, ./pages/Crowdsourcing, ./pages/Dashboard, ./pages/History, ./pages/Home, ./pages/Login, ./pages/Onboarding, ./pages/Profile, ./pages/RouteViewer
+- Imports locales: ./contexts/CartContext, ./layouts/MainLayout, ./pages/Chatbot, ./pages/Crowdsourcing, ./pages/Dashboard, ./pages/History, ./pages/Home, ./pages/Login, ./pages/Onboarding, ./pages/ProductDetail, ./pages/Profile, ./pages/RouteViewer
 
 ### `app/router.tsx`
 
@@ -121,6 +121,15 @@ src/
 - Exports: BottomNav
 - Tipos: BottomNavProps
 - Imports locales: @/lib/utils
+
+### `components/CartSidebar.tsx`
+
+- Exports: CartSidebar
+- Imports locales: @/components/ui/button, @/contexts/CartContext, @/data/mock
+
+### `components/Footer.tsx`
+
+- Exports: Footer
 
 ### `components/ProductCard.tsx`
 
@@ -164,6 +173,50 @@ src/
 - Exports: SocialButtons
 - Imports locales: @/components/ui/button
 
+### `components/landing/LandingCTA.tsx`
+
+- Exports: LandingCTA
+- Imports locales: @/components/ui/button
+
+### `components/landing/LandingFeatures.tsx`
+
+- Exports: LandingFeatures
+- Imports locales: @/data/landing.json
+
+### `components/landing/LandingFooter.tsx`
+
+- Exports: LandingFooter
+
+### `components/landing/LandingHero.tsx`
+
+- Exports: LandingHero
+- Imports locales: @/components/ui/button, @/data/landing.json
+
+### `components/landing/LandingNavbar.tsx`
+
+- Exports: LandingNavbar
+- Imports locales: @/components/ui/button, @/data/landing.json
+
+### `components/landing/LandingSavings.tsx`
+
+- Exports: LandingSavings
+- Imports locales: @/components/ui/button, @/data/landing.json
+
+### `components/landing/LandingStores.tsx`
+
+- Exports: LandingStores
+- Imports locales: @/data/landing.json
+
+### `components/landing/LandingTrustStrip.tsx`
+
+- Exports: LandingTrustStrip
+- Imports locales: @/data/landing.json
+
+### `components/landing/LandingWorks.tsx`
+
+- Exports: LandingHowItWorks
+- Imports locales: @/data/landing.json
+
 ### `components/onboarding/OnboardingWizard.tsx`
 
 - Exports: OnboardingWizard
@@ -192,12 +245,6 @@ src/
 - Tipos: Chain, StepSupermarketsProps
 - Imports locales: @/lib/utils
 
-### `components/side-bar.tsx`
-
-- Exports: SideBar
-- Tipos: SideBarProps
-- Imports locales: @/components/ui/button, @/lib/data
-
 ### `components/ui/button.tsx`
 
 - Tipos: VariantProps
@@ -213,6 +260,12 @@ src/
 - Tipos: VariantProps
 - Imports locales: @/lib/utils
 
+### `contexts/CartContext.tsx`
+
+- Exports: CartProvider, useCart
+- Tipos: CartContextType, CartItem
+- Imports locales: @/types
+
 ### `layouts/AppShell.tsx`
 
 - Exports: AppShell
@@ -223,7 +276,7 @@ src/
 
 - Exports: MainLayout, useLayoutContext
 - Tipos: LayoutContextType
-- Imports locales: @/components/BottomNav, @/components/Sidebar, @/components/TopNav
+- Imports locales: @/components/CartSidebar, @/components/Sidebar, @/components/TopNav
 
 ### `pages/Chatbot.tsx`
 
@@ -234,23 +287,22 @@ src/
 ### `pages/Crowdsourcing.tsx`
 
 - Exports: Crowdsourcing
-- Imports locales: @/data/mock, @/lib/utils
+- Imports locales: @/components/Footer, @/data/mock, @/lib/utils
 
 ### `pages/Dashboard.tsx`
 
-- Exports: Dashboard
-- Tipos: MapStop
-- Imports locales: @/components/ProductCard, @/components/RouteMap, @/data/mock, @/layouts/MainLayout, @/types
+- Exports: Page
+- Imports locales: @/components/Footer, @/components/ProductCard, @/contexts/CartContext, @/data/mock, @/layouts/MainLayout, @/types
 
 ### `pages/History.tsx`
 
 - Exports: History
-- Imports locales: @/lib/utils
+- Imports locales: @/components/Footer, @/lib/utils
 
 ### `pages/Home.tsx`
 
 - Exports: Home
-- Imports locales: @/components/ui/button, @/core/routes
+- Imports locales: @/components/landing/LandingCTA, @/components/landing/LandingFeatures, @/components/landing/LandingFooter, @/components/landing/LandingHero, @/components/landing/LandingNavbar, @/components/landing/LandingSavings, @/components/landing/LandingStores, @/components/landing/LandingTrustStrip, @/components/landing/LandingWorks
 
 ### `pages/Login.tsx`
 
@@ -270,7 +322,8 @@ src/
 ### `pages/ProductDetail.tsx`
 
 - Exports: ProductDetail
-- Imports locales: @/components/ui/button, @/core/routes, @/data/mock
+- Tipos: RelatedItem
+- Imports locales: @/components/Footer, @/components/ui/button, @/contexts/CartContext, @/data/mock
 
 ### `pages/Profile.tsx`
 

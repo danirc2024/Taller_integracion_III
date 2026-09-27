@@ -1,23 +1,29 @@
-# Dockerfile para Backend API Gateway (Golang) - Entorno de Desarrollo
-FROM golang:1.26-alpine
-
-# Instalar git y utilidades de compilación necesarias para Go y Air
-RUN apk add --no-cache git gcc musl-dev
-
-# Instalar Air para Live-Reloading / Hot-Reload automático en desarrollo
-RUN go install github.com/air-verse/air@latest
+# Etapa 1: Construcción (Builder)
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
+RUN apk add --no-cache git gcc musl-dev && go install github.com/air-verse/air@latest
 
-# Copiar archivos de definición de módulos e instalar dependencias (aprovechando la caché de capas)
+# Instalar dependencias
 COPY go.mod go.sum* ./
 RUN go mod download
 
-# Copiar el resto del código fuente del backend en Go
+# Copiar el código y compilar
 COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o api_gateway .
 
-# Exponer el puerto configurado para el backend en Go (8080)
+# Etapa 2: Producción (Ligera)
+FROM alpine:3.19
+
+WORKDIR /app
+RUN apk add --no-cache git gcc musl-dev && go install github.com/air-verse/air@latest
+
+# Agregar certificados para llamadas HTTPS
+RUN apk --no-cache add ca-certificates tzdata
+
+# Copiar el binario compilado desde la etapa anterior
+COPY --from=builder /app/api_gateway .
+
 EXPOSE 8080
 
-# Iniciar el servidor con Air para recarga automática en desarrollo
-CMD ["air"]
+CMD ["./api_gateway"]

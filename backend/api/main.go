@@ -16,6 +16,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"github.com/joho/godotenv"
 )
 
 var DB *gorm.DB
@@ -24,8 +25,7 @@ var RDB *redis.Client
 func initDB() {
 	dsn := os.Getenv("DB_URL")
 	if dsn == "" {
-		log.Println("No se encontró DB_URL en las variables de entorno, usando valor por defecto para desarrollo local")
-		dsn = "host=localhost user=postgres password=postgres dbname=supermercados_db port=5432 sslmode=disable"
+		log.Fatal("ERROR DE SEGURIDAD: No se encontró DB_URL en las variables de entorno. Abortando inicio.")
 	}
 
 	var err error
@@ -135,6 +135,11 @@ func RootHandler(c *gin.Context) {
 // @host            localhost:8080
 // @BasePath        /
 func main() {
+	// Intentar cargar .env, pero si no existe (ej. Producción/Docker), continuar usando variables de entorno inyectadas
+	if err := godotenv.Load(); err != nil {
+		log.Println("Aviso: No se encontró archivo .env, usando variables de entorno del sistema")
+	}
+
 	initDB()
 	initRedis()
 
