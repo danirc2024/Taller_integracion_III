@@ -189,7 +189,8 @@ func main() {
 			log.Fatalf("Error insertando producto %s: %v", s.SKU, err)
 		}
 
-		captura := infrastructure.CapturaPrecio{
+		// Captura actual
+		capturaActual := infrastructure.CapturaPrecio{
 			ProductoCrudoID: prod.ID,
 			PrecioNormal:    s.PrecioNormal,
 			PrecioOferta:    s.PrecioOferta,
@@ -197,10 +198,33 @@ func main() {
 			CapturadoEl:     time.Now(),
 		}
 
-		if err := db.Create(&captura).Error; err != nil {
+		if err := db.Create(&capturaActual).Error; err != nil {
 			log.Fatalf("Error insertando captura de precio para %s: %v", s.SKU, err)
+		}
+
+		// Para SEED-PROD-001 inyectamos capturas históricas anteriores para pruebas de gráficas
+		if s.SKU == "SEED-PROD-001" {
+			precioViejo1 := 1350.00
+			capturaVieja1 := infrastructure.CapturaPrecio{
+				ProductoCrudoID: prod.ID,
+				PrecioNormal:    precioViejo1,
+				PrecioOferta:    nil,
+				EstaDisponible:  true,
+				CapturadoEl:     time.Now().Add(-7 * 24 * time.Hour),
+			}
+			_ = db.Create(&capturaVieja1)
+
+			precioViejo2 := 1390.00
+			capturaVieja2 := infrastructure.CapturaPrecio{
+				ProductoCrudoID: prod.ID,
+				PrecioNormal:    precioViejo2,
+				PrecioOferta:    nil,
+				EstaDisponible:  true,
+				CapturadoEl:     time.Now().Add(-14 * 24 * time.Hour),
+			}
+			_ = db.Create(&capturaVieja2)
 		}
 	}
 
-	log.Println("10 productos de prueba inyectados exitosamente con distintos supermercados, categorías, marcas y ofertas.")
+	log.Println("10 productos de prueba inyectados exitosamente con historial de precios para pruebas.")
 }

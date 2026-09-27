@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"math"
 	"strings"
 
@@ -10,9 +11,13 @@ import (
 	"github.com/danirc2024/Taller_integracion_III/backend/api/utils"
 )
 
+// ErrProductoNoEncontrado se retorna cuando no existe el producto solicitado en la base de datos
+var ErrProductoNoEncontrado = errors.New("producto no encontrado")
+
 // ProductoService define el contrato para la lógica de negocio del catálogo de productos
 type ProductoService interface {
 	ObtenerCatalogo(ctx context.Context, filtro domain.FiltroProductosDTO) (*domain.PaginaProductosDTO, error)
+	ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)
 }
 
 type productoService struct {
@@ -85,4 +90,22 @@ func (s *productoService) ObtenerCatalogo(ctx context.Context, filtro domain.Fil
 		TotalPaginas:   totalPaginas,
 		Limite:         filtro.Limit,
 	}, nil
+}
+
+// ObtenerPorID busca un producto específico por su identificador e incluye su historial de precios
+func (s *productoService) ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return nil, ErrProductoNoEncontrado
+	}
+
+	producto, err := s.repo.ObtenerPorID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if producto == nil {
+		return nil, ErrProductoNoEncontrado
+	}
+
+	return producto, nil
 }

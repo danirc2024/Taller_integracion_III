@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -86,4 +87,34 @@ func (h *ProductoHandler) ObtenerProductos(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, resultado)
+}
+
+// ObtenerDetalleProducto godoc
+// @Summary      Consulta detalle de producto y su historial de precios
+// @Description  Obtiene la información completa de un producto por su ID junto con el historial de precios capturados
+// @Tags         productos
+// @Produce      json
+// @Param        id   path      string  true  "ID del producto (UUID)"
+// @Success      200  {object}  domain.ProductoDetalleDTO
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /api/v1/productos/{id} [get]
+func (h *ProductoHandler) ObtenerDetalleProducto(c *gin.Context) {
+	id := c.Param("id")
+
+	producto, err := h.service.ObtenerPorID(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, services.ErrProductoNoEncontrado) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "Producto no encontrado",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error interno al obtener el detalle del producto",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, producto)
 }

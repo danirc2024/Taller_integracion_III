@@ -9,11 +9,12 @@ import (
 )
 
 // RegistrarRutasProductos conecta la inyección de dependencias de la capa de productos
-// y expone el endpoint público de catálogo bajo /api/v1/productos sin requerir autenticación
+// y expone los endpoints públicos de catálogo y detalle bajo /api/v1/productos
 func RegistrarRutasProductos(rg *gin.RouterGroup, db *gorm.DB) {
 	productoRepo := repositories.NewProductoRepository(db)
 	productoService := services.NewProductoService(productoRepo)
 	productoHandler := handlers.NewProductoHandler(productoService)
 
 	rg.GET("/productos", productoHandler.ObtenerProductos)
+	rg.GET("/productos/:id", productoHandler.ObtenerDetalleProducto)
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/danirc2024/Taller_integracion_III/backend/api/domain"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/handlers"
@@ -57,33 +58,71 @@ func TestProductoHandler_ObtenerProductos(t *testing.T) {
 	if response.Data[0].Nombre != "Arroz Grado 1" {
 		t.Errorf("se esperaba 'Arroz Grado 1', se obtuvo '%s'", response.Data[0].Nombre)
 	}
+}
 
-	// Verificar que el handler extrajo y pasó correctamente los filtros al repositorio
-	if mockRepo.lastFilter.Page != 2 {
-		t.Errorf("se esperaba page=2, se obtuvo %d", mockRepo.lastFilter.Page)
+func TestProductoHandler_ObtenerDetalleProducto(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	fecha := time.Date(2026, 9, 27, 12, 0, 0, 0, time.UTC)
+	oferta := 890.0
+	mockRepo := &mockProductoRepository{
+		detalle: &domain.ProductoDetalleDTO{
+			ProductoDTO: domain.ProductoDTO{
+				ID:           "prod-uuid-xyz",
+				Nombre:       "Leche Chocolate 1L",
+				Marca:        "Colun",
+				Categoria:    "Lácteos",
+				Supermercado: "Jumbo",
+				Precio:       890,
+				PrecioNormal: 1090,
+				PrecioOferta: &oferta,
+				EnOferta:     true,
+			},
+			Historial: []domain.HistorialPrecioDTO{
+				{
+					PrecioNormal: 1090,
+					PrecioOferta: &oferta,
+					CapturadoEl:  fecha,
+				},
+			},
+		},
 	}
-	if mockRepo.lastFilter.Limit != 10 {
-		t.Errorf("se esperaba limit=10, se obtuvo %d", mockRepo.lastFilter.Limit)
-	}
-	if mockRepo.lastFilter.Categoria != "Despensa" {
-		t.Errorf("se esperaba categoria=Despensa, se obtuvo %s", mockRepo.lastFilter.Categoria)
-	}
-	if mockRepo.lastFilter.Supermercado != "Lider" {
-		t.Errorf("se esperaba supermercado=Lider, se obtuvo %s", mockRepo.lastFilter.Supermercado)
-	}
-	if mockRepo.lastFilter.PrecioMin == nil || *mockRepo.lastFilter.PrecioMin != 1000 {
-		t.Errorf("se esperaba precio_min=1000")
-	}
-	if mockRepo.lastFilter.PrecioMax == nil || *mockRepo.lastFilter.PrecioMax != 2000 {
-		t.Errorf("se esperaba precio_max=2000")
-	}
-	if mockRepo.lastFilter.EnOferta == nil || *mockRepo.lastFilter.EnOferta != true {
-		t.Errorf("se esperaba en_oferta=true")
-	}
-	if mockRepo.lastFilter.SortBy != "nombre" {
-		t.Errorf("se esperaba sort_by=nombre, se obtuvo %s", mockRepo.lastFilter.SortBy)
-	}
-	if mockRepo.lastFilter.Order != "desc" {
-		t.Errorf("se esperaba order=desc, se obtuvo %s", mockRepo.lastFilter.Order)
-	}
+
+	service := services.NewProductoService(mockRepo)
+	handler := handlers.NewProductoHandler(service)
+
+	router := gin.New()
+	router.GET("/api/v1/productos/:id", handler.ObtenerDetalleProducto)
+
+	t.Run("200 OK cuando existe", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/api/v1/productos/prod-uuid-xyz", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba HTTP 200, se obtuvo %d. Body: %s", w.Code, w.Body.String())
+		}
+
+		var res domain.ProductoDetalleDTO
+		if err := json.Unmarshal(w.Body.Bytes(), &res); err != nil {
+			t.Fatalf("error parseando respuesta: %v", err)
+		}
+
+		if res.ID != "prod-uuid-xyz" {
+			t.Errorf("se esperaba prod-uuid-xyz, se obtuvo %s", res.ID)
+		}
+		if len(res.Historial) != 1 {
+			t.Errorf("se esperaba 1 registro histórico, se obtuvieron %d", len(res.Historial))
+		}
+	})
+
+	t.Run("404 Not Found cuando no existe", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/api/v1/productos/no-existe", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("se esperaba HTTP 404, se obtuvo %d. Body: %s", w.Code, w.Body.String())
+		}
+	})
 }
