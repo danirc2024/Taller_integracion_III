@@ -1,5 +1,14 @@
 basePath: /
 definitions:
+  domain.HistorialPrecioDTO:
+    properties:
+      capturado_el:
+        type: string
+      precio_normal:
+        type: number
+      precio_oferta:
+        type: number
+    type: object
   domain.MetadatosPaginacionDTO:
     properties:
       limite:
@@ -36,6 +45,37 @@ definitions:
         type: boolean
       en_stock:
         type: boolean
+      id:
+        type: string
+      marca:
+        type: string
+      nombre:
+        type: string
+      precio:
+        type: number
+      precio_normal:
+        type: number
+      precio_oferta:
+        type: number
+      supermercado:
+        type: string
+      unidad:
+        type: string
+      url_imagen:
+        type: string
+    type: object
+  domain.ProductoDetalleDTO:
+    properties:
+      categoria:
+        type: string
+      en_oferta:
+        type: boolean
+      en_stock:
+        type: boolean
+      historial:
+        items:
+          $ref: '#/definitions/domain.HistorialPrecioDTO'
+        type: array
       id:
         type: string
       marca:
@@ -320,6 +360,36 @@ paths:
             additionalProperties: true
             type: object
       summary: Catálogo y filtrado de productos
+      tags:
+      - productos
+  /api/v1/productos/{id}:
+    get:
+      description: Obtiene la información completa de un producto por su ID junto
+        con el historial de precios capturados
+      parameters:
+      - description: ID del producto (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ProductoDetalleDTO'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Consulta detalle de producto y su historial de precios
       tags:
       - productos
 swagger: "2.0"

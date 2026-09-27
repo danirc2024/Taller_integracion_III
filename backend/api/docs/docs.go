@@ -267,9 +267,66 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/productos/{id}": {
+            "get": {
+                "description": "Obtiene la información completa de un producto por su ID junto con el historial de precios capturados",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "productos"
+                ],
+                "summary": "Consulta detalle de producto y su historial de precios",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID del producto (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ProductoDetalleDTO"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "domain.HistorialPrecioDTO": {
+            "type": "object",
+            "properties": {
+                "capturado_el": {
+                    "type": "string"
+                },
+                "precio_normal": {
+                    "type": "number"
+                },
+                "precio_oferta": {
+                    "type": "number"
+                }
+            }
+        },
         "domain.MetadatosPaginacionDTO": {
             "type": "object",
             "properties": {
@@ -324,6 +381,53 @@ const docTemplate = `{
                 },
                 "en_stock": {
                     "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "marca": {
+                    "type": "string"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "precio": {
+                    "type": "number"
+                },
+                "precio_normal": {
+                    "type": "number"
+                },
+                "precio_oferta": {
+                    "type": "number"
+                },
+                "supermercado": {
+                    "type": "string"
+                },
+                "unidad": {
+                    "type": "string"
+                },
+                "url_imagen": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ProductoDetalleDTO": {
+            "type": "object",
+            "properties": {
+                "categoria": {
+                    "type": "string"
+                },
+                "en_oferta": {
+                    "type": "boolean"
+                },
+                "en_stock": {
+                    "type": "boolean"
+                },
+                "historial": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.HistorialPrecioDTO"
+                    }
                 },
                 "id": {
                     "type": "string"

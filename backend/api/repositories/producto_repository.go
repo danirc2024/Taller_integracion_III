@@ -12,6 +12,7 @@ import (
 // ProductoRepository define el contrato para operaciones sobre el catálogo de productos
 type ProductoRepository interface {
 	Listar(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoDTO, int64, error)
+	ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)
 }
 
 type gormProductoRepository struct {
@@ -121,4 +122,62 @@ func (r *gormProductoRepository) Listar(ctx context.Context, filtro domain.Filtr
 	}
 
 	return items, total, nil
+}
+
+// ObtenerPorID busca el producto por su UUID en scraper.productos_crudos e incluye su historial de precios
+func (r *gormProductoRepository) ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error) {
+	selectCols := `
+		pc.id::text AS id,
+		pc.titulo_crudo AS nombre,
+		COALESCE(pc.marca_cruda, '') AS marca,
+		COALESCE(pc.categoria_cruda, '') AS categoria,
+		cs.nombre AS supermercado,
+		COALESCE(cp.precio_oferta, cp.precio_normal, 0) AS precio,
+		COALESCE(cp.precio_normal, 0) AS precio_normal,
+		cp.precio_oferta,
+		(cp.precio_oferta IS NOT NULL AND cp.precio_oferta < cp.precio_normal) AS en_oferta,
+		COALESCE(pc.url_imagen, '') AS url_imagen,
+		COALESCE(pc.formato_crudo, '') AS unidad,
+		pc.en_stock
+	`
+
+	var baseProd domain.ProductoDTO
+	res := r.db.WithContext(ctx).
+		Table("scraper.productos_crudos pc").
+		Joins("JOIN scraper.sucursales_supermercado ss ON pc.sucursal_id = ss.id").
+		Joins("JOIN scraper.cadenas_supermercado cs ON ss.cadena_id = cs.id").
+		Joins("LEFT JOIN LATERAL (SELECT precio_normal, precio_oferta, esta_disponible FROM scraper.capturas_precios WHERE producto_crudo_id = pc.id ORDER BY capturado_el DESC LIMIT 1) cp ON true").
+		Where("pc.id::text = ?", id).
+		Select(selectCols).
+		Limit(1).
+		Scan(&baseProd)
+
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	if res.RowsAffected == 0 || baseProd.ID == "" {
+		return nil, nil
+	}
+
+	var historial []domain.HistorialPrecioDTO
+	err := r.db.WithContext(ctx).
+		Table("scraper.capturas_precios").
+		Where("producto_crudo_id::text = ?", id).
+		Order("capturado_el DESC").
+		Select("precio_normal, precio_oferta, capturado_el").
+		Scan(&historial).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	if historial == nil {
+		historial = []domain.HistorialPrecioDTO{}
+	}
+
+	return &domain.ProductoDetalleDTO{
+		ProductoDTO: baseProd,
+		Historial:   historial,
+	}, nil
 }

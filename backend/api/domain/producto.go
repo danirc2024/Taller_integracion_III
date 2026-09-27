@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 // FiltroProductosDTO define los criterios de filtrado, paginación y ordenamiento para el catálogo de productos.
 type FiltroProductosDTO struct {
 	Page         int      `json:"page" form:"page"`
@@ -46,4 +48,17 @@ type PaginaProductosDTO struct {
 	PaginaActual   int                    `json:"pagina_actual"`
 	TotalPaginas   int                    `json:"total_paginas"`
 	Limite         int                    `json:"limite"`
+}
+
+// HistorialPrecioDTO representa una captura histórica de precio para visualización y gráficas.
+type HistorialPrecioDTO struct {
+	PrecioNormal float64   `json:"precio_normal"`
+	PrecioOferta *float64  `json:"precio_oferta,omitempty"`
+	CapturadoEl  time.Time `json:"capturado_el"`
+}
+
+// ProductoDetalleDTO contiene la información base del producto junto con su historial de capturas de precio.
+type ProductoDetalleDTO struct {
+	ProductoDTO
+	Historial []HistorialPrecioDTO `json:"historial"`
 }
