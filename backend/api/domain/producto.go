@@ -1,0 +1,49 @@
+package domain
+
+// FiltroProductosDTO define los criterios de filtrado, paginación y ordenamiento para el catálogo de productos.
+type FiltroProductosDTO struct {
+	Page         int      `json:"page" form:"page"`
+	Limit        int      `json:"limit" form:"limit"`
+	Categoria    string   `json:"categoria" form:"categoria"`
+	Supermercado string   `json:"supermercado" form:"supermercado"`
+	Marca        string   `json:"marca" form:"marca"`
+	PrecioMin    *float64 `json:"precio_min" form:"precio_min"`
+	PrecioMax    *float64 `json:"precio_max" form:"precio_max"`
+	EnOferta     *bool    `json:"en_oferta" form:"en_oferta"`
+	SortBy       string   `json:"sort_by" form:"sort_by"`
+	Order        string   `json:"order" form:"order"`
+}
+
+// ProductoDTO representa el objeto de producto enriquecido para el catálogo de cara a la UI y clientes de la API.
+type ProductoDTO struct {
+	ID           string   `json:"id"`
+	Nombre       string   `json:"nombre"`
+	Marca        string   `json:"marca"`
+	Categoria    string   `json:"categoria"`
+	Supermercado string   `json:"supermercado"`
+	Precio       float64  `json:"precio"`
+	PrecioNormal float64  `json:"precio_normal"`
+	PrecioOferta *float64 `json:"precio_oferta,omitempty"`
+	EnOferta     bool     `json:"en_oferta"`
+	URLImagen    string   `json:"url_imagen"`
+	Unidad       string   `json:"unidad"`
+	EnStock      bool     `json:"en_stock"`
+}
+
+// MetadatosPaginacionDTO describe los metadatos de paginación devueltos en la respuesta.
+type MetadatosPaginacionDTO struct {
+	TotalRegistros int64 `json:"total_registros"`
+	PaginaActual   int   `json:"pagina_actual"`
+	TotalPaginas   int   `json:"total_paginas"`
+	Limite         int   `json:"limite"`
+}
+
+// PaginaProductosDTO estructura la respuesta completa del catálogo con la lista de productos y metadatos de paginación.
+type PaginaProductosDTO struct {
+	Data           []ProductoDTO          `json:"data"`
+	Paginacion     MetadatosPaginacionDTO `json:"paginacion"`
+	TotalRegistros int64                  `json:"total_registros"`
+	PaginaActual   int                    `json:"pagina_actual"`
+	TotalPaginas   int                    `json:"total_paginas"`
+	Limite         int                    `json:"limite"`
+}
