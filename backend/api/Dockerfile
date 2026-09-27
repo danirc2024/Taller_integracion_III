@@ -16,7 +16,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o api_gateway .
 FROM alpine:3.19
 
 WORKDIR /app
-RUN apk add --no-cache git gcc musl-dev && go install github.com/air-verse/air@latest
 
 # Agregar certificados para llamadas HTTPS
 RUN apk --no-cache add ca-certificates tzdata
