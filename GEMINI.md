@@ -75,8 +75,33 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 
 ## Mapa auto-generado: API Gateway (Go + Gin)
 
-**3 archivos .go** detectados
+**22 archivos .go** detectados
 
+
+### `cmd/seed_productos/main.go` (package main)
+
+- Structs: productoSemilla
+- `main()`
+
+### `domain/producto.go` (package domain)
+
+- Structs: FiltroProductosDTO, ProductoDTO, MetadatosPaginacionDTO, PaginaProductosDTO, HistorialPrecioDTO, ProductoDetalleDTO
+
+### `handlers/auth_handler.go` (package handlers)
+
+- Structs: RegistroRequest, RegistroResponse, LoginRequest, LoginResponse, AuthHandler
+- `NewAuthHandler(authService services.AuthService) *AuthHandler`
+- `(AuthHandler).RegistrarUsuario(c *gin.Context)`
+- `(AuthHandler).LoginUsuario(c *gin.Context)`
+- `(AuthHandler).PerfilUsuario(c *gin.Context)`
+
+### `handlers/producto_handler.go` (package handlers)
+
+- Structs: ProductoHandler
+- `NewProductoHandler(service services.ProductoService) *ProductoHandler`
+- `(ProductoHandler).ObtenerProductos(c *gin.Context)`
+- `(ProductoHandler).BuscarProductos(c *gin.Context)`
+- `(ProductoHandler).ObtenerDetalleProducto(c *gin.Context)`
 
 ### `infrastructure/models.go` (package infrastructure)
 
@@ -85,13 +110,119 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 ### `main.go` (package main)
 
 - `initDB()`
+- `initRedis()`
 - `setupRouter() *gin.Engine`
 - `RootHandler(c *gin.Context)`
 - `main()`
 
+### `middleware/error_handler.go` (package middleware)
+
+- Structs: RespuestaError
+- `ErrorHandler() gin.HandlerFunc`
+- `NotFoundHandler() gin.HandlerFunc`
+- `MethodNotAllowedHandler() gin.HandlerFunc`
+- `ResponderError(c *gin.Context, estado int, mensaje string, err error)`
+
+### `middleware/jwt_auth.go` (package middleware)
+
+- `RequireAuth() gin.HandlerFunc`
+
+### `middleware/rate_limit.go` (package middleware)
+
+- `RateLimiterIP(rdb *redis.Client, prefijo string, maxIntentos int64, ventana time.Duration) gin.HandlerFunc`
+- `RateLimitLogin(rdb *redis.Client) gin.HandlerFunc`
+
+### `repositories/producto_repository.go` (package repositories)
+
+- Structs: gormProductoRepository
+- `NewProductoRepository(db *gorm.DB) ProductoRepository`
+- `(gormProductoRepository).Listar(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoDTO, int64, error)`
+- `(gormProductoRepository).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
+
+### `repositories/usuario_repository.go` (package repositories)
+
+- Structs: gormUsuarioRepository
+- `NewUsuarioRepository(db *gorm.DB) UsuarioRepository`
+- `(gormUsuarioRepository).FindByEmail(ctx context.Context, email string) (*infrastructure.Usuario, error)`
+- `(gormUsuarioRepository).Create(ctx context.Context, usuario *infrastructure.Usuario) error`
+
+### `routes/auth_routes.go` (package routes)
+
+- `RegistrarRutasAuth(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client)`
+
+### `routes/producto_routes.go` (package routes)
+
+- `RegistrarRutasProductos(rg *gin.RouterGroup, db *gorm.DB)`
+
+### `services/auth_service.go` (package services)
+
+- Structs: RegistroDTO, UsuarioCreadoDTO, authService
+- `NewAuthService(usuarioRepo repositories.UsuarioRepository) AuthService`
+- `validarComplejidadPassword(password string) error`
+- `(authService).Registrar(ctx context.Context, input RegistroDTO) (*UsuarioCreadoDTO, error)`
+- `(authService).Login(correo, password string) (*infrastructure.Usuario, error)`
+- `(authService).LoginWithContext(ctx context.Context, correo, password string) (*infrastructure.Usuario, error)`
+
+### `services/producto_service.go` (package services)
+
+- Structs: productoService
+- `NewProductoService(repo repositories.ProductoRepository) ProductoService`
+- `(productoService).ObtenerCatalogo(ctx context.Context, filtro domain.FiltroProductosDTO) (*domain.PaginaProductosDTO, error)`
+- `(productoService).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
+
+### `tests/auth_service_test.go` (package tests)
+
+- Structs: mockUsuarioRepository
+- `newMockUsuarioRepository() *mockUsuarioRepository`
+- `(mockUsuarioRepository).FindByEmail(ctx context.Context, email string) (*infrastructure.Usuario, error)`
+- `(mockUsuarioRepository).Create(ctx context.Context, usuario *infrastructure.Usuario) error`
+- `TestAuthService_PasswordComplexity(t *testing.T)`
+- `TestAuthService_RegistroExitoso(t *testing.T)`
+- `TestAuthService_Login(t *testing.T)`
+
+### `tests/jwt_test.go` (package tests)
+
+- `TestJWT_GenerarYValidarToken(t *testing.T)`
+- `TestJWT_TokenInvalido(t *testing.T)`
+- `TestMiddleware_RequireAuth(t *testing.T)`
+
+### `tests/middleware_test.go` (package tests)
+
+- `init()`
+- `setupTestRouter() *gin.Engine`
+- `TestNotFoundHandler(t *testing.T)`
+- `TestMethodNotAllowedHandler(t *testing.T)`
+- `TestPanicRecoveryHandler(t *testing.T)`
+- `TestResponderError(t *testing.T)`
+
+### `tests/producto_handler_test.go` (package tests)
+
+- `TestProductoHandler_ObtenerProductos(t *testing.T)`
+- `TestProductoHandler_BuscarProductos(t *testing.T)`
+- `TestProductoHandler_ObtenerDetalleProducto(t *testing.T)`
+
+### `tests/producto_service_test.go` (package tests)
+
+- Structs: mockProductoRepository
+- `(mockProductoRepository).Listar(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoDTO, int64, error)`
+- `(mockProductoRepository).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
+- `TestProductoService_ValoresPorDefecto(t *testing.T)`
+- `TestProductoService_SanitizacionYLimites(t *testing.T)`
+- `TestProductoService_Busqueda_Minimo3Caracteres(t *testing.T)`
+- `TestProductoService_ObtenerPorID(t *testing.T)`
+
+### `utils/jwt.go` (package utils)
+
+- Structs: JWTClaims
+- `getJWTSecret() []byte`
+- `GenerarToken(usuarioID, rol, provider string) (string, error)`
+- `ValidarToken(tokenString string) (*jwt.Token, error)`
+
 ### `utils/security.go` (package utils)
 
 - `SanitizarInputBusqueda(input string) string`
+- `HashPassword(password string) (string, error)`
+- `CheckPasswordHash(password, hash string) bool`
 
 
 ## Mapa auto-generado: IA Conversacional (FastAPI)
@@ -226,7 +357,7 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 
 ## Mapa auto-generado: Scraper (Scrapy)
 
-**8 archivos .py** detectados
+**11 archivos .py** detectados
 
 
 ### `research/test_jumbo.py`
@@ -236,6 +367,57 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
   - `test_category_is_taken_from_url()`
   - `test_extracts_comparison_fields()`
   - `test_page_url_preserves_category()`
+  - `test_catalog_refresh_is_needed_when_never_updated()`
+  - `test_catalog_refresh_handles_naive_datetime_without_type_error()`
+  - `test_catalog_refresh_is_not_needed_while_fresh()`
+  - `test_product_refresh_is_needed_after_ttl()`
+  - `test_product_refresh_is_not_needed_while_fresh()`
+  - `test_refresh_decision_marks_stale_product()`
+  - `test_duplicate_refresh_request_is_skipped()`
+  - `test_scheduler_marks_catalog_as_stale_after_interval()`
+  - `test_queue_skips_duplicate_in_flight_refresh()`
+  - `test_queue_schedules_stale_product_refresh()`
+  - `test_queue_exposes_enqueued_product_for_processing()`
+  - `test_worker_processes_next_product_and_releases_in_flight_lock()`
+  - `test_worker_reports_failure_and_releases_in_flight_lock()`
+  - `test_worker_propagates_structured_failure_from_executor()`
+  - `test_worker_processes_all_pending_products()`
+  - `test_result_publisher_sends_item_to_injected_sender()`
+  - `test_result_publisher_reports_api_failure()`
+  - `test_refresh_flow_consumes_queue_and_publishes_result()`
+  - `test_scrapy_executor_runs_catalog_without_persisting_output_file()`
+  - `test_scrapy_executor_targets_product_url_for_queued_job()`
+  - `test_scheduler_decides_catalog_and_product_update_flow()`
+  - `test_scheduler_accepts_future_api_configuration()`
+  - `test_scheduler_can_force_catalog_refresh_from_manual_trigger()`
+  - `test_scrapy_settings_use_ethic_rate_limit()`
+  - `test_scrapy_retry_policy_handles_transient_errors()`
+  - `test_404_page_stops_pagination_cleanly()`
+
+### `scraper_core/freshness.py`
+
+- **class RefreshQueue**
+  - `__init__(product_ttl_seconds: int)`
+  - `in_flight_refreshes()`
+  - `mark_started(product_id)`
+  - `mark_finished(product_id)`
+  - `pop_next()`
+  - `enqueue(product_id, last_updated_at, product_url)`
+- **class RefreshWorker**
+  - `__init__(queue, executor)`
+  - `process_next()`
+  - `process_all()`
+- **class RefreshScheduler**
+  - `__init__(catalog_interval_seconds: int, product_ttl_seconds: int, enabled: bool)`
+  - `from_config(cls, config)`
+  - `catalog_needs_refresh(last_updated_at)`
+  - `product_needs_refresh(product_id, last_updated_at)`
+  - `build_catalog_and_product_plan(last_catalog_updated_at, product_id, last_product_updated_at, force_catalog_refresh)`
+- `_normalize_datetime(value)`
+- `should_refresh_catalog(last_updated_at, interval_seconds: int) → bool`
+- `should_refresh_product(last_updated_at, ttl_seconds: int) → bool`
+- `build_refresh_decision(product_id, last_updated_at, ttl_seconds: int)`
+- `should_skip_refresh(product_id, in_flight_refreshes)`
 
 ### `scraper_core/items.py`
 
@@ -257,10 +439,23 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
   - `process_exception(request, exception, spider)`
   - `spider_opened(spider)`
 
+### `scraper_core/output.py`
+
+- **class ScraperResultPublisher**
+  - `__init__(sender)`
+  - `publish(item)`
+
 ### `scraper_core/pipelines.py`
 
 - **class ScraperCorePipeline**
   - `process_item(item)`
+
+### `scraper_core/runtime.py`
+
+- **class ScrapyCommandExecutor**
+  - `__init__(command_runner, spider_name)`
+  - `__call__(job)`
+- `main()`
 
 ### `scraper_core/settings.py`
 
@@ -286,7 +481,7 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 
 ## Mapa auto-generado: Frontend (React + TypeScript)
 
-**44 archivos activos** (excluidos kebab-case obsoletos)
+**55 archivos activos** (excluidos kebab-case obsoletos)
 
 
 ### `core/routes.ts`
@@ -320,7 +515,7 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 ### `App.tsx`
 
 - Exports: App
-- Imports locales: ./layouts/MainLayout, ./pages/Chatbot, ./pages/Crowdsourcing, ./pages/Dashboard, ./pages/History, ./pages/Home, ./pages/Login, ./pages/Onboarding, ./pages/Profile, ./pages/RouteViewer
+- Imports locales: ./contexts/CartContext, ./layouts/MainLayout, ./pages/Chatbot, ./pages/Crowdsourcing, ./pages/Dashboard, ./pages/History, ./pages/Home, ./pages/Login, ./pages/Onboarding, ./pages/ProductDetail, ./pages/Profile, ./pages/RouteViewer
 
 ### `app/router.tsx`
 
@@ -332,6 +527,15 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 - Exports: BottomNav
 - Tipos: BottomNavProps
 - Imports locales: @/lib/utils
+
+### `components/CartSidebar.tsx`
+
+- Exports: CartSidebar
+- Imports locales: @/components/ui/button, @/contexts/CartContext, @/data/mock
+
+### `components/Footer.tsx`
+
+- Exports: Footer
 
 ### `components/ProductCard.tsx`
 
@@ -375,6 +579,50 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 - Exports: SocialButtons
 - Imports locales: @/components/ui/button
 
+### `components/landing/LandingCTA.tsx`
+
+- Exports: LandingCTA
+- Imports locales: @/components/ui/button
+
+### `components/landing/LandingFeatures.tsx`
+
+- Exports: LandingFeatures
+- Imports locales: @/data/landing.json
+
+### `components/landing/LandingFooter.tsx`
+
+- Exports: LandingFooter
+
+### `components/landing/LandingHero.tsx`
+
+- Exports: LandingHero
+- Imports locales: @/components/ui/button, @/data/landing.json
+
+### `components/landing/LandingNavbar.tsx`
+
+- Exports: LandingNavbar
+- Imports locales: @/components/ui/button, @/data/landing.json
+
+### `components/landing/LandingSavings.tsx`
+
+- Exports: LandingSavings
+- Imports locales: @/components/ui/button, @/data/landing.json
+
+### `components/landing/LandingStores.tsx`
+
+- Exports: LandingStores
+- Imports locales: @/data/landing.json
+
+### `components/landing/LandingTrustStrip.tsx`
+
+- Exports: LandingTrustStrip
+- Imports locales: @/data/landing.json
+
+### `components/landing/LandingWorks.tsx`
+
+- Exports: LandingHowItWorks
+- Imports locales: @/data/landing.json
+
 ### `components/onboarding/OnboardingWizard.tsx`
 
 - Exports: OnboardingWizard
@@ -403,12 +651,6 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 - Tipos: Chain, StepSupermarketsProps
 - Imports locales: @/lib/utils
 
-### `components/side-bar.tsx`
-
-- Exports: SideBar
-- Tipos: SideBarProps
-- Imports locales: @/components/ui/button, @/lib/data
-
 ### `components/ui/button.tsx`
 
 - Tipos: VariantProps
@@ -424,6 +666,12 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 - Tipos: VariantProps
 - Imports locales: @/lib/utils
 
+### `contexts/CartContext.tsx`
+
+- Exports: CartProvider, useCart
+- Tipos: CartContextType, CartItem
+- Imports locales: @/types
+
 ### `layouts/AppShell.tsx`
 
 - Exports: AppShell
@@ -434,7 +682,7 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 
 - Exports: MainLayout, useLayoutContext
 - Tipos: LayoutContextType
-- Imports locales: @/components/BottomNav, @/components/Sidebar, @/components/TopNav
+- Imports locales: @/components/CartSidebar, @/components/Sidebar, @/components/TopNav
 
 ### `pages/Chatbot.tsx`
 
@@ -445,23 +693,22 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 ### `pages/Crowdsourcing.tsx`
 
 - Exports: Crowdsourcing
-- Imports locales: @/data/mock, @/lib/utils
+- Imports locales: @/components/Footer, @/data/mock, @/lib/utils
 
 ### `pages/Dashboard.tsx`
 
-- Exports: Dashboard
-- Tipos: MapStop
-- Imports locales: @/components/ProductCard, @/components/RouteMap, @/data/mock, @/layouts/MainLayout, @/types
+- Exports: Page
+- Imports locales: @/components/Footer, @/components/ProductCard, @/contexts/CartContext, @/data/mock, @/layouts/MainLayout, @/types
 
 ### `pages/History.tsx`
 
 - Exports: History
-- Imports locales: @/lib/utils
+- Imports locales: @/components/Footer, @/lib/utils
 
 ### `pages/Home.tsx`
 
 - Exports: Home
-- Imports locales: @/components/ui/button, @/core/routes
+- Imports locales: @/components/landing/LandingCTA, @/components/landing/LandingFeatures, @/components/landing/LandingFooter, @/components/landing/LandingHero, @/components/landing/LandingNavbar, @/components/landing/LandingSavings, @/components/landing/LandingStores, @/components/landing/LandingTrustStrip, @/components/landing/LandingWorks
 
 ### `pages/Login.tsx`
 
@@ -481,7 +728,8 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 ### `pages/ProductDetail.tsx`
 
 - Exports: ProductDetail
-- Imports locales: @/components/ui/button, @/core/routes, @/data/mock
+- Tipos: RelatedItem
+- Imports locales: @/components/Footer, @/components/ui/button, @/contexts/CartContext, @/data/mock
 
 ### `pages/Profile.tsx`
 
