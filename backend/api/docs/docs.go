@@ -191,6 +191,12 @@ const docTemplate = `{
                 "summary": "Catálogo y filtrado de productos",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Búsqueda por texto libre",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "Número de página (default: 1)",
                         "name": "page",
@@ -256,6 +262,68 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/domain.PaginaProductosDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/productos/buscar": {
+            "get": {
+                "description": "Busca productos que coincidan parcialmente en título, marca o categoría con el parámetro 'q' (mínimo 3 caracteres obligatorios).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "productos"
+                ],
+                "summary": "Búsqueda de productos por término",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Término de búsqueda (mínimo 3 caracteres)",
+                        "name": "q",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Número de página (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Cantidad de productos por página (default: 20)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.PaginaProductosDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "500": {

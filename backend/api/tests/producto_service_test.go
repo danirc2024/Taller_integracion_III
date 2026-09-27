@@ -113,6 +113,49 @@ func TestProductoService_SanitizacionYLimites(t *testing.T) {
 	}
 }
 
+func TestProductoService_Busqueda_Minimo3Caracteres(t *testing.T) {
+	mockRepo := &mockProductoRepository{
+		items: []domain.ProductoDTO{
+			{ID: "p1", Nombre: "Leche Colun", Precio: 1000},
+		},
+		total: 1,
+	}
+
+	service := services.NewProductoService(mockRepo)
+
+	casosError := []struct {
+		nombre string
+		query  string
+	}{
+		{"2 letras", "le"},
+		{"1 letra", "a"},
+		{"espacios con 2 letras", "  ab  "},
+		{"caracteres especiales sanitizados que quedan cortos", "!@#ab$$%"},
+	}
+
+	for _, tc := range casosError {
+		t.Run(tc.nombre, func(t *testing.T) {
+			_, err := service.ObtenerCatalogo(context.Background(), domain.FiltroProductosDTO{Query: tc.query})
+			if !errors.Is(err, services.ErrBusquedaCorta) {
+				t.Errorf("para '%s' se esperaba ErrBusquedaCorta, se obtuvo %v", tc.query, err)
+			}
+		})
+	}
+
+	t.Run("3 letras validas", func(t *testing.T) {
+		res, err := service.ObtenerCatalogo(context.Background(), domain.FiltroProductosDTO{Query: "lec"})
+		if err != nil {
+			t.Fatalf("se esperaba exito, se obtuvo error: %v", err)
+		}
+		if res.TotalRegistros != 1 {
+			t.Errorf("se esperaba 1 registro, se obtuvieron %d", res.TotalRegistros)
+		}
+		if mockRepo.lastFilter.Query != "lec" {
+			t.Errorf("se esperaba query 'lec', se obtuvo '%s'", mockRepo.lastFilter.Query)
+		}
+	})
+}
+
 func TestProductoService_ObtenerPorID(t *testing.T) {
 	fecha := time.Date(2026, 9, 27, 10, 0, 0, 0, time.UTC)
 	oferta := 990.0

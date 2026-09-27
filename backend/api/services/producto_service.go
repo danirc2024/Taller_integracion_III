@@ -11,8 +11,11 @@ import (
 	"github.com/danirc2024/Taller_integracion_III/backend/api/utils"
 )
 
-// ErrProductoNoEncontrado se retorna cuando no existe el producto solicitado en la base de datos
-var ErrProductoNoEncontrado = errors.New("producto no encontrado")
+// Errores del servicio de productos
+var (
+	ErrProductoNoEncontrado = errors.New("producto no encontrado")
+	ErrBusquedaCorta        = errors.New("el término de búsqueda debe tener al menos 3 caracteres")
+)
 
 // ProductoService define el contrato para la lógica de negocio del catálogo de productos
 type ProductoService interface {
@@ -31,7 +34,15 @@ func NewProductoService(repo repositories.ProductoRepository) ProductoService {
 
 // ObtenerCatalogo valida parámetros, aplica valores por defecto y sanitización, y obtiene los productos paginados
 func (s *productoService) ObtenerCatalogo(ctx context.Context, filtro domain.FiltroProductosDTO) (*domain.PaginaProductosDTO, error) {
-	// 1. Valores por defecto para paginación
+	// 1. Validación y sanitización del término de búsqueda general
+	if strings.TrimSpace(filtro.Query) != "" {
+		filtro.Query = utils.SanitizarInputBusqueda(filtro.Query)
+		if len(filtro.Query) < 3 {
+			return nil, ErrBusquedaCorta
+		}
+	}
+
+	// 2. Valores por defecto para paginación
 	if filtro.Page < 1 {
 		filtro.Page = 1
 	}
@@ -41,7 +52,7 @@ func (s *productoService) ObtenerCatalogo(ctx context.Context, filtro domain.Fil
 		filtro.Limit = 100
 	}
 
-	// 2. Valores por defecto para ordenamiento
+	// 3. Valores por defecto para ordenamiento
 	filtro.SortBy = strings.ToLower(strings.TrimSpace(filtro.SortBy))
 	if filtro.SortBy != "precio" && filtro.SortBy != "nombre" && filtro.SortBy != "marca" {
 		filtro.SortBy = "precio"
@@ -52,7 +63,7 @@ func (s *productoService) ObtenerCatalogo(ctx context.Context, filtro domain.Fil
 		filtro.Order = "asc"
 	}
 
-	// 3. Sanitización de textos para prevenir ataques XSS o inyecciones
+	// 4. Sanitización de textos para prevenir ataques XSS o inyecciones
 	if filtro.Categoria != "" {
 		filtro.Categoria = utils.SanitizarInputBusqueda(filtro.Categoria)
 	}
@@ -63,13 +74,13 @@ func (s *productoService) ObtenerCatalogo(ctx context.Context, filtro domain.Fil
 		filtro.Marca = utils.SanitizarInputBusqueda(filtro.Marca)
 	}
 
-	// 4. Invocar repositorio
+	// 5. Invocar repositorio
 	productos, totalRegistros, err := s.repo.Listar(ctx, filtro)
 	if err != nil {
 		return nil, err
 	}
 
-	// 5. Cálculo de metadatos de paginación
+	// 6. Cálculo de metadatos de paginación
 	totalPaginas := 0
 	if totalRegistros > 0 {
 		totalPaginas = int(math.Ceil(float64(totalRegistros) / float64(filtro.Limit)))

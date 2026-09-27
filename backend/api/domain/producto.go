@@ -4,6 +4,7 @@ import "time"
 
 // FiltroProductosDTO define los criterios de filtrado, paginación y ordenamiento para el catálogo de productos.
 type FiltroProductosDTO struct {
+	Query        string   `json:"q" form:"q"`
 	Page         int      `json:"page" form:"page"`
 	Limit        int      `json:"limit" form:"limit"`
 	Categoria    string   `json:"categoria" form:"categoria"`

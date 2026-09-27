@@ -35,6 +35,11 @@ func (r *gormProductoRepository) Listar(ctx context.Context, filtro domain.Filtr
 		Joins("LEFT JOIN LATERAL (SELECT precio_normal, precio_oferta, esta_disponible FROM scraper.capturas_precios WHERE producto_crudo_id = pc.id ORDER BY capturado_el DESC LIMIT 1) cp ON true")
 
 	// 2. Encadenamiento dinámico de cláusulas .Where()
+	if filtro.Query != "" {
+		qPattern := "%" + filtro.Query + "%"
+		baseQuery = baseQuery.Where("(pc.titulo_crudo ILIKE ? OR pc.marca_cruda ILIKE ? OR pc.categoria_cruda ILIKE ?)", qPattern, qPattern, qPattern)
+	}
+
 	if filtro.Categoria != "" {
 		baseQuery = baseQuery.Where("pc.categoria_cruda ILIKE ?", "%"+filtro.Categoria+"%")
 	}
