@@ -1,5 +1,5 @@
 # Etapa 1: Construcción (Builder)
-FROM golang:1.23-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 RUN apk add --no-cache git gcc musl-dev && go install github.com/air-verse/air@latest
