@@ -9,7 +9,7 @@ metadata:
     # Opcional: nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-    - host: api.student-vmatus.dev.censei.cl
+    - host: api-vmatus.k8s-estudiantes.dev.censei.cl
       http:
         paths:
           - path: /
