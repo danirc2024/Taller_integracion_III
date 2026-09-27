@@ -1,5 +1,60 @@
 basePath: /
 definitions:
+  domain.MetadatosPaginacionDTO:
+    properties:
+      limite:
+        type: integer
+      pagina_actual:
+        type: integer
+      total_paginas:
+        type: integer
+      total_registros:
+        type: integer
+    type: object
+  domain.PaginaProductosDTO:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.ProductoDTO'
+        type: array
+      limite:
+        type: integer
+      pagina_actual:
+        type: integer
+      paginacion:
+        $ref: '#/definitions/domain.MetadatosPaginacionDTO'
+      total_paginas:
+        type: integer
+      total_registros:
+        type: integer
+    type: object
+  domain.ProductoDTO:
+    properties:
+      categoria:
+        type: string
+      en_oferta:
+        type: boolean
+      en_stock:
+        type: boolean
+      id:
+        type: string
+      marca:
+        type: string
+      nombre:
+        type: string
+      precio:
+        type: number
+      precio_normal:
+        type: number
+      precio_oferta:
+        type: number
+      supermercado:
+        type: string
+      unidad:
+        type: string
+      url_imagen:
+        type: string
+    type: object
   handlers.LoginRequest:
     properties:
       correo:
@@ -207,4 +262,64 @@ paths:
       summary: Registrar nuevo usuario con verificación
       tags:
       - auth
+  /api/v1/productos:
+    get:
+      description: Obtiene una lista paginada de productos con soporte para múltiples
+        filtros (categoría, supermercado, marca, rango de precio, en oferta) y ordenamiento.
+      parameters:
+      - description: 'Número de página (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Cantidad de productos por página (default: 20)'
+        in: query
+        name: limit
+        type: integer
+      - description: Filtrar por categoría
+        in: query
+        name: categoria
+        type: string
+      - description: Filtrar por supermercado o cadena
+        in: query
+        name: supermercado
+        type: string
+      - description: Filtrar por marca
+        in: query
+        name: marca
+        type: string
+      - description: Precio mínimo
+        in: query
+        name: precio_min
+        type: number
+      - description: Precio máximo
+        in: query
+        name: precio_max
+        type: number
+      - description: Filtrar solo productos en oferta
+        in: query
+        name: en_oferta
+        type: boolean
+      - description: Criterio de ordenamiento (precio, nombre, marca)
+        in: query
+        name: sort_by
+        type: string
+      - description: Dirección del orden (asc, desc)
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.PaginaProductosDTO'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Catálogo y filtrado de productos
+      tags:
+      - productos
 swagger: "2.0"

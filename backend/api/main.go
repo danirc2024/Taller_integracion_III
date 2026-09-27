@@ -110,6 +110,7 @@ func setupRouter() *gin.Engine {
 	// Grupo de rutas de la API v1
 	v1 := r.Group("/api/v1")
 	routes.RegistrarRutasAuth(v1, DB, RDB)
+	routes.RegistrarRutasProductos(v1, DB)
 
 	return r
 }
