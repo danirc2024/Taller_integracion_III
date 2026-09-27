@@ -22,7 +22,7 @@ research/
 ## Spider principal: JumboRscSpider [scraper_core/spiders/jumbo.py]
 
 - `name = "jumbo_rsc"`, `allowed_domains = ["jumbo.cl"]`
-- `max_pages = 20` por categoría
+- `max_pages = 100` por categoría
 - Extrae productos desde bloques `<script type="application/ld+json">`
 - Campos extraídos: nombre, precio, imagen
 - URLs de categorías desde: archivo txt + env JUMBO_CATEGORY_URLS + arg -a add_url

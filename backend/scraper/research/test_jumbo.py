@@ -108,6 +108,33 @@ class JumboExtractionTest(unittest.TestCase):
             url, "https://www.jumbo.cl/frutas-y-verduras/verduras?page=2"
         )
 
+    def test_catalog_pagination_stops_at_page_100(self):
+        spider = JumboRscSpider()
+        spider.max_pages = 100
+        response = TextResponse(
+            url="https://www.jumbo.cl/frutas-y-verduras?page=99",
+            request=Request(
+                "https://www.jumbo.cl/frutas-y-verduras?page=99",
+                meta={"category_url": "https://www.jumbo.cl/frutas-y-verduras", "page": 99},
+            ),
+            body=(
+                b'<script type="application/ld+json">'
+                b'{"@type":"Product","name":"Producto prueba",'
+                b'"offers":{"price":"100"}}'
+                b'</script>'
+            ),
+            encoding="utf-8",
+        )
+
+        results = list(spider.parse(response))
+
+        self.assertTrue(any(isinstance(result, Request) and "page=100" in result.url for result in results))
+
+        response.request.meta["page"] = 100
+        response = response.replace(url="https://www.jumbo.cl/frutas-y-verduras?page=100")
+        results = list(spider.parse(response))
+        self.assertFalse(any(isinstance(result, Request) for result in results))
+
     def test_product_url_starts_one_request_without_category_pagination(self):
         product_url = "https://www.jumbo.cl/p/lechuga"
         spider = JumboRscSpider(product_url=product_url)

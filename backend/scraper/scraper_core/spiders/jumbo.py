@@ -13,7 +13,7 @@ class JumboRscSpider(scrapy.Spider):
         "https://www.jumbo.cl/frutas-y-verduras/verduras",
     )
     category_file = Path(__file__).parents[2] / "research" / "jumbo_categories.txt"
-    max_pages = 20
+    max_pages = 100
     handle_httpstatus_list = [404]
 
     custom_settings = {
