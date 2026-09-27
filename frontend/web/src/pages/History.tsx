@@ -37,7 +37,7 @@ export default function History() {
  ]);
 
  return (
- <div className="flex flex-col h-[calc(100vh-4rem)] bg-background font-sans text-foreground overflow-hidden relative">
+ <div className="flex flex-col h-full bg-background font-sans text-foreground overflow-hidden relative">
  
  <header className="flex-none flex items-center justify-between px-4 py-4 bg-card border-b border-border shadow-sm z-10">
  <h1 className="font-bold text-lg">Historial de Listas</h1>

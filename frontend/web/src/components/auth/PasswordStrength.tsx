@@ -14,7 +14,7 @@ const LEVELS = [
   { label: "Muy débil", color: "bg-destructive" },
   { label: "Débil", color: "bg-destructive" },
   { label: "Aceptable", color: "bg-amber-500" },
-  { label: "Fuerte", color: "bg-brand" },
+  { label: "Fuerte", color: "bg-primary/80" },
   { label: "Excelente", color: "bg-primary" },
 ]
 

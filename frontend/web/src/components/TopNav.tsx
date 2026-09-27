@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, FormEvent, useEffect } from 'react'
 import { Menu, MapPin, Search, ShoppingBasket, SlidersHorizontal, Bot, User, LogOut, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Link, useNavigate } from 'react-router-dom'
+import { ROUTES } from '@/core/routes'
 
 type TopNavProps = {
     query: string
@@ -13,15 +14,26 @@ type TopNavProps = {
 
 export function TopNav({ query, onQueryChange, onMenuClick }: TopNavProps) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [localQuery, setLocalQuery] = useState(query);
     const navigate = useNavigate();
 
+    useEffect(() => {
+        setLocalQuery(query);
+    }, [query]);
+
+    const handleSearch = (e: FormEvent) => {
+        e.preventDefault();
+        onQueryChange(localQuery);
+        navigate(ROUTES.CATALOGO);
+    };
+
     return (
-        <header className="sticky top-0 z-[500] border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <header className="sticky top-0 z-[500] border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
             <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-4 md:gap-6 md:px-6">
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 shrink-0 rounded-full"
+                    className="hidden md:flex h-10 w-10 shrink-0 rounded-full"
                     onClick={onMenuClick}
                     aria-label="Abrir menú"
                 >
@@ -40,7 +52,7 @@ export function TopNav({ query, onQueryChange, onMenuClick }: TopNavProps) {
                 <form
                     role="search"
                     className="relative flex-1"
-                    onSubmit={(e) => e.preventDefault()}
+                    onSubmit={handleSearch}
                 >
                     <label htmlFor="product-search" className="sr-only">
                         Buscar productos
@@ -52,24 +64,26 @@ export function TopNav({ query, onQueryChange, onMenuClick }: TopNavProps) {
                     <input
                         id="product-search"
                         type="search"
-                        value={query}
-                        onChange={(e) => onQueryChange(e.target.value)}
+                        value={localQuery}
+                        onChange={(e) => setLocalQuery(e.target.value)}
                         placeholder="Busca leche, café, aceite…"
                         autoComplete="off"
-                        className="h-11 w-full rounded-full border border-input bg-background pl-12 pr-28 text-base outline-none transition-shadow placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                        className="h-11 w-full rounded-full border border-input bg-background pl-10 md:pl-12 pr-12 md:pr-28 text-sm md:text-base outline-none transition-shadow placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     />
                     <Button
                         type="submit"
                         size="sm"
-                        className="absolute right-1.5 top-1/2 h-8 -translate-y-1/2 hover:-translate-y-1/2 hover:shadow-none active:-translate-y-1/2 active:shadow-none rounded-full px-4"
+                        className="absolute right-1.5 top-1/2 h-8 w-8 md:w-auto -translate-y-1/2 hover:-translate-y-1/2 hover:scale-105 hover:brightness-110 active:-translate-y-1/2 active:scale-95 hover:shadow-none active:shadow-none rounded-full p-0 md:px-4 flex items-center justify-center transition-all"
+                        aria-label="Buscar"
                     >
-                        Buscar
+                        <span className="hidden md:inline">Buscar</span>
+                        <Search className="h-4 w-4 md:hidden" />
                     </Button>
                 </form>
 
                 <Link
                     to="/chat"
-                    className="hidden sm:flex items-center gap-2 h-11 px-4 rounded-full bg-primary hover:bg-primary text-primary-foreground font-semibold transition-colors shrink-0 shadow-sm"
+                    className="hidden sm:flex items-center gap-2 h-11 px-4 rounded-full bg-primary hover:brightness-110 hover:scale-105 text-primary-foreground font-semibold transition-all shrink-0 shadow-sm"
                 >
                     <Bot className="h-5 w-5" />
                     <span>Asistente IA</span>

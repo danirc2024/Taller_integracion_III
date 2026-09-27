@@ -7,9 +7,10 @@ import { ProgressSteps } from "./ProgressSteps"
 import { StepLocation } from "./StepLocation"
 import { StepSupermarkets } from "./StepSupermarkets"
 import { StepDiet } from "./StepDiet"
+import { StepProfile } from "./StepProfile"
 import { cn } from "@/lib/utils"
 
-const STEPS = ["Ubicación", "Supermercados", "Dieta"]
+const STEPS = ["Perfil", "Ubicación", "Supermercados", "Dieta"]
 
 export function OnboardingWizard() {
   const [step, setStep] = useState(0)
@@ -20,6 +21,8 @@ export function OnboardingWizard() {
   const [address, setAddress] = useState("")
   const [chains, setChains] = useState<string[]>([])
   const [diet, setDiet] = useState<string[]>([])
+  const [name, setName] = useState("")
+  const [avatarUrl, setAvatarUrl] = useState("https://api.dicebear.com/9.x/fun-emoji/svg?seed=Felix")
 
   function toggle(list: string[], setList: (v: string[]) => void, id: string) {
     setList(list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
@@ -87,11 +90,12 @@ export function OnboardingWizard() {
                   direction === "forward" ? "animate-in fade-in slide-in-from-right-6" : "animate-in fade-in slide-in-from-left-6",
                 )}
               >
-                {step === 0 && <StepLocation address={address} onAddressChange={setAddress} />}
-                {step === 1 && (
+                {step === 0 && <StepProfile name={name} onNameChange={setName} avatarUrl={avatarUrl} onAvatarChange={setAvatarUrl} />}
+                {step === 1 && <StepLocation address={address} onAddressChange={setAddress} />}
+                {step === 2 && (
                   <StepSupermarkets selected={chains} onToggle={(id) => toggle(chains, setChains, id)} />
                 )}
-                {step === 2 && <StepDiet selected={diet} onToggle={(id) => toggle(diet, setDiet, id)} />}
+                {step === 3 && <StepDiet selected={diet} onToggle={(id) => toggle(diet, setDiet, id)} />}
               </div>
             </div>
 

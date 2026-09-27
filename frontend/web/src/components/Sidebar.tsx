@@ -15,11 +15,12 @@ import {
  Bot,
  Map,
  Users,
- Home
+ Home,
+ Zap
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
-import { supermarkets } from '@/data/mock'
+import { supermarkets, mockUser } from '@/data/mock'
 
 type SideBarProps = {
  open: boolean
@@ -203,7 +204,7 @@ export function SideBar({
  <Link
  to="/chat"
  onClick={onClose}
- className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-primary dark:text-primary bg-primary dark:bg-primary hover:bg-primary dark:hover:bg-primary transition-colors"
+ className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 transition-colors"
  >
  <Bot className="h-4.5 w-4.5"aria-hidden="true"/>
  Chat Inteligente
@@ -344,7 +345,29 @@ export function SideBar({
  </div>
  </div>
 
- <div className="border-t border-border px-4 py-4">
+ <div className="border-t border-border px-4 py-4 space-y-3">
+ {/* Plan Container */}
+ <Link 
+ to="/planes"
+ onClick={onClose}
+ className="flex items-center justify-between rounded-xl border-2 border-border bg-card p-3 shadow-sm transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0px_var(--color-border)] group"
+ >
+ <div className="flex items-center gap-3">
+ <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${mockUser.plan === 'Plus' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-muted text-muted-foreground'}`}>
+ <Zap className="h-4 w-4" aria-hidden="true" />
+ </div>
+ <div className="flex flex-col text-left">
+ <span className="text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground">Tu Plan</span>
+ <span className={`text-sm font-bold ${mockUser.plan === 'Plus' ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}`}>
+ {mockUser.plan === 'Plus' ? 'Suscripción Plus' : 'Plan Básico'}
+ </span>
+ </div>
+ </div>
+ <span className="text-xs font-bold text-primary opacity-0 transition-opacity group-hover:opacity-100">
+ Mejorar
+ </span>
+ </Link>
+
  <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm text-muted-foreground">
  <MapPin className="h-4 w-4 text-primary"aria-hidden="true"/>
  Comparando en{' '}
