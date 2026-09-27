@@ -60,6 +60,77 @@ func TestProductoHandler_ObtenerProductos(t *testing.T) {
 	}
 }
 
+func TestProductoHandler_BuscarProductos(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockRepo := &mockProductoRepository{
+		items: []domain.ProductoDTO{
+			{
+				ID:           "prod-leche-1",
+				Nombre:       "Leche Entera Colun 1L",
+				Marca:        "Colun",
+				Categoria:    "Lácteos",
+				Supermercado: "Lider",
+				Precio:       990,
+				PrecioNormal: 1290,
+				EnOferta:     true,
+			},
+		},
+		total: 1,
+	}
+
+	service := services.NewProductoService(mockRepo)
+	handler := handlers.NewProductoHandler(service)
+
+	router := gin.New()
+	router.GET("/api/v1/productos/buscar", handler.BuscarProductos)
+
+	t.Run("400 Bad Request cuando falta parámetro q", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/api/v1/productos/buscar", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba HTTP 400, se obtuvo %d. Body: %s", w.Code, w.Body.String())
+		}
+	})
+
+	t.Run("400 Bad Request cuando q tiene menos de 3 caracteres", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/api/v1/productos/buscar?q=le", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba HTTP 400 por búsqueda corta, se obtuvo %d. Body: %s", w.Code, w.Body.String())
+		}
+	})
+
+	t.Run("200 OK con búsqueda válida de al menos 3 caracteres", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/api/v1/productos/buscar?q=leche&page=1&limit=5", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba HTTP 200, se obtuvo %d. Body: %s", w.Code, w.Body.String())
+		}
+
+		var res domain.PaginaProductosDTO
+		if err := json.Unmarshal(w.Body.Bytes(), &res); err != nil {
+			t.Fatalf("error parseando JSON: %v", err)
+		}
+
+		if len(res.Data) != 1 {
+			t.Fatalf("se esperaba 1 resultado, se obtuvieron %d", len(res.Data))
+		}
+		if res.Data[0].Nombre != "Leche Entera Colun 1L" {
+			t.Errorf("se esperaba 'Leche Entera Colun 1L', se obtuvo '%s'", res.Data[0].Nombre)
+		}
+		if mockRepo.lastFilter.Query != "leche" {
+			t.Errorf("se esperaba query 'leche', se obtuvo '%s'", mockRepo.lastFilter.Query)
+		}
+	})
+}
+
 func TestProductoHandler_ObtenerDetalleProducto(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

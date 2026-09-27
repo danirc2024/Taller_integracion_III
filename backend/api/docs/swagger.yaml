@@ -307,6 +307,10 @@ paths:
       description: Obtiene una lista paginada de productos con soporte para múltiples
         filtros (categoría, supermercado, marca, rango de precio, en oferta) y ordenamiento.
       parameters:
+      - description: Búsqueda por texto libre
+        in: query
+        name: q
+        type: string
       - description: 'Número de página (default: 1)'
         in: query
         name: page
@@ -354,6 +358,11 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/domain.PaginaProductosDTO'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
         "500":
           description: Internal Server Error
           schema:
@@ -390,6 +399,44 @@ paths:
             additionalProperties: true
             type: object
       summary: Consulta detalle de producto y su historial de precios
+      tags:
+      - productos
+  /api/v1/productos/buscar:
+    get:
+      description: Busca productos que coincidan parcialmente en título, marca o categoría
+        con el parámetro 'q' (mínimo 3 caracteres obligatorios).
+      parameters:
+      - description: Término de búsqueda (mínimo 3 caracteres)
+        in: query
+        name: q
+        required: true
+        type: string
+      - description: 'Número de página (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Cantidad de productos por página (default: 20)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.PaginaProductosDTO'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Búsqueda de productos por término
       tags:
       - productos
 swagger: "2.0"

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/danirc2024/Taller_integracion_III/backend/api/domain"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/services"
@@ -25,6 +26,7 @@ func NewProductoHandler(service services.ProductoService) *ProductoHandler {
 // @Description  Obtiene una lista paginada de productos con soporte para múltiples filtros (categoría, supermercado, marca, rango de precio, en oferta) y ordenamiento.
 // @Tags         productos
 // @Produce      json
+// @Param        q             query     string  false  "Búsqueda por texto libre"
 // @Param        page          query     int     false  "Número de página (default: 1)"
 // @Param        limit         query     int     false  "Cantidad de productos por página (default: 20)"
 // @Param        categoria     query     string  false  "Filtrar por categoría"
@@ -36,10 +38,13 @@ func NewProductoHandler(service services.ProductoService) *ProductoHandler {
 // @Param        sort_by       query     string  false  "Criterio de ordenamiento (precio, nombre, marca)"
 // @Param        order         query     string  false  "Dirección del orden (asc, desc)"
 // @Success      200           {object}  domain.PaginaProductosDTO
+// @Failure      400           {object}  map[string]interface{}
 // @Failure      500           {object}  map[string]interface{}
 // @Router       /api/v1/productos [get]
 func (h *ProductoHandler) ObtenerProductos(c *gin.Context) {
 	var filtro domain.FiltroProductosDTO
+
+	filtro.Query = c.Query("q")
 
 	if pageStr := c.Query("page"); pageStr != "" {
 		if page, err := strconv.Atoi(pageStr); err == nil {
@@ -80,8 +85,67 @@ func (h *ProductoHandler) ObtenerProductos(c *gin.Context) {
 
 	resultado, err := h.service.ObtenerCatalogo(c.Request.Context(), filtro)
 	if err != nil {
+		if errors.Is(err, services.ErrBusquedaCorta) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error interno al obtener los productos del catálogo",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, resultado)
+}
+
+// BuscarProductos godoc
+// @Summary      Búsqueda de productos por término
+// @Description  Busca productos que coincidan parcialmente en título, marca o categoría con el parámetro 'q' (mínimo 3 caracteres obligatorios).
+// @Tags         productos
+// @Produce      json
+// @Param        q      query     string  true   "Término de búsqueda (mínimo 3 caracteres)"
+// @Param        page   query     int     false  "Número de página (default: 1)"
+// @Param        limit  query     int     false  "Cantidad de productos por página (default: 20)"
+// @Success      200    {object}  domain.PaginaProductosDTO
+// @Failure      400    {object}  map[string]interface{}
+// @Failure      500    {object}  map[string]interface{}
+// @Router       /api/v1/productos/buscar [get]
+func (h *ProductoHandler) BuscarProductos(c *gin.Context) {
+	q := strings.TrimSpace(c.Query("q"))
+	if q == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "El parámetro de búsqueda 'q' es obligatorio",
+		})
+		return
+	}
+
+	var filtro domain.FiltroProductosDTO
+	filtro.Query = q
+
+	if pageStr := c.Query("page"); pageStr != "" {
+		if page, err := strconv.Atoi(pageStr); err == nil {
+			filtro.Page = page
+		}
+	}
+
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if limit, err := strconv.Atoi(limitStr); err == nil {
+			filtro.Limit = limit
+		}
+	}
+
+	resultado, err := h.service.ObtenerCatalogo(c.Request.Context(), filtro)
+	if err != nil {
+		if errors.Is(err, services.ErrBusquedaCorta) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error interno al buscar productos",
 		})
 		return
 	}
