@@ -21,6 +21,8 @@ services:
     build:
       context: ./backend/api
       dockerfile: Dockerfile
+      target: builder
+    command: ["air"]
     container_name: go_service_api
     ports:
       - "8080:8080"
