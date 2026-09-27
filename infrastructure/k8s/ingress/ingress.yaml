@@ -9,7 +9,7 @@ metadata:
     # Opcional: nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-    - host: api.student-vmatus.dev.censei.cl
+    - host: api-vmatus.k8s-estudiantes.dev.censei.cl
       http:
         paths:
           - path: /
@@ -19,13 +19,3 @@ spec:
                 name: api
                 port:
                   number: 8080
-    - host: rutahorro.student-vmatus.dev.censei.cl
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 3000
