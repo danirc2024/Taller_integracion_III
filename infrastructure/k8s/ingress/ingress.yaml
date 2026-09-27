@@ -19,13 +19,3 @@ spec:
                 name: api
                 port:
                   number: 8080
-    - host: rutahorro.student-vmatus.dev.censei.cl
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 3000
