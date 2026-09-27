@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: ghcr.io/danirc2024/taller_integracion_iii-api:latest
+          image: ghcr.io/danirc2024/taller_integracion_iii-api:develop
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
