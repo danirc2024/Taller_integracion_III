@@ -3,17 +3,20 @@
 Stack: React 19 + Go 1.26 (Gin/GORM) + Python 3.11 (FastAPI) + PostgreSQL 15/PostGIS + Docker
 Equipo: 6 integrantes, GitFlow estricto, Scrum semestral (UCT)
 
-## Arquitectura de Microservicios
+## Arquitectura Híbrida (Clúster + Local)
 
-```
-frontend/web/       → React 19 + Vite + TypeScript + Tailwind 4         (puerto 3000)
-backend/api/        → Go 1.26 + Gin + GORM, API Gateway                 (puerto 8080)
-backend/scraper/    → Python + Scrapy, extractor asíncrono               (standby worker)
-backend/motor_rutas/→ Python + FastAPI + OR-Tools + OTP                 (puerto 8001)
-backend/ia_conversacional/ → Python + FastAPI + Groq/Gemini              (puerto 8002)
+```text
+=== Servidor Local (Pentium) ===
+frontend/web/       → React 19 + Vite + TypeScript (Accesible vía Zapto)
+backend/bot_discord/→ Go Discord Bot (Se conecta a la API K8s)
+
+=== Clúster Kubernetes UCT ===
+backend/api/        → Go 1.26 + Gin + GORM (API Gateway, expuesto vía Ingress/Port-Forward)
+backend/scraper/    → Python + Scrapy (Standby worker)
+PostgreSQL / Redis  → Pods dedicados en el clúster
 ```
 
-Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas C++)
+Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (broker)
 
 ## Base de Datos (3 esquemas PostgreSQL)
 
