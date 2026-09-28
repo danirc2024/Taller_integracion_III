@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 
 import scrapy
 
@@ -13,7 +13,7 @@ class JumboRscSpider(scrapy.Spider):
         "https://www.jumbo.cl/frutas-y-verduras/verduras",
     )
     category_file = Path(__file__).parents[2] / "research" / "jumbo_categories.txt"
-    max_pages = 20
+    max_pages = 100
     handle_httpstatus_list = [404]
 
     custom_settings = {
@@ -48,22 +48,7 @@ class JumboRscSpider(scrapy.Spider):
             )
 
         for product in products:
-            yield {
-                "producto": product["producto"],
-                "precio": product["precio"],
-                "precio_normal": product["precio_normal"],
-                "precio_oferta": product["precio_oferta"],
-                "ean_gtin": product["ean_gtin"],
-                "sku": product["sku"],
-                "marca": product["marca"],
-                "formato_crudo": product["formato_crudo"],
-                "mecanica_promocion": product["mecanica_promocion"],
-                "en_stock": product["en_stock"],
-                "url_producto": product["url_producto"],
-                "imagen": product["imagen"],
-                "supermercado": "Jumbo",
-                "categoria": category,
-            }
+            yield self._to_scraped_item(product, category, response.url)
 
         if products and page < self.max_pages:
             next_url = self._page_url(category_url, page + 1)
@@ -81,6 +66,17 @@ class JumboRscSpider(scrapy.Spider):
             )
 
     def start_requests(self):
+        product_url = getattr(self, "product_url", None)
+        if product_url:
+            product_url = self._validate_product_url(product_url)
+            yield scrapy.Request(
+                product_url,
+                callback=self.parse_product,
+                errback=self.handle_error,
+                meta={"product_url": product_url},
+            )
+            return
+
         for url in self.start_urls:
             yield scrapy.Request(
                 url,
@@ -88,6 +84,78 @@ class JumboRscSpider(scrapy.Spider):
                 errback=self.handle_error,
                 meta={"category_url": url, "page": 1},
             )
+
+    def parse_product(self, response):
+        if response.status >= 400:
+            self.logger.error(
+                "No se pudo procesar producto %s (HTTP %s)",
+                response.url,
+                response.status,
+            )
+            return
+
+        products = self._extract_products(response)
+        if not products:
+            self.logger.warning(
+                "No se encontró información de producto en %s; el formato del sitio pudo cambiar",
+                response.url,
+            )
+            return
+
+        requested_url = response.meta.get("product_url", response.url)
+        requested_key = self._canonical_product_url(requested_url)
+        matching_products = [
+            product
+            for product in products
+            if isinstance(product["url_producto"], str)
+            and self._canonical_product_url(
+                urljoin(response.url, product["url_producto"])
+            )
+            == requested_key
+        ]
+        if matching_products:
+            product = matching_products[0]
+        elif len(products) == 1:
+            product = products[0]
+        else:
+            self.logger.error(
+                "La página %s contiene varios productos y no se pudo identificar la URL solicitada",
+                response.url,
+            )
+            return
+
+        yield self._to_scraped_item(product, "producto", response.url)
+
+    @staticmethod
+    def _to_scraped_item(product, category, response_url):
+        return {
+            "producto": product["producto"],
+            "precio": product["precio"],
+            "precio_normal": product["precio_normal"],
+            "precio_oferta": product["precio_oferta"],
+            "ean_gtin": product["ean_gtin"],
+            "sku": product["sku"],
+            "marca": product["marca"],
+            "formato_crudo": product["formato_crudo"],
+            "mecanica_promocion": product["mecanica_promocion"],
+            "en_stock": product["en_stock"],
+            "url_producto": product["url_producto"] or response_url,
+            "imagen": product["imagen"],
+            "supermercado": "Jumbo",
+            "categoria": category,
+        }
+
+    @staticmethod
+    def _validate_product_url(url):
+        parsed = urlparse(url)
+        if parsed.scheme != "https" or parsed.hostname not in {"jumbo.cl", "www.jumbo.cl"}:
+            raise ValueError("product_url debe ser una URL HTTPS pública de jumbo.cl")
+        return url
+
+    @staticmethod
+    def _canonical_product_url(url):
+        parsed = urlparse(url)
+        return parsed.hostname.lower() if parsed.hostname else None, parsed.path.rstrip("/")
 
     @staticmethod
     def _page_url(category_url, page):
@@ -188,6 +256,7 @@ class JumboRscSpider(scrapy.Spider):
                         image = entry.get("image")
                         if isinstance(image, list):
                             image = image[0] if image else None
+                        product_url = entry.get("url")
                         products.append(
                             {
                                 "producto": name,
@@ -211,7 +280,9 @@ class JumboRscSpider(scrapy.Spider):
                                     "offerDescription",
                                 ),
                                 "en_stock": JumboRscSpider._stock_value(availability),
-                                "url_producto": entry.get("url"),
+                                "url_producto": (
+                                    product_url if isinstance(product_url, str) else None
+                                ),
                                 "imagen": image if isinstance(image, str) else None,
                             }
                         )
