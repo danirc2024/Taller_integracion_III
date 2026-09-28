@@ -61,6 +61,36 @@ docker run --rm \
 	-O /salida/jumbo.json
 ```
 
+Para Santa Isabel, el spider usa las categorias verificadas en su sitemap y
+respeta `robots.txt`:
+
+```bash
+docker run --rm \
+	-v "$PWD/backend/scraper:/app" \
+	-v "$PWD:/salida" \
+	taller-integracion-scraper:local \
+	scrapy crawl santa_isabel_rsc \
+	-s JOBDIR= \
+	-O /salida/santa_isabel.json
+```
+
+El spider lee el estado SSR propio de Santa Isabel (`window.__renderData`),
+acepta categorias desde `research/santa_isabel_categories.txt` o desde
+`SANTA_ISABEL_CATEGORY_URLS`, y normaliza cada producto al esquema compartido.
+El valor `supermercado` de los items es `Santa Isabel`; no se usan URLs de
+producto que el marcado de la pagina atribuye a otra cadena.
+
+Para ejecutar ambos spiders en secuencia desde la raíz del repositorio y
+guardar cada catálogo por separado:
+
+```bash
+docker run --rm \
+	-v "$PWD/backend/scraper:/app" \
+	-v "$PWD:/salida" \
+	taller-integracion-scraper:local \
+	sh -c 'scrapy crawl jumbo_rsc -s JOBDIR= -O /salida/jumbo.json && scrapy crawl santa_isabel_rsc -s JOBDIR= -O /salida/santa_isabel.json'
+```
+
 El archivo queda en `jumbo.json` dentro de la carpeta desde la que se ejecuta
 el comando. Para obtener una prueba de un solo producto, agrega
 `-s CLOSESPIDER_ITEMCOUNT=1`.
