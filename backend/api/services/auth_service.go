@@ -13,7 +13,6 @@ import (
 	"github.com/danirc2024/Taller_integracion_III/backend/api/infrastructure"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/repositories"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/utils"
-	"github.com/google/uuid"
 )
 
 var (
