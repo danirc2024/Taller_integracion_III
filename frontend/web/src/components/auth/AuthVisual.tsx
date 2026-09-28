@@ -1,9 +1,10 @@
 import { Leaf, Route, ShoppingBag, TrendingDown } from "lucide-react"
+import { Link } from "react-router-dom"
 
 export function AuthVisual() {
   return (
     <div className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between bg-primary text-primary-foreground transition-colors duration-500">
-      
+
       {/* Brand */}
       <header className="relative z-10 flex items-center gap-2.5 p-10">
         <span className="flex size-10 items-center justify-center rounded-xl border-2 border-primary-foreground">
@@ -47,9 +48,8 @@ export function AuthVisual() {
             ].map((store) => (
               <div
                 key={store.name}
-                className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-bold border-2 ${
-                  store.best ? "border-primary-foreground bg-primary-foreground text-primary shadow-[4px_4px_0px_currentColor]" : "border-transparent opacity-70"
-                }`}
+                className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-bold border-2 ${store.best ? "border-primary-foreground bg-primary-foreground text-primary shadow-[4px_4px_0px_currentColor]" : "border-transparent opacity-70"
+                  }`}
               >
                 <span className="flex items-center gap-2">
                   {store.best && <Route className="size-4" />}
@@ -69,6 +69,10 @@ export function AuthVisual() {
         <span>+120 supermercados</span>
         <span className="size-1.5 rounded-full bg-primary-foreground" />
         <span>Precios actualizados cada hora</span>
+        <span className="size-1.5 rounded-full bg-primary-foreground" />
+        <Link to="/" className="hover:opacity-100 transition-opacity">
+          ¿Que ofrecemos?
+        </Link>
       </footer>
     </div>
   )

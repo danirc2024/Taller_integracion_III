@@ -5,8 +5,13 @@ import {
  User, Bot, Check, X, ShieldAlert, Loader2, Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { mockUser, products, supermarketById, formatPrice } from '@/data/mock';
+import { OutOfStockAlert } from '@/components/chatbot/OutOfStockAlert';
+import { RichRecipeCard } from '@/components/chatbot/RichRecipeCard';
+import { TypingIndicator } from '@/components/chatbot/TypingIndicator';
+import { useToast } from '@/contexts/ToastContext';
+import { useAuth } from '@/hooks/useAuth';
 
 type Message = {
  id: string;
@@ -14,10 +19,12 @@ type Message = {
  type: 'welcome' | 'text' | 'processing' | 'rich-recipe' | 'out-of-stock';
  content?: string;
  step?: number;
+ query?: string;
 };
 
-export default function Chatbot() {
- const [isGuest, setIsGuest] = useState(false);
+ export default function Chatbot() {
+ const navigate = useNavigate();
+ const { isGuest, user } = useAuth();
  const [showAuthModal, setShowAuthModal] = useState(false);
  const [inputValue, setInputValue] = useState('');
  const [messages, setMessages] = useState<Message[]>([
@@ -25,6 +32,11 @@ export default function Chatbot() {
  ]);
  const [isProcessing, setIsProcessing] = useState(false);
  const scrollRef = useRef<HTMLDivElement>(null);
+ const { toast } = useToast();
+
+ const handleAddToCart = () => {
+ toast("Ingredientes agregados a tu carrito", "success");
+ };
 
  // Auto-scroll to bottom
  useEffect(() => {
@@ -67,9 +79,9 @@ export default function Chatbot() {
  setMessages(prev => prev.filter(m => m.id !== processingId));
  
  if (isOutOfStockScenario) {
- setMessages(prev => [...prev, { id: (Date.now() + 2).toString(), role: 'assistant', type: 'out-of-stock' }]);
+ setMessages(prev => [...prev, { id: (Date.now() + 2).toString(), role: 'assistant', type: 'out-of-stock', query: text }]);
  } else {
- setMessages(prev => [...prev, { id: (Date.now() + 2).toString(), role: 'assistant', type: 'rich-recipe' }]);
+ setMessages(prev => [...prev, { id: (Date.now() + 2).toString(), role: 'assistant', type: 'rich-recipe', query: text }]);
  }
  }, 4500);
  };
@@ -89,9 +101,9 @@ export default function Chatbot() {
  <div>
  <h1 className="font-semibold text-base leading-tight">Chef & Shopper IA</h1>
  <div className="flex items-center gap-2 mt-0.5">
- <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary text-primary-foreground border-2 border-border shadow-[4px_4px_0px_var(--color-border)] border-2 border-border shadow-[4px_4px_0px_var(--color-border)]">
- <span className="w-1.5 h-1.5 rounded-full bg-primary mr-1.5"></span>
- Catálogos actualizados
+ <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-bold transition-colors border-2 border-border bg-primary text-primary-foreground shadow-[2px_2px_0px_var(--color-border)] sm:shadow-[4px_4px_0px_var(--color-border)] whitespace-nowrap">
+ <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground/50 mr-1.5"></span>
+ Catálogos al día
  </span>
  </div>
  </div>
@@ -100,7 +112,7 @@ export default function Chatbot() {
  <div className="flex items-center gap-2">
  <div className="hidden sm:flex group relative items-center justify-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium cursor-pointer hover:bg-accent transition-colors">
  <Sparkles className="h-3.5 w-3.5 mr-1.5 text-primary"/>
- Consultas IA: {mockUser.cuotaTokensIa}/5 disponibles
+ Consultas IA: {user?.cuota_tokens_ia ?? 0}/5 disponibles
  {/* Tooltip */}
  <div className="absolute top-full mt-2 w-48 rounded-md border border-border bg-card p-2 text-center text-xs text-muted-foreground opacity-0 shadow-md transition-opacity group-hover:opacity-100 pointer-events-none z-50">
  Conviértete en Colaborador para cuota extendida
@@ -108,15 +120,6 @@ export default function Chatbot() {
  </div>
 
  <div className="flex items-center gap-1 border-l border-border pl-2 ml-2">
- <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer mr-2">
- <input 
- type="checkbox"
- checked={isGuest} 
- onChange={(e) => setIsGuest(e.target.checked)}
- className="rounded border-input text-foreground focus:ring-ring"
- />
- Modo Guest
- </label>
  <button onClick={handleClear} className="p-2 rounded-md hover:bg-accent text-muted-foreground transition-colors"title="Vaciar chat">
  <Trash2 className="h-4 w-4"/>
  </button>
@@ -128,7 +131,7 @@ export default function Chatbot() {
  </header>
 
  {/* Main Chat Area */}
- <main ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-background scroll-smooth">
+ <main ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-hide p-4 sm:p-6 space-y-6 bg-background scroll-smooth">
  <div className="max-w-3xl mx-auto space-y-6">
  {messages.map((msg) => (
  <div key={msg.id} className={cn("flex gap-3 sm:gap-4", msg.role === 'user' ?"justify-end":"justify-start")}>
@@ -184,105 +187,18 @@ export default function Chatbot() {
  </div>
  <div className="flex items-center gap-3 text-sm">
  {msg.step! > 3 ? <CheckCircle2 className="h-4 w-4 text-foreground"/> : msg.step! === 3 ? <Loader2 className="h-4 w-4 animate-spin text-foreground"/> : <div className="h-4 w-4 rounded-full border-2 border-border"/>}
- <span className={msg.step! > 3 ?"text-foreground": msg.step! === 3 ?"text-foreground dark:text-foreground font-medium":"text-muted-foreground"}>Redactando alternativa más conveniente...</span>
+ <span className={msg.step! > 3 ?"text-foreground": msg.step! === 3 ?"text-foreground dark:text-foreground font-medium":"text-muted-foreground"}>Generando plan de ahorro...</span>
  </div>
+ <TypingIndicator className="mt-2" />
  </div>
  )}
 
  {msg.type === 'out-of-stock' && (
- <div className="rounded-lg border border-border bg-primary p-4 dark:border-border dark:bg-primary">
- <div className="flex items-start gap-3">
- <AlertTriangle className="h-5 w-5 text-primary dark:text-primary mt-0.5"/>
- <div>
- <h4 className="font-semibold text-primary dark:text-primary">Producto sin stock en la zona</h4>
- <p className="text-primary dark:text-primary/80 mt-1 leading-relaxed">
- No encontramos disponibilidad para 'Harina de Almendras 1kg' en ningún supermercado de Temuco en este momento. ¿Deseas buscar un reemplazo como Harina de Avena o Nuez?
- </p>
- <div className="flex gap-2 mt-3">
- <button className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-[4px_4px_0px_var(--color-border)] border-2 border-border-foreground shadow-[4px_4px_0px_var(--color-border)] border-2 border-border text-xs font-medium rounded-md transition-colors">
- Buscar reemplazos
- </button>
- </div>
- </div>
- </div>
- </div>
+   <OutOfStockAlert query={msg.query} />
  )}
 
  {msg.type === 'rich-recipe' && (
- <div className="space-y-5">
- <p className="leading-relaxed">
- ¡Excelente elección! He calculado la alternativa más económica para tu almuerzo saludable. Aquí tienes los ingredientes optimizados según los catálogos vigentes:
- </p>
- 
- <div className="space-y-2.5">
- {[
- { 
- name: products[0].name, 
- market: supermarketById(products[0].supermarketId)?.name ||"Supermercado", 
- marketColor: `bg-[${supermarketById(products[0].supermarketId)?.color}]/10 text-[${supermarketById(products[0].supermarketId)?.color}] border-[${supermarketById(products[0].supermarketId)?.color}]/20`, 
- price: formatPrice(products[0].price), 
- stock: true 
- },
- { 
- name: products[1].name, 
- market: supermarketById(products[1].supermarketId)?.name ||"Supermercado", 
- marketColor: `bg-[${supermarketById(products[1].supermarketId)?.color}]/10 text-[${supermarketById(products[1].supermarketId)?.color}] border-[${supermarketById(products[1].supermarketId)?.color}]/20`, 
- price: formatPrice(products[1].price), 
- stock: true 
- },
- { 
- name: products[3].name, 
- market: supermarketById(products[3].supermarketId)?.name ||"Supermercado", 
- marketColor: `bg-[${supermarketById(products[3].supermarketId)?.color}]/10 text-[${supermarketById(products[3].supermarketId)?.color}] border-[${supermarketById(products[3].supermarketId)?.color}]/20`, 
- price: formatPrice(products[3].price), 
- stock: false, 
- substitute:"Sustituto sugerido: Cous Cous"
- }
- ].map((item, idx) => (
- <div key={idx} className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between p-3 rounded-xl border border-border bg-background hover:border-border dark:hover:border-border transition-colors">
- <div className="flex gap-3 items-start sm:items-center">
- <input type="checkbox"defaultChecked className="mt-1 sm:mt-0 h-4 w-4 rounded border-input text-foreground focus:ring-ring"/>
- <div>
- <p className="font-medium text-sm">{item.name}</p>
- <div className="flex flex-wrap items-center gap-2 mt-1.5">
- <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider", item.marketColor)}>
- {item.market}
- </span>
- {item.stock ? (
- <span className="inline-flex items-center text-[10px] font-medium text-foreground dark:text-foreground">
- <Check className="h-3 w-3 mr-0.5"/> En stock
- </span>
- ) : (
- <span className="inline-flex items-center text-[10px] font-medium text-primary dark:text-primary">
- <RefreshCw className="h-3 w-3 mr-0.5"/> {item.substitute}
- </span>
- )}
- </div>
- </div>
- </div>
- <div className="font-semibold self-end sm:self-auto shrink-0 bg-background px-2 py-1 rounded-md border border-border shadow-sm">
- {item.price}
- </div>
- </div>
- ))}
- </div>
-
- <div className="rounded-xl bg-gradient-to-br from-secondary to-background p-0.5 shadow-lg">
- <div className="rounded-[10px] bg-card p-4 h-full">
- <div className="flex justify-between items-center mb-4">
- <span className="text-muted-foreground font-medium">Subtotal Estimado</span>
- <span className="text-2xl font-bold text-foreground dark:text-foreground">$10.870</span>
- </div>
- <Link 
- to="/route"
- className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary text-primary-foreground border-2 border-border shadow-[4px_4px_0px_var(--color-border)] py-2.5 px-4 rounded-lg font-medium transition-colors shadow-sm focus:ring-2 focus:ring-ring focus:ring-offset-2 dark:focus:ring-offset-zinc-900"
- >
- <MapPin className="h-4 w-4"/>
- Calcular Ruta Óptima
- </Link>
- </div>
- </div>
- </div>
+   <RichRecipeCard onAddToCart={handleAddToCart} />
  )}
  </div>
 
@@ -349,14 +265,14 @@ export default function Chatbot() {
  
  <div className="pt-4 space-y-3">
  <button 
- onClick={() => setShowAuthModal(false)}
- className="w-full bg-primary hover:bg-primary text-primary-foreground border-2 border-border shadow-[4px_4px_0px_var(--color-border)] font-medium py-2.5 rounded-xl transition-colors"
+ onClick={() => navigate('/login')}
+ className="w-full bg-primary hover:bg-primary text-primary-foreground border-2 border-border shadow-[4px_4px_0px_var(--color-border)] font-medium py-2.5 rounded-xl transition-colors cursor-pointer"
  >
  Iniciar Sesión
  </button>
  <button 
- onClick={() => setShowAuthModal(false)}
- className="w-full bg-background border border-border hover:bg-accent text-foreground font-medium py-2.5 rounded-xl transition-colors"
+ onClick={() => navigate('/login', { state: { tab: 'signup' } })}
+ className="w-full bg-background border border-border hover:bg-accent text-foreground font-medium py-2.5 rounded-xl transition-colors cursor-pointer"
  >
  Crear Cuenta Gratuita
  </button>

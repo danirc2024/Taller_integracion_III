@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useMemo } from 'react'
 import type { UiProduct as Product } from '@/types'
+import { useToast } from '@/contexts/ToastContext'
 
 export type CartItem = {
   product: Product
@@ -24,6 +25,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const [isCartOpen, setIsCartOpen] = useState(false)
 
+  const { toast } = useToast()
+
   const addToCart = (product: Product) => {
     setItems((current) => {
       const existing = current.find((item) => item.product.id === product.id)
@@ -36,7 +39,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...current, { product, quantity: 1 }]
     })
-    setIsCartOpen(true) // Automatically open cart when adding
+    toast(`${product.name} agregado a tu lista`, "success")
   }
 
   const removeFromCart = (productId: string) => {

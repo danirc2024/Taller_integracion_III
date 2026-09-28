@@ -2,8 +2,12 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { ROUTES, MOCK_ROUTES } from '@/core/routes';
 
 // Layouts
-import {MainLayout} from '@/layouts/MainLayout';
+import { MainLayout } from '@/layouts/MainLayout';
 import AppShell from '@/layouts/AppShell';
+import { CartProvider } from '@/contexts/CartContext';
+import { ToastProvider } from '@/contexts/ToastContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 // Sprint 1 — vistas funcionales
 import Home from '@/pages/Home';
@@ -20,6 +24,7 @@ import Crowdsourcing from '@/pages/Crowdsourcing';
 import RouteViewer from '@/pages/RouteViewer';
 import History from '@/pages/History';
 import MockShell from '@/pages/mocks/MockShell';
+import Planes from '@/pages/Planes';
 
 const chatSprint = MOCK_ROUTES[ROUTES.CHAT];
 const colabSprint = MOCK_ROUTES[ROUTES.COLABORADOR];
@@ -35,7 +40,6 @@ const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       // Sprint 1
-      { path: ROUTES.HOME, element: <Home /> },
       { path: ROUTES.CATALOGO, element: <Dashboard /> },
       { path: '/producto/:id', element: <ProductDetail /> },
 
@@ -52,49 +56,69 @@ const router = createBrowserRouter([
   },
 
   // ───────────────────────────────────────────────────────────
-  // Grupo B: AppShell (BottomNav + página con header propio)
+  // Grupo B: MainLayout (BottomNav + página con header propio + SideBar global) - PROTEGIDAS
   // ───────────────────────────────────────────────────────────
   {
-    element: <AppShell />,
+    element: <MainLayout />,
     children: [
-      { path: ROUTES.PERFIL, element: <Profile /> },
       {
-        path: ROUTES.COLABORADOR,
-        element: (
-          <MockShell sprint={colabSprint}>
-            <Crowdsourcing />
-          </MockShell>
-        ),
-      },
-      {
-        path: ROUTES.RUTA,
-        element: (
-          <MockShell sprint={rutaSprint}>
-            <RouteViewer />
-          </MockShell>
-        ),
-      },
-      {
-        path: ROUTES.HISTORIAL,
-        element: (
-          <MockShell sprint={histSprint}>
-            <History />
-          </MockShell>
-        ),
-      },
+        element: <ProtectedRoute />,
+        children: [
+          { path: ROUTES.PERFIL, element: <Profile /> },
+          { path: ROUTES.PLANES, element: <Planes /> },
+          {
+            path: ROUTES.COLABORADOR,
+            element: (
+              <MockShell sprint={colabSprint}>
+                <Crowdsourcing />
+              </MockShell>
+            ),
+          },
+          {
+            path: ROUTES.RUTA,
+            element: (
+              <MockShell sprint={rutaSprint}>
+                <RouteViewer />
+              </MockShell>
+            ),
+          },
+          {
+            path: ROUTES.HISTORIAL,
+            element: (
+              <MockShell sprint={histSprint}>
+                <History />
+              </MockShell>
+            ),
+          },
+        ]
+      }
     ],
   },
 
   // ───────────────────────────────────────────────────────────
   // Grupo C: sin layout (pantalla completa)
   // ───────────────────────────────────────────────────────────
+  { path: ROUTES.HOME, element: <Home /> },
   { path: ROUTES.LOGIN, element: <Login /> },
-  { path: ROUTES.ONBOARDING, element: <Onboarding /> },
+  { 
+    element: <ProtectedRoute />, 
+    children: [
+      { path: ROUTES.ONBOARDING, element: <Onboarding /> },
+    ]
+  },
 
   // Catch-all
   { path: '*', element: <NotFound /> },
 ]);
 
 export default function AppRouter() {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <ToastProvider>
+        <CartProvider>
+          <RouterProvider router={router} />
+        </CartProvider>
+      </ToastProvider>
+    </AuthProvider>
+  );
 }

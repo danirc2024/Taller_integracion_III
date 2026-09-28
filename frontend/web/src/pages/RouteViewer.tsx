@@ -5,6 +5,8 @@ import L from 'leaflet';
 import { ArrowLeft, MapPin, Navigation, TrendingDown, AlertTriangle, CheckCircle2, Car, Bus, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
+import { supermarkets, products } from '@/data/mock';
 
 // Fix Leaflet default icon issues in React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -17,8 +19,6 @@ L.Icon.Default.mergeOptions({
 // Temuco Coordinates
 const CENTER_LAT = -38.7359;
 const CENTER_LNG = -72.5904;
-
-import { supermarkets, products } from '@/data/mock';
 
 const STORES = supermarkets.map(s => {
  const storeProducts = products.filter(p => p.supermarketId === s.id);
@@ -38,6 +38,7 @@ export default function RouteViewer() {
  const [maxStops, setMaxStops] = useState(3);
  const [transportMode, setTransportMode] = useState<'car' | 'bus'>('car');
  const [activeStores, setActiveStores] = useState(STORES);
+ const [isCalculating, setIsCalculating] = useState(true);
 
  // Business Rules States
  const [productCost, setProductCost] = useState(0);
@@ -50,6 +51,7 @@ export default function RouteViewer() {
  const RENTABILITY_THRESHOLD = 500;
 
  useEffect(() => {
+ setIsCalculating(true);
  // Simulate Logic based on RN-00 (Objective Cost Function)
  const currentStores = STORES.slice(0, maxStops);
  setActiveStores(currentStores);
@@ -69,6 +71,8 @@ export default function RouteViewer() {
  const calculatedSavings = maxSingleStoreCost - (pCost + lCost);
  setSavings(calculatedSavings);
 
+ const timer = setTimeout(() => setIsCalculating(false), 800);
+ return () => clearTimeout(timer);
  }, [maxStops, transportMode]);
 
  const isValidAmount = productCost >= MIN_AMOUNT;
@@ -78,49 +82,49 @@ export default function RouteViewer() {
  const polylinePositions: [number, number][] = activeStores.map(store => [store.lat, store.lng]);
 
  return (
- <div className="flex flex-col md:flex-row h-screen bg-background text-foreground">
+ <div className="flex flex-col-reverse md:flex-row flex-1 h-full bg-background text-foreground overflow-hidden">
 
  {/* Left Panel: Logistics & Business Rules */}
- <div className="w-full md:w-[400px] lg:w-[450px] bg-card border-r border-border flex flex-col h-full z-10 shadow-xl overflow-y-auto shrink-0">
+ <div className="w-full md:w-[400px] lg:w-[450px] bg-card border-r border-border flex flex-col h-[40vh] md:h-full z-10 shadow-xl overflow-y-auto shrink-0">
 
  {/* Header Area */}
- <div className="bg-gradient-to-b from-secondary to-transparent dark:from-secondary px-6 pt-6 pb-4 border-b border-border sticky top-0 bg-card z-20 backdrop-blur-md">
+ <div className="bg-gradient-to-b from-secondary to-transparent dark:from-secondary px-4 pt-4 pb-3 border-b border-border sticky top-0 bg-card z-20 backdrop-blur-md">
  <div>
- <h1 className="text-xl font-bold mt-1 text-foreground">Ruta Optimizada</h1>
- <p className="text-sm text-muted-foreground mt-0.5">3 Supermercados • 12 Productos</p>
+ <h1 className="text-lg font-bold mt-0 text-foreground">Ruta Optimizada</h1>
+ <p className="text-xs text-muted-foreground mt-0.5">3 Supermercados • 12 Productos</p>
  </div>
  </div>
 
- <div className="p-4 sm:p-6 space-y-6 flex-1">
+ <div className="p-3 sm:p-4 space-y-4 flex-1 pb-16 md:pb-4">
 
  {/* Transport Mode */}
  <section className="space-y-3">
- <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Medio de Transporte</h3>
+ <h3 className="text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground mb-1">Medio de Transporte</h3>
  <div className="grid grid-cols-2 gap-3">
  <button
  onClick={() => setTransportMode('car')}
  className={cn("flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all", transportMode === 'car' ?"border-border bg-primary text-primary-foreground border-2 border-border shadow-[4px_4px_0px_var(--color-border)] border-2 border-border shadow-[4px_4px_0px_var(--color-border)]":"border-border bg-background text-muted-foreground hover:border-zinc-300 dark:hover:border-zinc-700")}
  >
  <Car className="h-6 w-6 mb-2"/>
- <span className="text-sm font-semibold">Particular</span>
+ <span className="text-xs font-semibold">Particular</span>
  </button>
  <button
  onClick={() => setTransportMode('bus')}
  className={cn("flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all", transportMode === 'bus' ?"border-border bg-primary text-primary-foreground border-2 border-border shadow-[4px_4px_0px_var(--color-border)] border-2 border-border shadow-[4px_4px_0px_var(--color-border)]":"border-border bg-background text-muted-foreground hover:border-zinc-300 dark:hover:border-zinc-700")}
  >
  <Bus className="h-6 w-6 mb-2"/>
- <span className="text-sm font-semibold">Transporte Público</span>
+ <span className="text-xs font-semibold">Transporte Público</span>
  </button>
  </div>
  </section>
 
  {/* RN-07: Stops Limit */}
  <section className="space-y-3">
- <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 px-1">Costos de Logística</h3>
- <div className="bg-background border border-border rounded-2xl p-4 shadow-sm">
+ <h3 className="text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">Costos de Logística</h3>
+ <div className="bg-background border border-border rounded-xl p-3 shadow-sm">
  <div className="flex justify-between mb-2">
- <span className="text-sm font-medium">Máximo de paradas:</span>
- <span className="text-sm font-bold text-foreground">{maxStops}</span>
+ <span className="text-xs font-medium">Máximo de paradas:</span>
+ <span className="text-xs font-bold text-foreground">{maxStops}</span>
  </div>
  <input
  type="range"
@@ -132,6 +136,17 @@ export default function RouteViewer() {
  </div>
  </section>
 
+ {isCalculating ? (
+ <div className="space-y-4 pt-2">
+ <Skeleton className="h-[72px] w-full rounded-xl" />
+ <div className="space-y-2">
+ <Skeleton className="h-3 w-32 rounded mb-2" />
+ <Skeleton className="h-[120px] w-full rounded-xl" />
+ </div>
+ <Skeleton className="h-11 w-full rounded-xl mt-4" />
+ </div>
+ ) : (
+ <>
  {/* Alert RN-20: Minimum Amount */}
  {!isValidAmount && (
  <div className="bg-primary dark:bg-primary p-3 rounded-xl border border-border dark:border-border flex items-start gap-2">
@@ -155,21 +170,21 @@ export default function RouteViewer() {
  )}
 
  {/* RN-00: Cost Function Breakdown */}
- <section className="space-y-3">
- <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 px-1">Función de Costo Total</h3>
- <div className="bg-background border border-border rounded-2xl p-4 shadow-sm">
- <div className="space-y-2 mb-3">
- <div className="flex justify-between items-center text-sm">
+ <section className="space-y-2">
+ <h3 className="text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">Función de Costo Total</h3>
+ <div className="bg-background border border-border rounded-xl p-3 shadow-sm">
+ <div className="space-y-1.5 mb-2">
+ <div className="flex justify-between items-center text-xs">
  <span className="text-muted-foreground">Precio Productos</span>
  <span className="font-medium text-foreground">${productCost.toLocaleString()}</span>
  </div>
- <div className="flex justify-between items-center text-sm">
+ <div className="flex justify-between items-center text-xs">
  <span className="text-muted-foreground">Costo Desplazamiento</span>
  <span className="font-medium text-primary dark:text-primary">+ ${logisticCost.toLocaleString()}</span>
  </div>
- <div className="border-t border-border mt-3 pt-3 flex justify-between items-center">
- <span className="font-semibold text-foreground">Costo Objetivo Total</span>
- <span className="font-bold text-foreground text-lg">${totalCost.toLocaleString()}</span>
+ <div className="border-t border-border mt-2 pt-2 flex justify-between items-center">
+ <span className="font-semibold text-foreground text-sm">Costo Objetivo Total</span>
+ <span className="font-bold text-foreground text-base">${totalCost.toLocaleString()}</span>
  </div>
  </div>
 
@@ -188,16 +203,18 @@ export default function RouteViewer() {
  {/* Action Button */}
  <button
  disabled={!isValidAmount || !isProfitable}
- className="w-full mt-4 flex items-center justify-center gap-2 bg-primary hover:bg-primary disabled:bg-muted disabled:text-muted-foreground text-primary-foreground py-3.5 px-4 rounded-xl font-bold transition-all shadow-md active:scale-[0.98]"
+ className="w-full mt-2 flex items-center justify-center gap-2 bg-primary hover:bg-primary disabled:bg-muted disabled:text-muted-foreground text-primary-foreground py-2.5 px-3 rounded-xl text-sm font-bold transition-all shadow-md active:scale-[0.98]"
  >
  <Navigation className="h-5 w-5"/>
  Iniciar Ruta Turn-by-Turn
  </button>
+ </>
+ )}
  </div>
  </div>
 
  {/* Right Panel: Map Area */}
- <div className="flex-1 h-[50vh] md:h-full relative bg-muted z-0">
+ <div className="flex-1 min-h-[45vh] md:h-full relative bg-muted z-0">
  <MapContainer
  center={[CENTER_LAT, CENTER_LNG]}
  zoom={14}

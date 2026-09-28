@@ -18,7 +18,7 @@ export default function BottomNav({ active }: BottomNavProps) {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-900 pb-safe z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border pb-safe z-50">
       <nav className="flex items-center justify-around px-2 h-16 max-w-lg mx-auto">
         {navItems.map(item => {
           const isActive = active === item.id;
@@ -28,7 +28,7 @@ export default function BottomNav({ active }: BottomNavProps) {
               to={item.to}
               className={cn(
                 "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors",
-                isActive ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >
               <item.icon className={cn("h-5 w-5", isActive && "fill-current/20 stroke-[2.5px]")} />

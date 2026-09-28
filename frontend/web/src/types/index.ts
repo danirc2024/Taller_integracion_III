@@ -1,13 +1,28 @@
 export type Usuario = {
   id: string;
-  nombreCompleto: string;
-  urlAvatar: string | null;
-  rol: 'user' | 'colaborador' | 'admin';
-  cuotaTokensIa: number;
-  colaboradorHasta: string | null;
-  estaActivo: boolean;
-  creadoEl: string;
+  google_id?: string | null;
+  correo: string;
+  nombre_completo: string;
+  url_avatar?: string | null;
+  rol: string;
+  cuota_tokens_ia: number;
+  esta_activo: boolean;
+  token_verificacion?: string | null;
+  creado_el: string;
+  actualizado_el: string;
+  plan?: 'Usuario' | 'Plus';
 };
+
+export interface LoginPayload {
+  correo: string;
+  password: string;
+}
+
+export interface RegisterPayload {
+  correo: string;
+  password: string;
+  nombre_completo: string;
+}
 
 export type PreferenciasDieteticas = {
   usuarioId: string;
