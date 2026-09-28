@@ -21,6 +21,7 @@ func RegistrarRutasAuth(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
 	{
 		auth.POST("/register", authHandler.RegistrarUsuario)
 		auth.POST("/login", middleware.RateLimitLogin(rdb), authHandler.LoginUsuario)
+		auth.POST("/google", authHandler.GoogleLoginUsuario)
 		// Ruta protegida con interceptor JWT
 		auth.GET("/me", middleware.RequireAuth(), authHandler.PerfilUsuario)
 	}

@@ -181,3 +181,53 @@ func (h *AuthHandler) PerfilUsuario(c *gin.Context) {
 		"mensaje":  "Acceso autorizado a ruta protegida con JWT.",
 	})
 }
+
+// GoogleLoginRequest DTO de entrada para autenticación con Google
+type GoogleLoginRequest struct {
+	IDToken string `json:"id_token" binding:"required"`
+}
+
+// GoogleLoginUsuario godoc
+// @Summary      Inicio de sesión con Google
+// @Description  Valida el token de Google y aplica lógica find-or-create para la cuenta de usuario
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        payload body GoogleLoginRequest true "Token JWT de Google"
+// @Success      200  {object}  LoginResponse
+// @Failure      400  {object}  middleware.RespuestaError
+// @Failure      401  {object}  middleware.RespuestaError
+// @Failure      500  {object}  middleware.RespuestaError
+// @Router       /api/v1/auth/google [post]
+func (h *AuthHandler) GoogleLoginUsuario(c *gin.Context) {
+	var req GoogleLoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		middleware.ResponderError(c, http.StatusBadRequest, "El id_token de Google es obligatorio.", err)
+		return
+	}
+
+	usuario, err := h.authService.GoogleLogin(c.Request.Context(), req.IDToken)
+	if err != nil {
+		middleware.ResponderError(c, http.StatusUnauthorized, "Autenticación con Google fallida.", err)
+		return
+	}
+
+	// Emisión del JWT centralizado
+	tokenString, err := utils.GenerarToken(usuario.ID.String(), usuario.Rol, "google")
+	if err != nil {
+		middleware.ResponderError(c, http.StatusInternalServerError, "Error generando token de autorización local.", err)
+		return
+	}
+
+	c.SetCookie("jwt", tokenString, 86400, "/", "", false, true)
+
+	c.JSON(http.StatusOK, LoginResponse{
+		ID:             usuario.ID.String(),
+		Correo:         usuario.Correo,
+		NombreCompleto: usuario.NombreCompleto,
+		Rol:            usuario.Rol,
+		EstaActivo:     usuario.EstaActivo,
+		URLAvatar:      usuario.URLAvatar,
+		Mensaje:        "Inicio de sesión con Google exitoso.",
+	})
+}

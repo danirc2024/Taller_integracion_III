@@ -89,11 +89,12 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 
 ### `handlers/auth_handler.go` (package handlers)
 
-- Structs: RegistroRequest, RegistroResponse, LoginRequest, LoginResponse, AuthHandler
+- Structs: RegistroRequest, RegistroResponse, LoginRequest, LoginResponse, AuthHandler, GoogleLoginRequest
 - `NewAuthHandler(authService services.AuthService) *AuthHandler`
 - `(AuthHandler).RegistrarUsuario(c *gin.Context)`
 - `(AuthHandler).LoginUsuario(c *gin.Context)`
 - `(AuthHandler).PerfilUsuario(c *gin.Context)`
+- `(AuthHandler).GoogleLoginUsuario(c *gin.Context)`
 
 ### `handlers/producto_handler.go` (package handlers)
 
@@ -162,6 +163,7 @@ Servicios de infraestructura: PostgreSQL 15+PostGIS, Redis (broker), OTP (rutas 
 - `(authService).Registrar(ctx context.Context, input RegistroDTO) (*UsuarioCreadoDTO, error)`
 - `(authService).Login(correo, password string) (*infrastructure.Usuario, error)`
 - `(authService).LoginWithContext(ctx context.Context, correo, password string) (*infrastructure.Usuario, error)`
+- `(authService).GoogleLogin(ctx context.Context, tokenGoogle string) (*infrastructure.Usuario, error)`
 
 ### `services/producto_service.go` (package services)
 
