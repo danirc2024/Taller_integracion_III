@@ -4,9 +4,9 @@ services:
     image: postgis/postgis:15-3.3-alpine
     container_name: bd_supermercados
     environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-supermercados_db}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
     volumes:
@@ -21,6 +21,8 @@ services:
     build:
       context: ./backend/api
       dockerfile: Dockerfile
+      target: builder
+    command: ["air"]
     container_name: go_service_api
     ports:
       - "8080:8080"
@@ -28,10 +30,10 @@ services:
       - PORT=8080
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_USER=${DB_USER:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-postgres}
-      - DB_NAME=${DB_NAME:-supermercados_db}
-      - DB_URL=postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-supermercados_db}?sslmode=disable
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_URL=postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
       - REDIS_URL=redis://redis:6379/0
     depends_on:
       - db
@@ -55,8 +57,6 @@ services:
     volumes:
       - ./frontend/web:/app
       - /app/node_modules
-    depends_on:
-      - go_service
     restart: unless-stopped
     networks:
       - microservices_net

@@ -178,9 +178,354 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/productos": {
+            "get": {
+                "description": "Obtiene una lista paginada de productos con soporte para múltiples filtros (categoría, supermercado, marca, rango de precio, en oferta) y ordenamiento.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "productos"
+                ],
+                "summary": "Catálogo y filtrado de productos",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Búsqueda por texto libre",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Número de página (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Cantidad de productos por página (default: 20)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por categoría",
+                        "name": "categoria",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por supermercado o cadena",
+                        "name": "supermercado",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por marca",
+                        "name": "marca",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Precio mínimo",
+                        "name": "precio_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Precio máximo",
+                        "name": "precio_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filtrar solo productos en oferta",
+                        "name": "en_oferta",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Criterio de ordenamiento (precio, nombre, marca)",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Dirección del orden (asc, desc)",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.PaginaProductosDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/productos/buscar": {
+            "get": {
+                "description": "Busca productos que coincidan parcialmente en título, marca o categoría con el parámetro 'q' (mínimo 3 caracteres obligatorios).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "productos"
+                ],
+                "summary": "Búsqueda de productos por término",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Término de búsqueda (mínimo 3 caracteres)",
+                        "name": "q",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Número de página (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Cantidad de productos por página (default: 20)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.PaginaProductosDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/productos/{id}": {
+            "get": {
+                "description": "Obtiene la información completa de un producto por su ID junto con el historial de precios capturados",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "productos"
+                ],
+                "summary": "Consulta detalle de producto y su historial de precios",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID del producto (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ProductoDetalleDTO"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "domain.HistorialPrecioDTO": {
+            "type": "object",
+            "properties": {
+                "capturado_el": {
+                    "type": "string"
+                },
+                "precio_normal": {
+                    "type": "number"
+                },
+                "precio_oferta": {
+                    "type": "number"
+                }
+            }
+        },
+        "domain.MetadatosPaginacionDTO": {
+            "type": "object",
+            "properties": {
+                "limite": {
+                    "type": "integer"
+                },
+                "pagina_actual": {
+                    "type": "integer"
+                },
+                "total_paginas": {
+                    "type": "integer"
+                },
+                "total_registros": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.PaginaProductosDTO": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.ProductoDTO"
+                    }
+                },
+                "limite": {
+                    "type": "integer"
+                },
+                "pagina_actual": {
+                    "type": "integer"
+                },
+                "paginacion": {
+                    "$ref": "#/definitions/domain.MetadatosPaginacionDTO"
+                },
+                "total_paginas": {
+                    "type": "integer"
+                },
+                "total_registros": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.ProductoDTO": {
+            "type": "object",
+            "properties": {
+                "categoria": {
+                    "type": "string"
+                },
+                "en_oferta": {
+                    "type": "boolean"
+                },
+                "en_stock": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "marca": {
+                    "type": "string"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "precio": {
+                    "type": "number"
+                },
+                "precio_normal": {
+                    "type": "number"
+                },
+                "precio_oferta": {
+                    "type": "number"
+                },
+                "supermercado": {
+                    "type": "string"
+                },
+                "unidad": {
+                    "type": "string"
+                },
+                "url_imagen": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ProductoDetalleDTO": {
+            "type": "object",
+            "properties": {
+                "categoria": {
+                    "type": "string"
+                },
+                "en_oferta": {
+                    "type": "boolean"
+                },
+                "en_stock": {
+                    "type": "boolean"
+                },
+                "historial": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.HistorialPrecioDTO"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "marca": {
+                    "type": "string"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "precio": {
+                    "type": "number"
+                },
+                "precio_normal": {
+                    "type": "number"
+                },
+                "precio_oferta": {
+                    "type": "number"
+                },
+                "supermercado": {
+                    "type": "string"
+                },
+                "unidad": {
+                    "type": "string"
+                },
+                "url_imagen": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.LoginRequest": {
             "type": "object",
             "required": [

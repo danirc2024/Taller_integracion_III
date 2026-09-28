@@ -63,7 +63,6 @@ export default function Page() {
 
   const displayedProducts = filtered.slice(0, visibleCount);
 
-
   const handleAdd = (product: Product) => {
     addToCart(product)
   }

@@ -21,7 +21,7 @@ type JWTClaims struct {
 func getJWTSecret() []byte {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		secret = "supermercados_secret_key_desarrollo_2026_jwt"
+		panic("ERROR DE SEGURIDAD: JWT_SECRET no está configurado en las variables de entorno.")
 	}
 	return []byte(secret)
 }

@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rutahorro-ingress
+  labels:
+    app: rutahorro
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    # Opcional: nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: api-vmatus.k8s-estudiantes.dev.censei.cl
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 8080
