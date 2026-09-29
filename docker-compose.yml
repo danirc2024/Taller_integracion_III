@@ -50,7 +50,7 @@ services:
       resources:
         limits:
           cpus: '0.3'
-          memory: 200M
+          memory: 500M
   frontend:
     build:
       context: ./frontend/web
