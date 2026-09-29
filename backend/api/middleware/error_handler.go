@@ -24,7 +24,7 @@ func ErrorHandler() gin.HandlerFunc {
 				log.Printf("[PANIC RECOVERY] Excepción no controlada capturada: %v", r)
 
 				detalle := fmt.Sprintf("%v", r)
-				
+
 				// Responder con estado HTTP 500 estandarizado
 				c.JSON(http.StatusInternalServerError, RespuestaError{
 					Estado:  http.StatusInternalServerError,

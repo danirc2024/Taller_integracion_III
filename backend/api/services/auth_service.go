@@ -4,13 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"google.golang.org/api/idtoken"
+	"os"
 	"strings"
 	"unicode"
 
 	"github.com/danirc2024/Taller_integracion_III/backend/api/infrastructure"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/repositories"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/utils"
-	"github.com/google/uuid"
 )
 
 var (
@@ -47,6 +49,7 @@ type AuthService interface {
 	Registrar(ctx context.Context, input RegistroDTO) (*UsuarioCreadoDTO, error)
 	Login(correo, password string) (*infrastructure.Usuario, error)
 	LoginWithContext(ctx context.Context, correo, password string) (*infrastructure.Usuario, error)
+	GoogleLogin(ctx context.Context, tokenGoogle string) (*infrastructure.Usuario, error)
 }
 
 type authService struct {
@@ -180,6 +183,53 @@ func (s *authService) LoginWithContext(ctx context.Context, correo, password str
 	// 4. Validación de Credenciales: comparar contraseña con utils.CheckPasswordHash de forma segura
 	if !utils.CheckPasswordHash(password, *usuario.PasswordHash) {
 		return nil, ErrCredencialesInvalidas
+	}
+
+	return usuario, nil
+}
+
+func (s *authService) GoogleLogin(ctx context.Context, tokenGoogle string) (*infrastructure.Usuario, error) {
+	clientID := os.Getenv("GOOGLE_CLIENT_ID")
+	if clientID == "" {
+		return nil, errors.New("configuración del servidor incompleta para login social")
+	}
+
+	payload, err := idtoken.Validate(ctx, tokenGoogle, clientID)
+	if err != nil {
+		return nil, fmt.Errorf("token de Google inválido: %w", err)
+	}
+
+	email := payload.Claims["email"].(string)
+	googleID := payload.Subject
+	name := payload.Claims["name"].(string)
+
+	var picture *string
+	if pic, ok := payload.Claims["picture"].(string); ok {
+		picture = &pic
+	}
+
+	usuario, err := s.usuarioRepo.FindByEmail(ctx, email)
+	if err != nil {
+		return nil, fmt.Errorf("error al buscar usuario: %w", err)
+	}
+
+	if usuario == nil {
+		nuevoUsuario := &infrastructure.Usuario{
+			ID:             uuid.New(),
+			Correo:         email,
+			NombreCompleto: name,
+			URLAvatar:      picture,
+			GoogleID:       &googleID,
+			Rol:            "registrado",
+			EstaActivo:     true,
+			CuotaTokensIA:  1000,
+		}
+
+		err = s.usuarioRepo.Create(ctx, nuevoUsuario)
+		if err != nil {
+			return nil, fmt.Errorf("error al registrar usuario con Google: %w", err)
+		}
+		return nuevoUsuario, nil
 	}
 
 	return usuario, nil
