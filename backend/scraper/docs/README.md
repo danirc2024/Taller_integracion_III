@@ -57,9 +57,14 @@ docker run --rm \
 	-v "$PWD:/salida" \
 	taller-integracion-scraper:local \
 	scrapy crawl jumbo_rsc \
+	-a enrich_ean=true \
 	-s JOBDIR= \
 	-O /salida/jumbo.json
 ```
+
+La opción `-a enrich_ean=true` consulta la ficha de cada producto sin EAN en
+el listado. Puede aumentar bastante la duración del scraping; mantiene la
+concurrencia y la demora configuradas en Scrapy.
 
 Para Santa Isabel, el spider usa las categorias verificadas en su sitemap y
 respeta `robots.txt`:
@@ -88,7 +93,7 @@ docker run --rm \
 	-v "$PWD/backend/scraper:/app" \
 	-v "$PWD:/salida" \
 	taller-integracion-scraper:local \
-	sh -c 'scrapy crawl jumbo_rsc -s JOBDIR= -O /salida/jumbo.json && scrapy crawl santa_isabel_rsc -s JOBDIR= -O /salida/santa_isabel.json'
+	sh -c 'scrapy crawl jumbo_rsc -a enrich_ean=true -s JOBDIR= -O /salida/jumbo.json && scrapy crawl santa_isabel_rsc -s JOBDIR= -O /salida/santa_isabel.json'
 ```
 
 El archivo queda en `jumbo.json` dentro de la carpeta desde la que se ejecuta

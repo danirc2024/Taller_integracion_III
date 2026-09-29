@@ -48,7 +48,28 @@ class JumboRscSpider(scrapy.Spider):
             )
 
         for product in products:
-            yield self._to_scraped_item(product, category, response.url)
+            product_url = product.get("url_producto")
+            if self.enrich_ean and not product.get("ean_gtin") and product_url:
+                try:
+                    product_url = self._validate_product_url(
+                        urljoin(response.url, product_url)
+                    )
+                except ValueError:
+                    yield self._to_scraped_item(product, category, response.url)
+                    continue
+                yield scrapy.Request(
+                    product_url,
+                    priority=1,
+                    callback=self.parse_ean_detail,
+                    errback=self.handle_ean_detail_error,
+                    cb_kwargs={
+                        "catalog_product": product,
+                        "category": category,
+                        "category_page_url": response.url,
+                    },
+                )
+            else:
+                yield self._to_scraped_item(product, category, response.url)
 
         if products and page < self.max_pages:
             next_url = self._page_url(category_url, page + 1)
@@ -64,6 +85,44 @@ class JumboRscSpider(scrapy.Spider):
                 self.max_pages,
                 category_url,
             )
+
+    def parse_ean_detail(self, response, catalog_product, category, category_page_url):
+        detail_products = self._extract_products(response)
+        requested_url = self._canonical_product_url(response.url)
+        matching_products = [
+            product
+            for product in detail_products
+            if isinstance(product.get("url_producto"), str)
+            and self._canonical_product_url(
+                urljoin(response.url, product["url_producto"])
+            )
+            == requested_url
+        ]
+        detail_product = matching_products[0] if matching_products else None
+        if detail_product is None and len(detail_products) == 1:
+            detail_product = detail_products[0]
+
+        enriched_product = dict(catalog_product)
+        if detail_product is not None:
+            for field in ("ean_gtin", "sku"):
+                if detail_product.get(field):
+                    enriched_product[field] = detail_product[field]
+        if not enriched_product.get("ean_gtin"):
+            self.logger.info("La ficha no publica EAN/GTIN: %s", response.url)
+        yield self._to_scraped_item(enriched_product, category, category_page_url)
+
+    def handle_ean_detail_error(self, failure):
+        request = failure.request
+        self.logger.warning(
+            "No se pudo consultar EAN/GTIN en %s (HTTP %s); se conserva el producto del catálogo",
+            request.url,
+            getattr(getattr(failure.value, "response", None), "status", "sin respuesta"),
+        )
+        yield self._to_scraped_item(
+            request.cb_kwargs["catalog_product"],
+            request.cb_kwargs["category"],
+            request.cb_kwargs["category_page_url"],
+        )
 
     def start_requests(self):
         product_url = getattr(self, "product_url", None)
@@ -182,8 +241,9 @@ class JumboRscSpider(scrapy.Spider):
             failure.getErrorMessage(),
         )
 
-    def __init__(self, *args, add_url=None, **kwargs):
+    def __init__(self, *args, add_url=None, enrich_ean=False, **kwargs):
         super().__init__(*args, **kwargs)
+        self.enrich_ean = str(enrich_ean).lower() in {"1", "true", "yes"}
         if add_url:
             self._append_category_url(add_url)
 
