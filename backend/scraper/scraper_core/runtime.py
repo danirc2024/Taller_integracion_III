@@ -26,19 +26,17 @@ class ScrapyCommandExecutor:
         command = [
             "scrapy",
             "crawl",
-            self.spider_name,
             "-s",
             f"JOBDIR={jobdir}",
             "-O",
             str(output_path),
-            "-t",
-            "jsonlines",
         ]
 
         if job.get("product_url"):
             command.extend(["-a", f"product_url={job['product_url']}"])
         if job.get("product_id"):
             command.extend(["-a", f"product_id={job['product_id']}"])
+        command.append(self.spider_name)
 
         try:
             completed = self.command_runner(

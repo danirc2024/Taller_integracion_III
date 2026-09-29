@@ -56,8 +56,8 @@ class APIPipelineTest(unittest.TestCase):
         sent = []
 
         class FakeClient:
-            def ingest_batch(self, products, supermarket=None):
-                sent.append((products, supermarket))
+            def ingest_batch(self, products, supermarket=None, work_id=None):
+                sent.append((products, supermarket, work_id))
 
         pipeline = ScraperCorePipeline(FakeClient(), batch_size=2)
         pipeline.process_item(
@@ -89,6 +89,7 @@ class APIPipelineTest(unittest.TestCase):
                         {"sku": "sku-2", "producto": "Pan", "precio_normal": 800},
                     ],
                     "Jumbo",
+                    None,
                 )
             ],
         )

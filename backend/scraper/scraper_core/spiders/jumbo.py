@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -314,6 +315,8 @@ class JumboRscSpider(scrapy.Spider):
                         offer_price = JumboRscSpider._first_price(offer, "price")
                         if offer_price is None:
                             offer_price = normal_price
+                        if normal_price is None:
+                            normal_price = offer_price
                         brand = entry.get("brand")
                         if isinstance(brand, dict):
                             brand = brand.get("name")
@@ -322,6 +325,11 @@ class JumboRscSpider(scrapy.Spider):
                         if isinstance(image, list):
                             image = image[0] if image else None
                         product_url = entry.get("url")
+                        sku = JumboRscSpider._first_value(
+                            entry, "sku", "productID", "productId"
+                        )
+                        if sku is None and isinstance(product_url, str):
+                            sku = JumboRscSpider._sku_from_url(product_url)
                         products.append(
                             {
                                 "producto": name,
@@ -333,9 +341,7 @@ class JumboRscSpider(scrapy.Spider):
                                         entry, "gtin", "gtin8", "gtin12", "gtin13", "ean"
                                     )
                                 ),
-                                "sku": JumboRscSpider._first_value(
-                                    entry, "sku", "productID", "productId"
-                                ),
+                                "sku": sku,
                                 "marca": normalizar_texto(brand),
                                 "formato_crudo": normalizar_texto(
                                     JumboRscSpider._first_value(
@@ -373,6 +379,21 @@ class JumboRscSpider(scrapy.Spider):
     def _first_price(data, *keys):
         value = JumboRscSpider._first_value(data, *keys)
         return normalizar_precio_clp(value)
+
+    @staticmethod
+    def _sku_from_url(product_url):
+        parsed = urlparse(product_url)
+        segments = [segment for segment in parsed.path.split("/") if segment]
+        if segments and segments[-1].lower() == "p":
+            segments.pop()
+        if not segments:
+            return None
+        slug = segments[-1]
+        sku = f"JUMBO-{slug}"
+        if len(sku) <= 100:
+            return sku
+        suffix = hashlib.sha1(product_url.encode("utf-8")).hexdigest()[:12]
+        return f"JUMBO-{slug[:80]}-{suffix}"
 
     @staticmethod
     def _normal_price(entry):

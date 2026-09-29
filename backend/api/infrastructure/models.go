@@ -293,7 +293,7 @@ type ProductoCrudo struct {
 	ID                 uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 	SucursalID         int       `gorm:"not null;index" json:"sucursal_id"`
 	SKU                string    `gorm:"type:varchar(100);not null" json:"sku"`
-	EANGTIN            *string   `gorm:"type:varchar(50);index" json:"ean_gtin,omitempty"`
+	EANGTIN            *string   `gorm:"column:ean_gtin;type:varchar(50);index" json:"ean_gtin,omitempty"`
 	TituloCrudo        string    `gorm:"type:varchar(255);not null" json:"titulo_crudo"`
 	MarcaCruda         *string   `gorm:"type:varchar(100)" json:"marca_cruda,omitempty"`
 	CategoriaCruda     *string   `gorm:"type:varchar(100)" json:"categoria_cruda,omitempty"`

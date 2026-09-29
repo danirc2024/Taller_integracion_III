@@ -11,6 +11,7 @@ class ScraperCorePipeline:
         self.batch_size = batch_size
         self.batch = []
         self.supermarket = None
+        self.work_id = os.getenv("SCRAPER_TRABAJO_ID")
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -45,5 +46,9 @@ class ScraperCorePipeline:
     def _flush(self):
         if not self.batch:
             return
-        self.api_client.ingest_batch(self.batch, supermarket=self.supermarket)
+        self.api_client.ingest_batch(
+            self.batch,
+            supermarket=self.supermarket,
+            work_id=self.work_id,
+        )
         self.batch = []

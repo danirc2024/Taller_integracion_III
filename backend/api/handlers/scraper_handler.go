@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/danirc2024/Taller_integracion_III/backend/api/domain"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/services"
@@ -13,11 +16,93 @@ import (
 // ScraperHandler gestiona las peticiones HTTP del microservicio de scraping y bots
 type ScraperHandler struct {
 	service services.ScraperService
+	rdb     *redis.Client
 }
 
 // NewScraperHandler inicializa una nueva instancia de ScraperHandler
-func NewScraperHandler(service services.ScraperService) *ScraperHandler {
-	return &ScraperHandler{service: service}
+func NewScraperHandler(service services.ScraperService, rdb ...*redis.Client) *ScraperHandler {
+	var client *redis.Client
+	if len(rdb) > 0 {
+		client = rdb[0]
+	}
+	return &ScraperHandler{service: service, rdb: client}
+}
+
+type ejecutarScraperRequest struct {
+	Spider      string  `json:"spider,omitempty"`
+	ProductoURL *string `json:"producto_url,omitempty"`
+	ProductoID  *string `json:"producto_id,omitempty"`
+}
+
+// EjecutarTrabajo encola un trabajo para que el worker Scrapy lo ejecute.
+func (h *ScraperHandler) EjecutarTrabajo(c *gin.Context) {
+	if h.rdb == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "La cola Redis no está disponible"})
+		return
+	}
+
+	id := c.Param("id")
+	trabajo, err := h.service.ObtenerTrabajo(c.Request.Context(), id)
+	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrTrabajoNoEncontrado):
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		case errors.Is(err, services.ErrUUIDInvalido):
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error interno al consultar trabajo"})
+		}
+		return
+	}
+	if trabajo.Estado != "en_progreso" {
+		c.JSON(http.StatusConflict, gin.H{"error": "El trabajo no está disponible para ejecución"})
+		return
+	}
+
+	var input ejecutarScraperRequest
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Payload inválido para ejecutar scraper", "detalle": err.Error()})
+		return
+	}
+	input.Spider = strings.TrimSpace(input.Spider)
+	if input.Spider == "" {
+		input.Spider = "jumbo_rsc"
+	}
+	if input.Spider != "jumbo_rsc" && input.Spider != "santa_isabel_rsc" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Spider no permitido"})
+		return
+	}
+	if input.ProductoID != nil && input.ProductoURL == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "producto_id requiere producto_url"})
+		return
+	}
+
+	job := map[string]interface{}{
+		"trabajo_id": id,
+		"spider":     input.Spider,
+	}
+	if input.ProductoURL != nil {
+		job["product_url"] = *input.ProductoURL
+	}
+	if input.ProductoID != nil {
+		job["product_id"] = *input.ProductoID
+	}
+	payload, err := json.Marshal(job)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo serializar el trabajo"})
+		return
+	}
+
+	if err := h.rdb.LPush(c.Request.Context(), "scraper:jobs", payload).Err(); err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "No se pudo encolar el trabajo", "detalle": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{
+		"trabajo_id": id,
+		"estado":     "encolado",
+		"spider":     input.Spider,
+	})
 }
 
 // IniciarTrabajo godoc
