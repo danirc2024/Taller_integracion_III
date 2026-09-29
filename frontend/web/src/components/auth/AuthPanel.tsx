@@ -32,7 +32,7 @@ export function AuthPanel() {
   
   const [showLoginPw, setShowLoginPw] = useState(false)
   const [showSignupPw, setShowSignupPw] = useState(false)
-  const { login, register, isLoading, error: authError } = useAuth()
+  const { login, register, logout, isLoading, error: authError } = useAuth()
   
   const [errors, setErrors] = useState<{ loginEmail?: string; loginPassword?: string; signupEmail?: string; signupPassword?: string }>({})
 
@@ -215,7 +215,7 @@ export function AuthPanel() {
                 <Button 
                   variant="ghost" 
                   className="text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-transparent"
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => { logout(); navigate('/dashboard'); }}
                 >
                   Continuar como invitado
                 </Button>

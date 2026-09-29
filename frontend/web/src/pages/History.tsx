@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { Clock, Calendar, CheckCircle, AlertCircle, RefreshCw, ChevronRight, CheckSquare, Square, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Clock, Calendar, CheckCircle, AlertCircle, RefreshCw, ChevronRight, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Footer } from '@/components/Footer';
 
 export default function History() {
- const [lists, setLists] = useState([
+ const [lists] = useState([
  {
  id: 1,
  name: 'Almuerzo Saludable 4 pers.',

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useState, useEffect, type ReactNode } from 'react';
 import type { Usuario, LoginPayload, RegisterPayload } from '@/types';
 
 // Local storage key for persistence
@@ -43,13 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        credentials: 'omit', // change to 'include' when CORS allows
+        credentials: 'omit', // pendiente: requiere CORS con origen explícito en el backend
       });
       const result = await response.json();
       if (!response.ok) {
         throw new Error(result.error || result.mensaje || 'Error al iniciar sesión');
       }
-      setUser(result);
+      // El backend devuelve los datos del usuario. El JWT viaja en cookie HttpOnly.
+      const userData: Usuario = result.usuario ?? result;
+      setUser(userData);
       return true;
     } catch (err: any) {
       setError(err.message || 'Error de red.');
@@ -90,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        isGuest: user === null,
+        isGuest: !user?.id,  // es guest si no hay un usuario cargado con ID válido
         isLoading,
         error,
         login,

@@ -11,6 +11,8 @@ export type Usuario = {
   creado_el: string;
   actualizado_el: string;
   plan?: 'Usuario' | 'Plus';
+  // JWT devuelto por el backend al autenticar
+  token?: string;
 };
 
 export interface LoginPayload {
