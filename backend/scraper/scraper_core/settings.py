@@ -77,9 +77,15 @@ JOBDIR = os.getenv("SCRAPY_JOBDIR")
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    "scraper_core.pipelines.ScraperCorePipeline": 300,
-#}
+SCRAPER_API_URL = os.getenv(
+	"SCRAPER_API_URL",
+	"http://localhost:8080/api/v1/scraper/productos",
+)
+SCRAPER_API_TIMEOUT = float(os.getenv("SCRAPER_API_TIMEOUT", "30"))
+SCRAPER_API_BATCH_SIZE = int(os.getenv("SCRAPER_API_BATCH_SIZE", "100"))
+ITEM_PIPELINES = {
+	"scraper_core.pipelines.ScraperCorePipeline": 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
