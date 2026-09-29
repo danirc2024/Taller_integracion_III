@@ -23,9 +23,10 @@ services:
     build:
       context: ./backend/api
       dockerfile: Dockerfile
-      target: builder
-    command:
-    - air
+      # [!] EQUIPO BACKEND: Descomentar estas lineas para usar Hot-Reload (Air) en local
+      # target: builder
+    # command:
+    # - air
     container_name: go_service_api
     ports:
     - 8080:8080
@@ -40,9 +41,10 @@ services:
     - REDIS_URL=redis://redis:6379/0
     depends_on:
     - db
-    volumes:
-    - ./backend/api:/app
-    - /app/tmp
+    # [!] EQUIPO BACKEND: Descomentar los volumenes para desarrollo local
+    # volumes:
+    # - ./backend/api:/app
+    # - /app/tmp
     restart: unless-stopped
     networks:
     - microservices_net
