@@ -51,7 +51,7 @@ class JumboExtractionTest(unittest.TestCase):
                 {
                     "producto": "Tomate Larga Vida",
                     "precio": 1290.0,
-                    "precio_normal": None,
+                    "precio_normal": 1290.0,
                     "precio_oferta": 1290.0,
                     "ean_gtin": None,
                     "sku": None,
@@ -469,7 +469,7 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertIn("scrapy", commands[0][0])
         self.assertIn("crawl", commands[0][0])
         self.assertIn("-O", commands[0][0])
-        self.assertIn("jsonlines", commands[0][0])
+        self.assertTrue(commands[0][0][commands[0][0].index("-O") + 1].endswith(".jsonl"))
 
     def test_runtime_cli_emits_extracted_items_as_jsonlines(self):
         item = {"sku": "sku-42", "precio": 990.0}

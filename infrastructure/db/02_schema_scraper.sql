@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS scraper.productos_crudos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     sucursal_id INTEGER NOT NULL REFERENCES scraper.sucursales_supermercado(id) ON DELETE CASCADE,
     sku VARCHAR(100) NOT NULL,
+    ean_gtin VARCHAR(50),
     titulo_crudo VARCHAR(255) NOT NULL,
     marca_cruda VARCHAR(100),
     categoria_cruda VARCHAR(100),
@@ -61,6 +62,8 @@ CREATE TABLE IF NOT EXISTS scraper.productos_crudos (
     ultima_extraccion_el TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_sucursal_sku UNIQUE (sucursal_id, sku)
 );
+
+CREATE INDEX IF NOT EXISTS idx_productos_crudos_ean ON scraper.productos_crudos (ean_gtin);
 
 -- 5. Capturas de Precios (Dominio 3 - Serie de tiempo)
 CREATE TABLE IF NOT EXISTS scraper.capturas_precios (

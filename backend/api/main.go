@@ -111,6 +111,7 @@ func setupRouter() *gin.Engine {
 	v1 := r.Group("/api/v1")
 	routes.RegistrarRutasAuth(v1, DB, RDB)
 	routes.RegistrarRutasProductos(v1, DB)
+	routes.RegistrarRutasScraper(v1, DB, RDB)
 
 	return r
 }
