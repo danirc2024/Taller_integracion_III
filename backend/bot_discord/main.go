@@ -274,15 +274,6 @@ func handlePullRequest(s *discordgo.Session, channelID string, payload map[strin
 		}
 
 	case "review_requested":
-		// Evitar spam: Si el PR se creó hace menos de 1 minuto, ignorar este evento
-		// ya que el evento "opened" agrupa a todos los reviewers en un solo mensaje.
-		if createdAtStr, ok := prMap["created_at"].(string); ok {
-			if createdAt, err := time.Parse(time.RFC3339, createdAtStr); err == nil {
-				if time.Since(createdAt) < 60*time.Second {
-					return
-				}
-			}
-		}
 
 		if reqRev, ok := payload["requested_reviewer"].(map[string]interface{}); ok {
 			reviewer := reqRev["login"].(string)
