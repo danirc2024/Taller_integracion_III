@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { ArrowLeft, MapPin, Navigation, TrendingDown, AlertTriangle, CheckCircle2, Car, Bus, ShoppingCart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { MapPin, Navigation, TrendingDown, AlertTriangle, CheckCircle2, Car, Bus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supermarkets, products } from '@/data/mock';

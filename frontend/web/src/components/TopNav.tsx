@@ -1,10 +1,9 @@
-'use client'
-
 import { useState, FormEvent, useEffect } from 'react'
 import { Menu, MapPin, Search, ShoppingBasket, SlidersHorizontal, Bot, User, LogOut, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Link, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/core/routes'
+import { useAuth } from '@/hooks/useAuth'
 
 type TopNavProps = {
     query: string
@@ -16,6 +15,7 @@ export function TopNav({ query, onQueryChange, onMenuClick }: TopNavProps) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [localQuery, setLocalQuery] = useState(query);
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
     useEffect(() => {
         setLocalQuery(query);
@@ -128,14 +128,17 @@ export function TopNav({ query, onQueryChange, onMenuClick }: TopNavProps) {
                                         Mi Perfil
                                     </Link>
                                     <div className="h-px bg-border w-full" />
-                                    <Link
-                                        to="/login"
-                                        onClick={() => setIsDropdownOpen(false)}
-                                        className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                                    <button
+                                        onClick={() => {
+                                            setIsDropdownOpen(false);
+                                            logout();
+                                            navigate('/login');
+                                        }}
+                                        className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
                                     >
                                         <LogOut className="h-4 w-4" />
                                         Cerrar Sesión
-                                    </Link>
+                                    </button>
                                 </div>
                             </>
                         )}

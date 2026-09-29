@@ -85,16 +85,18 @@ export default function Page() {
               aria-hidden="true"
             />
             <div className="absolute inset-0 z-0 bg-gradient-to-r from-card/80 via-card/50 to-transparent pointer-events-none" />
-            <div className="relative z-10">
-              <h1 className="text-balance text-xl md:text-2xl font-extrabold tracking-tight text-foreground drop-shadow-sm">
-                Ofertas cerca de ti
-              </h1>
-              <p className="text-sm font-semibold text-muted-foreground mt-1">
-                {filtered.length}{' '}
-                {filtered.length === 1 ? 'producto' : 'productos'} comparados en{' '}
-                {supermarketCount}{' '}
-                {supermarketCount === 1 ? 'supermercado' : 'supermercados'}
-              </p>
+            <div className="relative z-10 flex items-end justify-between w-full">
+              <div>
+                <h1 className="text-balance text-xl md:text-2xl font-extrabold tracking-tight text-foreground drop-shadow-sm">
+                  Ofertas cerca de ti
+                </h1>
+                <p className="text-sm font-semibold text-muted-foreground mt-1">
+                  {filtered.length}{' '}
+                  {filtered.length === 1 ? 'producto' : 'productos'} comparados en{' '}
+                  {supermarketCount}{' '}
+                  {supermarketCount === 1 ? 'supermercado' : 'supermercados'}
+                </p>
+              </div>
             </div>
           </div>
 

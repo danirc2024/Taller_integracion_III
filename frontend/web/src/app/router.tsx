@@ -3,11 +3,11 @@ import { ROUTES, MOCK_ROUTES } from '@/core/routes';
 
 // Layouts
 import { MainLayout } from '@/layouts/MainLayout';
-import AppShell from '@/layouts/AppShell';
 import { CartProvider } from '@/contexts/CartContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Sprint 1 — vistas funcionales
 import Home from '@/pages/Home';
@@ -38,6 +38,7 @@ const router = createBrowserRouter([
   // ───────────────────────────────────────────────────────────
   {
     element: <MainLayout />,
+    errorElement: <ErrorBoundary />,
     children: [
       // Sprint 1
       { path: ROUTES.CATALOGO, element: <Dashboard /> },
@@ -60,6 +61,7 @@ const router = createBrowserRouter([
   // ───────────────────────────────────────────────────────────
   {
     element: <MainLayout />,
+    errorElement: <ErrorBoundary />,
     children: [
       {
         element: <ProtectedRoute />,
@@ -98,7 +100,7 @@ const router = createBrowserRouter([
   // ───────────────────────────────────────────────────────────
   // Grupo C: sin layout (pantalla completa)
   // ───────────────────────────────────────────────────────────
-  { path: ROUTES.HOME, element: <Home /> },
+  { path: ROUTES.HOME, element: <Home />, errorElement: <ErrorBoundary /> },
   { path: ROUTES.LOGIN, element: <Login /> },
   { 
     element: <ProtectedRoute />, 

@@ -1,6 +1,4 @@
 import { Zap, CheckCircle2, Shield, Rocket } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
 import { mockUser } from '@/data/mock';
 import MockShell from '@/pages/mocks/MockShell';
 

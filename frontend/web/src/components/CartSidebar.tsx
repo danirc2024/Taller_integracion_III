@@ -4,7 +4,7 @@ import { useCart } from '@/contexts/CartContext'
 import { formatPrice } from '@/data/mock'
 
 export function CartSidebar() {
-  const { isCartOpen, setIsCartOpen, items, updateQuantity, removeFromCart, totalPrice } = useCart()
+  const { isCartOpen, setIsCartOpen, items, updateQuantity, totalPrice } = useCart()
 
   if (!isCartOpen) return null
 

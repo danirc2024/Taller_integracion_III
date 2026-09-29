@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, ShieldAlert, CreditCard, Car, Bus, Apple, Leaf, Utensils, TrendingUp, Save, Zap, Settings, BarChart2, Key, Bell, Activity } from 'lucide-react';
+import { User, ShieldAlert, CreditCard, Car, Bus, Apple, Leaf, Utensils, TrendingUp, Save, Zap, Settings, BarChart2, Key, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { mockUser } from '@/data/mock';
 import { Link } from 'react-router-dom';

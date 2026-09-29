@@ -127,7 +127,7 @@ func (s *authService) Registrar(ctx context.Context, input RegistroDTO) (*Usuari
 		NombreCompleto:    nombreSanitizado,
 		Rol:               "registrado",
 		CuotaTokensIA:     1000,
-		EstaActivo:        false, // Estrictamente inactivo hasta confirmar correo
+		EstaActivo:        true, // TODO: revertir a false cuando se implemente el sistema de verificación por correo
 		TokenVerificacion: &tokenVerificacion,
 	}
 
