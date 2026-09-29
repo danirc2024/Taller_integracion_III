@@ -5,6 +5,11 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 
 import scrapy
+from scraper_core.normalization import (
+    normalizar_ean_gtin,
+    normalizar_precio_clp,
+    normalizar_texto,
+)
 
 
 class SantaIsabelRscSpider(scrapy.Spider):
@@ -110,7 +115,7 @@ class SantaIsabelRscSpider(scrapy.Spider):
         for product in products:
             if not isinstance(product, dict):
                 continue
-            name = product.get("productName")
+            name = normalizar_texto(product.get("productName"))
             items = product.get("items") or []
             item = next((value for value in items if isinstance(value, dict)), None)
             if not name or item is None:
@@ -130,12 +135,12 @@ class SantaIsabelRscSpider(scrapy.Spider):
                 continue
 
             offer = seller.get("commertialOffer") or {}
-            price = SantaIsabelRscSpider._number(offer.get("Price"))
+            price = normalizar_precio_clp(offer.get("Price"))
             if price is None:
                 continue
             normal_price = (
-                SantaIsabelRscSpider._number(offer.get("ListPrice"))
-                or SantaIsabelRscSpider._number(offer.get("PriceWithoutDiscount"))
+                normalizar_precio_clp(offer.get("ListPrice"))
+                or normalizar_precio_clp(offer.get("PriceWithoutDiscount"))
                 or price
             )
             available_quantity = SantaIsabelRscSpider._number(
@@ -165,9 +170,9 @@ class SantaIsabelRscSpider(scrapy.Spider):
                     "precio": price,
                     "precio_normal": normal_price,
                     "precio_oferta": price if price < normal_price else None,
-                    "ean_gtin": item.get("ean"),
+                    "ean_gtin": normalizar_ean_gtin(item.get("ean")),
                     "sku": item.get("itemId") or product.get("productId"),
-                    "marca": product.get("brand"),
+                    "marca": normalizar_texto(product.get("brand")),
                     "formato_crudo": raw_format,
                     "mecanica_promocion": ", ".join(promotion_names) or None,
                     "en_stock": available_quantity > 0

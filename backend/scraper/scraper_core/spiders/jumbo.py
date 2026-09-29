@@ -4,6 +4,11 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 
 import scrapy
+from scraper_core.normalization import (
+    normalizar_ean_gtin,
+    normalizar_precio_clp,
+    normalizar_texto,
+)
 
 
 class JumboRscSpider(scrapy.Spider):
@@ -48,7 +53,28 @@ class JumboRscSpider(scrapy.Spider):
             )
 
         for product in products:
-            yield self._to_scraped_item(product, category, response.url)
+            product_url = product.get("url_producto")
+            if self.enrich_ean and not product.get("ean_gtin") and product_url:
+                try:
+                    product_url = self._validate_product_url(
+                        urljoin(response.url, product_url)
+                    )
+                except ValueError:
+                    yield self._to_scraped_item(product, category, response.url)
+                    continue
+                yield scrapy.Request(
+                    product_url,
+                    priority=1,
+                    callback=self.parse_ean_detail,
+                    errback=self.handle_ean_detail_error,
+                    cb_kwargs={
+                        "catalog_product": product,
+                        "category": category,
+                        "category_page_url": response.url,
+                    },
+                )
+            else:
+                yield self._to_scraped_item(product, category, response.url)
 
         if products and page < self.max_pages:
             next_url = self._page_url(category_url, page + 1)
@@ -64,6 +90,44 @@ class JumboRscSpider(scrapy.Spider):
                 self.max_pages,
                 category_url,
             )
+
+    def parse_ean_detail(self, response, catalog_product, category, category_page_url):
+        detail_products = self._extract_products(response)
+        requested_url = self._canonical_product_url(response.url)
+        matching_products = [
+            product
+            for product in detail_products
+            if isinstance(product.get("url_producto"), str)
+            and self._canonical_product_url(
+                urljoin(response.url, product["url_producto"])
+            )
+            == requested_url
+        ]
+        detail_product = matching_products[0] if matching_products else None
+        if detail_product is None and len(detail_products) == 1:
+            detail_product = detail_products[0]
+
+        enriched_product = dict(catalog_product)
+        if detail_product is not None:
+            for field in ("ean_gtin", "sku"):
+                if detail_product.get(field):
+                    enriched_product[field] = detail_product[field]
+        if not enriched_product.get("ean_gtin"):
+            self.logger.info("La ficha no publica EAN/GTIN: %s", response.url)
+        yield self._to_scraped_item(enriched_product, category, category_page_url)
+
+    def handle_ean_detail_error(self, failure):
+        request = failure.request
+        self.logger.warning(
+            "No se pudo consultar EAN/GTIN en %s (HTTP %s); se conserva el producto del catálogo",
+            request.url,
+            getattr(getattr(failure.value, "response", None), "status", "sin respuesta"),
+        )
+        yield self._to_scraped_item(
+            request.cb_kwargs["catalog_product"],
+            request.cb_kwargs["category"],
+            request.cb_kwargs["category_page_url"],
+        )
 
     def start_requests(self):
         product_url = getattr(self, "product_url", None)
@@ -182,8 +246,9 @@ class JumboRscSpider(scrapy.Spider):
             failure.getErrorMessage(),
         )
 
-    def __init__(self, *args, add_url=None, **kwargs):
+    def __init__(self, *args, add_url=None, enrich_ean=False, **kwargs):
         super().__init__(*args, **kwargs)
+        self.enrich_ean = str(enrich_ean).lower() in {"1", "true", "yes"}
         if add_url:
             self._append_category_url(add_url)
 
@@ -238,7 +303,7 @@ class JumboRscSpider(scrapy.Spider):
                 if entry.get("@type") == "Product":
                     name = entry.get("name")
                     if isinstance(name, str) and name.strip():
-                        name = name.strip()
+                        name = normalizar_texto(name)
                         if name in seen:
                             continue
                         seen.add(name)
@@ -263,21 +328,27 @@ class JumboRscSpider(scrapy.Spider):
                                 "precio": offer_price,
                                 "precio_normal": normal_price,
                                 "precio_oferta": offer_price,
-                                "ean_gtin": JumboRscSpider._first_value(
-                                    entry, "gtin", "gtin8", "gtin12", "gtin13", "ean"
+                                "ean_gtin": normalizar_ean_gtin(
+                                    JumboRscSpider._first_value(
+                                        entry, "gtin", "gtin8", "gtin12", "gtin13", "ean"
+                                    )
                                 ),
                                 "sku": JumboRscSpider._first_value(
                                     entry, "sku", "productID", "productId"
                                 ),
-                                "marca": brand if isinstance(brand, str) else None,
-                                "formato_crudo": JumboRscSpider._first_value(
-                                    entry, "format", "size", "description"
+                                "marca": normalizar_texto(brand),
+                                "formato_crudo": normalizar_texto(
+                                    JumboRscSpider._first_value(
+                                        entry, "format", "size", "description"
+                                    )
                                 ),
-                                "mecanica_promocion": JumboRscSpider._first_value(
-                                    offer,
-                                    "promotion",
-                                    "promotionMechanic",
-                                    "offerDescription",
+                                "mecanica_promocion": normalizar_texto(
+                                    JumboRscSpider._first_value(
+                                        offer,
+                                        "promotion",
+                                        "promotionMechanic",
+                                        "offerDescription",
+                                    )
                                 ),
                                 "en_stock": JumboRscSpider._stock_value(availability),
                                 "url_producto": (
@@ -301,10 +372,7 @@ class JumboRscSpider(scrapy.Spider):
     @staticmethod
     def _first_price(data, *keys):
         value = JumboRscSpider._first_value(data, *keys)
-        try:
-            return float(value) if value is not None else None
-        except (TypeError, ValueError):
-            return None
+        return normalizar_precio_clp(value)
 
     @staticmethod
     def _normal_price(entry):

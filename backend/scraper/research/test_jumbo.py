@@ -39,7 +39,7 @@ class JumboExtractionTest(unittest.TestCase):
                 b'<script type="application/ld+json">'
                 b'{"@graph":[{"item":{"@type":"Product",'
                 b'"name":"Tomate Larga Vida","image":["https://img.test/tomate.jpg"],'
-                b'"offers":{"price":"1290"}}}]}'
+                    b'"offers":{"price":"$1.290"}}}]}'
                 b'</script>'
             ),
             encoding="utf-8",
@@ -98,6 +98,82 @@ class JumboExtractionTest(unittest.TestCase):
         self.assertEqual(product["mecanica_promocion"], "2x1")
         self.assertTrue(product["en_stock"])
         self.assertEqual(product["url_producto"], "https://jumbo.cl/p/lechuga")
+
+    def test_category_requests_detail_for_missing_ean_when_enabled(self):
+        spider = JumboRscSpider(enrich_ean=True)
+        category_url = "https://www.jumbo.cl/frutas-y-verduras/verduras"
+        response = TextResponse(
+            url=category_url,
+            request=Request(
+                category_url,
+                meta={"category_url": category_url, "page": 1},
+            ),
+            body=(
+                b'<script type="application/ld+json">'
+                b'{"@type":"Product","name":"Cafe",'
+                b'"url":"https://www.jumbo.cl/cafe/p",'
+                b'"offers":{"price":"990"}}'
+                b'</script>'
+            ),
+            encoding="utf-8",
+        )
+
+        results = list(spider.parse(response))
+
+        detail_request = next(
+            result
+            for result in results
+            if isinstance(result, Request)
+            and result.callback == spider.parse_ean_detail
+        )
+        self.assertEqual(detail_request.url, "https://www.jumbo.cl/cafe/p")
+        self.assertEqual(detail_request.cb_kwargs["category"], "verduras")
+
+    def test_detail_parse_fills_ean_and_preserves_catalog_price(self):
+        spider = JumboRscSpider(enrich_ean=True)
+        product_url = "https://www.jumbo.cl/cafe/p"
+        request = Request(
+            product_url,
+            cb_kwargs={
+                "catalog_product": {
+                    "producto": "Cafe",
+                    "precio": 990.0,
+                    "precio_normal": 990.0,
+                    "precio_oferta": 990.0,
+                    "ean_gtin": None,
+                    "sku": None,
+                    "marca": None,
+                    "formato_crudo": None,
+                    "mecanica_promocion": None,
+                    "en_stock": None,
+                    "url_producto": product_url,
+                    "imagen": None,
+                },
+                "category": "despensa",
+                "category_page_url": "https://www.jumbo.cl/despensa",
+            },
+        )
+        response = TextResponse(
+            url=product_url,
+            request=request,
+            body=(
+                b'<script type="application/ld+json">'
+                b'{"@type":"Product","name":"Cafe",'
+                b'"url":"https://www.jumbo.cl/cafe/p",'
+                b'"gtin13":"7800000000001","sku":"sku-detail",'
+                b'"offers":{"price":"1200"}}'
+                b'</script>'
+            ),
+            encoding="utf-8",
+        )
+
+        item = next(spider.parse_ean_detail(response, **request.cb_kwargs))
+
+        self.assertEqual(item["ean_gtin"], "7800000000001")
+        self.assertEqual(item["sku"], "sku-detail")
+        self.assertEqual(item["precio"], 990.0)
+        self.assertEqual(item["categoria"], "despensa")
+        self.assertEqual(item["supermercado"], "Jumbo")
 
     def test_page_url_preserves_category(self):
         url = JumboRscSpider._page_url(
