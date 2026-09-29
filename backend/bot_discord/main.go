@@ -40,6 +40,7 @@ func main() {
 	}
 
 	dg.AddHandler(messageCreate)
+	dg.AddHandler(handleInteraction)
 	dg.Identify.Intents = discordgo.IntentsGuildMessages
 
 	err = dg.Open()
@@ -107,6 +108,26 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if m.Content == "!ping" {
 		s.ChannelMessageSend(m.ChannelID, "Pong! El bot está vivo y respirando.")
+	}
+
+	if m.Content == "!scrapear" {
+		sendScraperMenu(s, m.ChannelID)
+	}
+
+	if m.Content == "!help" {
+		helpMsg := "📚 **Lista de Comandos del Bot**\n\n" +
+			"**Scraping:**\n" +
+			"`!scrapear` - Muestra el menú interactivo para seleccionar y ejecutar una araña de scraping (Jumbo, Lider, Santa Isabel).\n\n" +
+			"**GitHub (Automático):**\n" +
+			"No necesitas comandos para GitHub, el bot avisa automáticamente cuando hay:\n" +
+			"- 🚀 Nuevos Pushes (con resumen de commits)\n" +
+			"- 🛠️ Creación y Merge de Pull Requests\n" +
+			"- 👀 Asignación de Reviewers y Etiquetas en PRs\n" +
+			"- ✅ Aprobación o rechazo de PRs\n\n" +
+			"**Otros:**\n" +
+			"`!ping` - Para comprobar que sigo con vida."
+
+		s.ChannelMessageSend(m.ChannelID, helpMsg)
 	}
 }
 
