@@ -39,7 +39,7 @@ class JumboExtractionTest(unittest.TestCase):
                 b'<script type="application/ld+json">'
                 b'{"@graph":[{"item":{"@type":"Product",'
                 b'"name":"Tomate Larga Vida","image":["https://img.test/tomate.jpg"],'
-                b'"offers":{"price":"1290"}}}]}'
+                    b'"offers":{"price":"$1.290"}}}]}'
                 b'</script>'
             ),
             encoding="utf-8",

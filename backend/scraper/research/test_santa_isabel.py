@@ -40,9 +40,9 @@ class SantaIsabelExtractionTest(unittest.TestCase):
                                         {
                                             "sellerName": "santaisabel",
                                             "commertialOffer": {
-                                                "Price": 990,
-                                                "ListPrice": 1290,
-                                                "PriceWithoutDiscount": 1290,
+                                                "Price": "$990",
+                                                "ListPrice": "1.290",
+                                                "PriceWithoutDiscount": "1290.00",
                                                 "AvailableQuantity": 3,
                                                 "teasers": [{"name": "2x1"}],
                                             },

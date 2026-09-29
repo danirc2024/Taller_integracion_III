@@ -4,6 +4,11 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 
 import scrapy
+from scraper_core.normalization import (
+    normalizar_ean_gtin,
+    normalizar_precio_clp,
+    normalizar_texto,
+)
 
 
 class JumboRscSpider(scrapy.Spider):
@@ -298,7 +303,7 @@ class JumboRscSpider(scrapy.Spider):
                 if entry.get("@type") == "Product":
                     name = entry.get("name")
                     if isinstance(name, str) and name.strip():
-                        name = name.strip()
+                        name = normalizar_texto(name)
                         if name in seen:
                             continue
                         seen.add(name)
@@ -323,21 +328,27 @@ class JumboRscSpider(scrapy.Spider):
                                 "precio": offer_price,
                                 "precio_normal": normal_price,
                                 "precio_oferta": offer_price,
-                                "ean_gtin": JumboRscSpider._first_value(
-                                    entry, "gtin", "gtin8", "gtin12", "gtin13", "ean"
+                                "ean_gtin": normalizar_ean_gtin(
+                                    JumboRscSpider._first_value(
+                                        entry, "gtin", "gtin8", "gtin12", "gtin13", "ean"
+                                    )
                                 ),
                                 "sku": JumboRscSpider._first_value(
                                     entry, "sku", "productID", "productId"
                                 ),
-                                "marca": brand if isinstance(brand, str) else None,
-                                "formato_crudo": JumboRscSpider._first_value(
-                                    entry, "format", "size", "description"
+                                "marca": normalizar_texto(brand),
+                                "formato_crudo": normalizar_texto(
+                                    JumboRscSpider._first_value(
+                                        entry, "format", "size", "description"
+                                    )
                                 ),
-                                "mecanica_promocion": JumboRscSpider._first_value(
-                                    offer,
-                                    "promotion",
-                                    "promotionMechanic",
-                                    "offerDescription",
+                                "mecanica_promocion": normalizar_texto(
+                                    JumboRscSpider._first_value(
+                                        offer,
+                                        "promotion",
+                                        "promotionMechanic",
+                                        "offerDescription",
+                                    )
                                 ),
                                 "en_stock": JumboRscSpider._stock_value(availability),
                                 "url_producto": (
@@ -361,10 +372,7 @@ class JumboRscSpider(scrapy.Spider):
     @staticmethod
     def _first_price(data, *keys):
         value = JumboRscSpider._first_value(data, *keys)
-        try:
-            return float(value) if value is not None else None
-        except (TypeError, ValueError):
-            return None
+        return normalizar_precio_clp(value)
 
     @staticmethod
     def _normal_price(entry):
