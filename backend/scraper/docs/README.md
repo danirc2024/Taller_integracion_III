@@ -9,12 +9,51 @@ Scrapy bajo demanda sin modificar los demás microservicios.
 ## Tecnologías y Entorno
 El contenedor ya cuenta con las dependencias necesarias inyectadas en su `Dockerfile`:
 - `Scrapy`: Framework de extracción web.
-- `psycopg2-binary`: Dependencia disponible para la futura integración con PostgreSQL.
-- `redis`: Dependencia disponible para una futura cola distribuida.
+- `psycopg2-binary`: Dependencia disponible para integraciones auxiliares.
+- `redis`: Cliente usado por el worker para consumir trabajos desde Redis.
 
-Actualmente la cola de refresh usa memoria del proceso (`RefreshQueue`) para
-evitar duplicados durante una ejecución. La persistencia de productos, precios
-y timestamps será responsabilidad de la API cuando esté disponible.
+La API publica trabajos en la cola Redis `scraper:jobs`. El worker consume esos
+trabajos, ejecuta el spider indicado y envía los productos a la API para su
+persistencia. La cola de refresh (`RefreshQueue`) continúa siendo local al
+proceso y evita duplicados durante una ejecución.
+
+## Ejecución disparada desde la API
+
+La API y el worker se conectan mediante Redis. Primero se inicia el worker
+desde `backend/scraper` y se deja escuchando:
+
+```bash
+REDIS_URL=redis://localhost:6379/0 \
+SCRAPER_API_URL=http://localhost:8080/api/v1/scraper/productos \
+.venv/bin/python -m scraper_core.worker
+```
+
+En otra terminal, se registra y encola un trabajo:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/scraper/trabajos \
+	-H "Content-Type: application/json" \
+	-d '{"cadena_id":1}'
+```
+
+Con el `id` devuelto, se dispara el spider:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/scraper/trabajos/{ID}/ejecutar \
+	-H "Content-Type: application/json" \
+	-d '{"spider":"jumbo_rsc"}'
+```
+
+Los spiders permitidos son `jumbo_rsc` y `santa_isabel_rsc`. El estado se
+consulta con `GET /api/v1/scraper/trabajos/{ID}` y debe avanzar de
+`en_progreso` a `completado` o `fallido`. La ingesta se realiza por lotes en
+`POST /api/v1/scraper/trabajos/{ID}/productos`.
+
+Para comprobar la cola pendiente:
+
+```bash
+docker exec redis_broker redis-cli LLEN scraper:jobs
+```
 
 ## Documentación de Uso (Modo Desarrollo)
 
@@ -42,7 +81,7 @@ docker run --rm taller-integracion-scraper:local \
 	scrapy genspider ejemplo_supermercado misupermercado.com
 ```
 
-### 3. Ejecutar la recolección de datos
+### 3. Ejecutar la recolección de datos manualmente
 Cuando el desarrollador haya programado su araña (ej. `ejemplo_supermercado`), puede disparar la recolección lanzando:
 
 ```bash
@@ -166,9 +205,8 @@ scrapy crawl jumbo_rsc \
 El modo puntual solicita solo la URL recibida y no continúa con la paginación
 de categorías. La URL se limita a `jumbo.cl` y `www.jumbo.cl`. El runtime
 captura los items en un feed JSONL temporal y retorna los objetos en
-`result["items"]`; no los persiste en la base de datos ni los publica en la API.
-La cola de refresh, el TTL y el worker siguen siendo componentes en memoria que
-deben ser invocados por quien integre el servicio.
+`result["items"]`. Para persistirlos mediante la API se debe usar el worker y
+el flujo disparado desde la API descrito arriba.
 
 La configuración del scheduler puede construirse con los valores que más
 adelante enviará la API:

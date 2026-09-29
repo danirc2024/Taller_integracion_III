@@ -34,7 +34,20 @@ type ejecutarScraperRequest struct {
 	ProductoID  *string `json:"producto_id,omitempty"`
 }
 
-// EjecutarTrabajo encola un trabajo para que el worker Scrapy lo ejecute.
+// EjecutarTrabajo godoc
+// @Summary      Encola un trabajo para ejecución
+// @Description  Envía el trabajo a Redis para que el worker Scrapy ejecute el spider solicitado
+// @Tags         scraper
+// @Accept       json
+// @Produce      json
+// @Param        id      path      string                 true  "UUID del trabajo"
+// @Param        input   body      ejecutarScraperRequest true  "Spider y parámetros opcionales"
+// @Success      202     {object}  map[string]interface{}
+// @Failure      400     {object}  map[string]interface{}
+// @Failure      404     {object}  map[string]interface{}
+// @Failure      409     {object}  map[string]interface{}
+// @Failure      503     {object}  map[string]interface{}
+// @Router       /api/v1/scraper/trabajos/{id}/ejecutar [post]
 func (h *ScraperHandler) EjecutarTrabajo(c *gin.Context) {
 	if h.rdb == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "La cola Redis no está disponible"})
