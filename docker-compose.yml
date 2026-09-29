@@ -74,7 +74,7 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 1G
+          memory: 100M
   redis:
     image: redis:7-alpine
     container_name: redis_broker
