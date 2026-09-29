@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gin-gonic/gin"
@@ -273,6 +274,16 @@ func handlePullRequest(s *discordgo.Session, channelID string, payload map[strin
 		}
 
 	case "review_requested":
+		// Evitar spam: Si el PR se creó hace menos de 1 minuto, ignorar este evento
+		// ya que el evento "opened" agrupa a todos los reviewers en un solo mensaje.
+		if createdAtStr, ok := prMap["created_at"].(string); ok {
+			if createdAt, err := time.Parse(time.RFC3339, createdAtStr); err == nil {
+				if time.Since(createdAt) < 60*time.Second {
+					return
+				}
+			}
+		}
+
 		if reqRev, ok := payload["requested_reviewer"].(map[string]interface{}); ok {
 			reviewer := reqRev["login"].(string)
 			// Las URL entre <> evitan que Discord genere la caja gigante de previsualización
