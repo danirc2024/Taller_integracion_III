@@ -58,8 +58,21 @@ docker compose exec web_scraper_alimentos scrapy crawl jumbo_rsc -O /tmp/jumbo.j
 
 ## Mapa auto-generado: Scraper (Scrapy)
 
-**11 archivos .py** detectados
+**18 archivos .py** detectados
 
+
+### `research/test_api_pipeline.py`
+
+- **class FakeResponse**
+  - `__init__(payload)`
+  - `__enter__()`
+  - `__exit__(exc_type, exc_value, traceback)`
+  - `read()`
+- **class APIPipelineTest(unittest.TestCase)**
+  - `test_client_posts_ingestion_contract()`
+  - `test_pipeline_flushes_batches()`
+- **class FakeClient**
+  - `ingest_batch(products, supermarket, work_id)`
 
 ### `research/test_jumbo.py`
 
@@ -67,7 +80,14 @@ docker compose exec web_scraper_alimentos scrapy crawl jumbo_rsc -O /tmp/jumbo.j
   - `test_extract_names_from_json_ld()`
   - `test_category_is_taken_from_url()`
   - `test_extracts_comparison_fields()`
+  - `test_category_requests_detail_for_missing_ean_when_enabled()`
+  - `test_detail_parse_fills_ean_and_preserves_catalog_price()`
   - `test_page_url_preserves_category()`
+  - `test_catalog_pagination_stops_at_page_100()`
+  - `test_product_url_starts_one_request_without_category_pagination()`
+  - `test_product_url_rejects_untrusted_domains()`
+  - `test_parse_product_returns_one_item_without_pagination()`
+  - `test_parse_product_selects_requested_product_from_json_ld_graph()`
   - `test_catalog_refresh_is_needed_when_never_updated()`
   - `test_catalog_refresh_handles_naive_datetime_without_type_error()`
   - `test_catalog_refresh_is_not_needed_while_fresh()`
@@ -86,14 +106,42 @@ docker compose exec web_scraper_alimentos scrapy crawl jumbo_rsc -O /tmp/jumbo.j
   - `test_result_publisher_sends_item_to_injected_sender()`
   - `test_result_publisher_reports_api_failure()`
   - `test_refresh_flow_consumes_queue_and_publishes_result()`
-  - `test_scrapy_executor_runs_catalog_without_persisting_output_file()`
+  - `test_scrapy_executor_returns_structured_catalog_items()`
+  - `test_runtime_cli_emits_extracted_items_as_jsonlines()`
   - `test_scrapy_executor_targets_product_url_for_queued_job()`
+  - `test_scrapy_executor_rejects_product_id_without_url()`
   - `test_scheduler_decides_catalog_and_product_update_flow()`
   - `test_scheduler_accepts_future_api_configuration()`
   - `test_scheduler_can_force_catalog_refresh_from_manual_trigger()`
   - `test_scrapy_settings_use_ethic_rate_limit()`
   - `test_scrapy_retry_policy_handles_transient_errors()`
   - `test_404_page_stops_pagination_cleanly()`
+
+### `research/test_normalization.py`
+
+- **class ScraperNormalizationTest(unittest.TestCase)**
+  - `test_normalizes_clp_price_formats()`
+  - `test_rejects_invalid_prices()`
+  - `test_normalizes_ean_without_losing_leading_zeroes()`
+  - `test_normalizes_whitespace_in_text()`
+
+### `research/test_santa_isabel.py`
+
+- **class SantaIsabelExtractionTest(unittest.TestCase)**
+  - `_response(payload, page)`
+  - `test_extracts_santa_isabel_render_data()`
+  - `test_category_pagination_preserves_category()`
+  - `test_spider_obeys_robots_txt()`
+  - `test_only_uses_santa_isabel_seller()`
+
+### `scraper_core/api_client.py`
+
+- **class ScraperAPIError(RuntimeError)**
+- **class ScraperAPIClient**
+  - `__init__(endpoint: str, timeout: float, opener)`
+  - `ingest_batch(products: ?, supermarket: ?, branch_id: ?, branch_code: ?, work_id: ?) → dict`
+  - `finalize_work(work_id: str, status: str, extracted_items: int, error_message: ?) → dict`
+  - `_ingestion_endpoint(work_id: ?) → str`
 
 ### `scraper_core/freshness.py`
 
@@ -140,6 +188,13 @@ docker compose exec web_scraper_alimentos scrapy crawl jumbo_rsc -O /tmp/jumbo.j
   - `process_exception(request, exception, spider)`
   - `spider_opened(spider)`
 
+### `scraper_core/normalization.py`
+
+- `normalizar_precio_clp(value)`
+- `_uses_thousands_groups(parts)`
+- `normalizar_ean_gtin(value)`
+- `normalizar_texto(value)`
+
 ### `scraper_core/output.py`
 
 - **class ScraperResultPublisher**
@@ -149,7 +204,11 @@ docker compose exec web_scraper_alimentos scrapy crawl jumbo_rsc -O /tmp/jumbo.j
 ### `scraper_core/pipelines.py`
 
 - **class ScraperCorePipeline**
-  - `process_item(item)`
+  - `__init__(api_client, batch_size)`
+  - `from_crawler(cls, crawler)`
+  - `process_item(item, spider)`
+  - `close_spider(spider)`
+  - `_flush()`
 
 ### `scraper_core/runtime.py`
 
@@ -165,7 +224,13 @@ docker compose exec web_scraper_alimentos scrapy crawl jumbo_rsc -O /tmp/jumbo.j
 
 - **class JumboRscSpider(scrapy.Spider)**
   - `parse(response)`
+  - `parse_ean_detail(response, catalog_product, category, category_page_url)`
+  - `handle_ean_detail_error(failure)`
   - `start_requests()`
+  - `parse_product(response)`
+  - `_to_scraped_item(product, category, response_url)`
+  - `_validate_product_url(url)`
+  - `_canonical_product_url(url)`
   - `_page_url(category_url, page)`
   - `handle_error(failure)`
   - `__init__()`
@@ -175,6 +240,28 @@ docker compose exec web_scraper_alimentos scrapy crawl jumbo_rsc -O /tmp/jumbo.j
   - `_extract_products(response)`
   - `_first_value(data)`
   - `_first_price(data)`
+  - `_sku_from_url(product_url)`
   - `_normal_price(entry)`
   - `_stock_value(availability)`
   - `_walk_json(value)`
+
+### `scraper_core/spiders/santa_isabel.py`
+
+- **class SantaIsabelRscSpider(scrapy.Spider)**
+  - `__init__()`
+  - `from_crawler(cls, crawler)`
+  - `start_requests()`
+  - `parse(response)`
+  - `_extract_products(response)`
+  - `_number(value)`
+  - `_to_scraped_item(product, category, response_url)`
+  - `_page_url(category_url, page)`
+  - `_read_category_urls(cls)`
+  - `_append_category_url(url)`
+  - `handle_error(failure)`
+  - `_validate_category_url(url)`
+
+### `scraper_core/worker.py`
+
+- `process_job(job: dict, api_client: ScraperAPIClient) → dict`
+- `run_worker()`

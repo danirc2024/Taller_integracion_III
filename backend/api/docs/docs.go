@@ -36,6 +36,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/auth/google": {
+            "post": {
+                "description": "Valida el token de Google y aplica lógica find-or-create para la cuenta de usuario",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Inicio de sesión con Google",
+                "parameters": [
+                    {
+                        "description": "Token JWT de Google",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.GoogleLoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "description": "Verifica credenciales de acceso, valida cuenta activa y emite token JWT firmado",
@@ -378,9 +430,395 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/scraper/productos": {
+            "post": {
+                "description": "Guarda productos crudos y capturas de precio sin requerir una sesión de trabajo previa",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scraper"
+                ],
+                "summary": "Almacena un lote de productos de forma directa",
+                "parameters": [
+                    {
+                        "description": "Lote de productos extraídos",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.IngestaLoteDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.IngestaResultadoDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/scraper/trabajos": {
+            "post": {
+                "description": "Registra el inicio de una araña de scraping para auditar su ciclo de vida y métricas",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scraper"
+                ],
+                "summary": "Inicia una sesión de scraping",
+                "parameters": [
+                    {
+                        "description": "Datos de inicio de la sesión",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.IniciarTrabajoDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.TrabajoScraperDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/scraper/trabajos/{id}": {
+            "get": {
+                "description": "Retorna los detalles, duración, conteo y errores de un trabajo (ideal para bots de Discord)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scraper"
+                ],
+                "summary": "Consulta el estado de una sesión de scraping",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID del trabajo",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.TrabajoScraperDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/scraper/trabajos/{id}/ejecutar": {
+            "post": {
+                "description": "Envía el trabajo a Redis para que el worker Scrapy ejecute el spider solicitado",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scraper"
+                ],
+                "summary": "Encola un trabajo para ejecución",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID del trabajo",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Spider y parámetros opcionales",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ejecutarScraperRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/scraper/trabajos/{id}/finalizar": {
+            "put": {
+                "description": "Marca el término del trabajo como completado o fallido, registrando métricas y errores",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scraper"
+                ],
+                "summary": "Finaliza una sesión de scraping",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID del trabajo de scraping",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Datos de cierre de la sesión",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.FinalizarTrabajoDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.TrabajoScraperDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/scraper/trabajos/{id}/productos": {
+            "post": {
+                "description": "Realiza el upsert de productos crudos y guarda sus capturas de precios vinculados a una sesión",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "scraper"
+                ],
+                "summary": "Almacena un lote de productos asociado a un trabajo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID del trabajo de scraping",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Lote de productos extraídos",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.IngestaLoteDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.IngestaResultadoDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "domain.FinalizarTrabajoDTO": {
+            "type": "object",
+            "required": [
+                "estado"
+            ],
+            "properties": {
+                "elementos_extraidos": {
+                    "type": "integer"
+                },
+                "estado": {
+                    "description": "'completado' o 'fallido'",
+                    "type": "string"
+                },
+                "registro_errores": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.HistorialPrecioDTO": {
             "type": "object",
             "properties": {
@@ -392,6 +830,79 @@ const docTemplate = `{
                 },
                 "precio_oferta": {
                     "type": "number"
+                }
+            }
+        },
+        "domain.IngestaLoteDTO": {
+            "type": "object",
+            "required": [
+                "productos"
+            ],
+            "properties": {
+                "codigo_sucursal": {
+                    "type": "string"
+                },
+                "productos": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/domain.ProductoScrapeadoDTO"
+                    }
+                },
+                "sucursal_id": {
+                    "type": "integer"
+                },
+                "supermercado": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.IngestaResultadoDTO": {
+            "type": "object",
+            "properties": {
+                "actualizados": {
+                    "type": "integer"
+                },
+                "errores": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "insertados": {
+                    "type": "integer"
+                },
+                "mensaje": {
+                    "type": "string"
+                },
+                "precios_registrados": {
+                    "type": "integer"
+                },
+                "sucursal_id": {
+                    "type": "integer"
+                },
+                "total_recibidos": {
+                    "type": "integer"
+                },
+                "trabajo_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.IniciarTrabajoDTO": {
+            "type": "object",
+            "required": [
+                "cadena_id"
+            ],
+            "properties": {
+                "cadena_id": {
+                    "type": "integer"
+                },
+                "disparado_por_usuario_id": {
+                    "type": "string"
+                },
+                "supermercado": {
+                    "type": "string"
                 }
             }
         },
@@ -526,6 +1037,110 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.ProductoScrapeadoDTO": {
+            "type": "object",
+            "required": [
+                "precio_normal",
+                "producto",
+                "sku"
+            ],
+            "properties": {
+                "categoria": {
+                    "type": "string"
+                },
+                "ean_gtin": {
+                    "type": "string"
+                },
+                "en_stock": {
+                    "type": "boolean"
+                },
+                "formato_crudo": {
+                    "type": "string"
+                },
+                "imagen": {
+                    "type": "string"
+                },
+                "marca": {
+                    "type": "string"
+                },
+                "mecanica_promocion": {
+                    "type": "string"
+                },
+                "metrica_unidad": {
+                    "type": "string"
+                },
+                "precio": {
+                    "type": "number"
+                },
+                "precio_normal": {
+                    "type": "number"
+                },
+                "precio_oferta": {
+                    "type": "number"
+                },
+                "precio_por_unidad": {
+                    "type": "number"
+                },
+                "precio_tarjeta": {
+                    "type": "number"
+                },
+                "producto": {
+                    "type": "string"
+                },
+                "sku": {
+                    "type": "string"
+                },
+                "url_imagen": {
+                    "type": "string"
+                },
+                "url_producto": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.TrabajoScraperDTO": {
+            "type": "object",
+            "properties": {
+                "cadena_id": {
+                    "type": "integer"
+                },
+                "cadena_nombre": {
+                    "type": "string"
+                },
+                "duracion_segundos": {
+                    "type": "number"
+                },
+                "elementos_extraidos": {
+                    "type": "integer"
+                },
+                "estado": {
+                    "type": "string"
+                },
+                "finalizado_el": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "iniciado_el": {
+                    "type": "string"
+                },
+                "registro_errores": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.GoogleLoginRequest": {
+            "type": "object",
+            "required": [
+                "id_token"
+            ],
+            "properties": {
+                "id_token": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.LoginRequest": {
             "type": "object",
             "required": [
@@ -628,6 +1243,20 @@ const docTemplate = `{
                 "token_verificacion": {
                     "type": "string",
                     "example": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+                }
+            }
+        },
+        "handlers.ejecutarScraperRequest": {
+            "type": "object",
+            "properties": {
+                "producto_id": {
+                    "type": "string"
+                },
+                "producto_url": {
+                    "type": "string"
+                },
+                "spider": {
+                    "type": "string"
                 }
             }
         },
