@@ -6,6 +6,8 @@ metadata:
     app: db
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: db
@@ -30,7 +32,7 @@ spec:
               mountPath: /var/lib/postgresql/data
           resources:
             requests:
-              memory: 50Mi
+              memory: 64Mi
               cpu: 50m
             limits:
               memory: 150Mi

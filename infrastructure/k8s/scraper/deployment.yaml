@@ -42,10 +42,10 @@ spec:
           value: redis
         - name: REDIS_PORT
           value: '6379'
-        command: ["python", "scraper_core/worker.py"]
+        command: ["python", "-m", "scraper_core.worker"]
         resources:
           requests:
-            memory: 50Mi
+            memory: 64Mi
             cpu: 50m
           limits:
             memory: 150Mi
