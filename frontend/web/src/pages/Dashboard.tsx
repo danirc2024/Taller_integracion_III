@@ -4,10 +4,8 @@ import { useLayoutContext } from '@/layouts/MainLayout'
 import { ProductCard } from '@/components/ProductCard'
 import { ProductSkeleton } from '@/components/ui/ProductSkeleton'
 import { Footer } from '@/components/Footer'
-import {
-  products,
-  supermarketById,
-} from '@/data/mock'
+import { supermarkets } from '@/data/mock'
+import { getProducts } from '@/lib/products-api'
 import type { UiProduct as Product } from '@/types'
 import { useCart } from '@/contexts/CartContext'
 
@@ -15,12 +13,28 @@ export default function Page() {
   const { query, activeMarket } = useLayoutContext()
   const { addToCart, totalItems, totalPrice, setIsCartOpen } = useCart()
   const [isLoading, setIsLoading] = useState(true)
+  const [products, setProducts] = useState<Product[]>([])
+  const [error, setError] = useState<string | null>(null)
 
-  // Simulate network fetch when filters change
   useEffect(() => {
+    const controller = new AbortController()
     setIsLoading(true)
-    const timer = setTimeout(() => setIsLoading(false), 800)
-    return () => clearTimeout(timer)
+    setError(null)
+    const market = supermarkets.find((item) => item.id === activeMarket)?.name
+    const search = query.trim()
+    const params = search.length >= 3 ? `?q=${encodeURIComponent(search)}&limit=100` : `?limit=100${market ? `&supermercado=${encodeURIComponent(market)}` : ''}`
+
+    getProducts(params)
+      .then(({ products: result }) => {
+        if (!controller.signal.aborted) setProducts(result)
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setError('No se pudo cargar el catálogo desde la base de datos.')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false)
+      })
+    return () => controller.abort()
   }, [query, activeMarket])
 
   const filtered = useMemo(() => {
@@ -31,11 +45,10 @@ export default function Page() {
       const matchesQuery =
         !q ||
         p.name.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        supermarketById(p.supermarketId).name.toLowerCase().includes(q)
+        p.brand.toLowerCase().includes(q)
       return matchesMarket && matchesQuery
     })
-  }, [query, activeMarket])
+  }, [products, query, activeMarket])
 
   const supermarketCount = useMemo(() => {
     const ids = new Set(filtered.map((p) => p.supermarketId))
@@ -109,6 +122,11 @@ export default function Page() {
                 {Array.from({ length: 12 }).map((_, i) => (
                   <ProductSkeleton key={i} />
                 ))}
+              </div>
+            ) : error ? (
+              <div className="flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border py-16 text-center">
+                <Store className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+                <p className="text-sm text-muted-foreground">{error}</p>
               </div>
             ) : filtered.length > 0 ? (
               <div className="flex flex-col gap-6 pb-6">

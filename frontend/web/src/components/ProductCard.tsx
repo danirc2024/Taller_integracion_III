@@ -9,18 +9,15 @@ import {
   supermarketById,
 } from '@/data/mock'
 import type { UiProduct as Product } from '@/types'
+import { ROUTES } from '@/core/routes'
 
 type ProductCardProps = {
   product: Product
   onAdd?: (product: Product) => void
 }
 
-/* Simulamos estado de stock a partir del id (mock determinista) */
-function getStockState(product: Product) {
-  const hash = product.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
-  if (hash % 7 === 0) return 'out'
-  if (hash % 4 === 0) return 'low'
-  return 'in'
+function getStockState(product: Product): keyof typeof STOCK_UI {
+  return product.inStock === false ? 'out' : 'in'
 }
 
 const STOCK_UI = {
@@ -38,7 +35,7 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
 
   return (
     <Link 
-      to={`/product/${product.id}`}
+      to={ROUTES.PRODUCTO_DETALLE(product.id)}
       className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5"
     >
       <div className="relative aspect-square bg-secondary/50">
