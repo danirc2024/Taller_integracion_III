@@ -16,6 +16,7 @@ spec:
       labels:
         app: db
     spec:
+      nodeName: rke2-estudiantes-agent-03
       containers:
         - name: postgis
           image: postgis/postgis:15-3.3-alpine
