@@ -6,10 +6,10 @@ metadata:
     app: rutahorro
   annotations:
     kubernetes.io/ingress.class: "nginx"
-    # Opcional: nginx.ingress.kubernetes.io/rewrite-target: /
+    external-dns.alpha.kubernetes.io/target: "proxy.inf.uct.cl"
 spec:
   rules:
-    - host: api-vmatus.k8s-estudiantes.dev.censei.cl
+    - host: api-vmatus.dev.censei.cl
       http:
         paths:
           - path: /
@@ -19,3 +19,13 @@ spec:
                 name: api
                 port:
                   number: 8080
+    - host: miweb-vmatus.dev.censei.cl
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
