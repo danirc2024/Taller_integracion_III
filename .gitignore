@@ -67,3 +67,5 @@ Thumbs.db
 *.otp
 *.otp.*
 backend/motor_rutas/data/
+backend/api/tmp/
+backend/bot_discord/bot_discord

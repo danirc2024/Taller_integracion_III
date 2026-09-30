@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import redis
 
 from redis import Redis
 
@@ -43,7 +44,13 @@ def run_worker():
         "SCRAPER_API_URL",
         "http://localhost:8080/api/v1/scraper/productos",
     )
-    redis_client = Redis.from_url(redis_url, decode_responses=True)
+    redis_client = Redis.from_url(
+        redis_url, 
+        decode_responses=True,
+        socket_timeout=None,
+        socket_keepalive=True,
+        health_check_interval=30
+    )
     api_client = ScraperAPIClient(
         endpoint=api_url,
         timeout=float(os.getenv("SCRAPER_API_TIMEOUT", "30")),
@@ -51,8 +58,20 @@ def run_worker():
     logger.info("Worker Scrapy escuchando la cola %s", QUEUE_NAME)
 
     while True:
-        _, raw_job = redis_client.brpop(QUEUE_NAME, timeout=0)
-        job = json.loads(raw_job)
+        try:
+            result = redis_client.brpop(QUEUE_NAME, timeout=5)
+            if not result:
+                continue
+            _, raw_job = result
+            job = json.loads(raw_job)
+        except redis.exceptions.TimeoutError:
+            # Timeout normal esperando trabajos, continuamos
+            continue
+        except Exception as e:
+            logger.warning(f"Error conectando a Redis: {e}")
+            import time; time.sleep(5)
+            continue
+            
         try:
             process_job(job, api_client)
             logger.info("Trabajo %s completado", job.get("trabajo_id"))

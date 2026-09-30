@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	_ "github.com/danirc2024/Taller_integracion_III/backend/api/docs"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/docs"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/routes"
 	"github.com/gin-gonic/gin"
@@ -140,6 +140,9 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Aviso: No se encontró archivo .env, usando variables de entorno del sistema")
 	}
+
+	// Permitir que Swagger se adapte dinámicamente a cualquier dominio o IP
+	docs.SwaggerInfo.Host = ""
 
 	initDB()
 	initRedis()

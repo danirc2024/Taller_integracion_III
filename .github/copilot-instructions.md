@@ -78,7 +78,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 ## Mapa auto-generado: API Gateway (Go + Gin)
 
-**22 archivos .go** detectados
+**28 archivos .go** detectados
 
 
 ### `cmd/seed_productos/main.go` (package main)
@@ -89,6 +89,10 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 ### `domain/producto.go` (package domain)
 
 - Structs: FiltroProductosDTO, ProductoDTO, MetadatosPaginacionDTO, PaginaProductosDTO, HistorialPrecioDTO, ProductoDetalleDTO
+
+### `domain/scraper.go` (package domain)
+
+- Structs: IniciarTrabajoDTO, TrabajoScraperDTO, FinalizarTrabajoDTO, ProductoScrapeadoDTO, IngestaLoteDTO, IngestaResultadoDTO
 
 ### `handlers/auth_handler.go` (package handlers)
 
@@ -106,6 +110,18 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - `(ProductoHandler).ObtenerProductos(c *gin.Context)`
 - `(ProductoHandler).BuscarProductos(c *gin.Context)`
 - `(ProductoHandler).ObtenerDetalleProducto(c *gin.Context)`
+
+### `handlers/scraper_handler.go` (package handlers)
+
+- Structs: ScraperHandler, ejecutarScraperRequest
+- `NewScraperHandler(service services.ScraperService, rdb ...*redis.Client) *ScraperHandler`
+- `(ScraperHandler).EjecutarTrabajo(c *gin.Context)`
+- `(ScraperHandler).IniciarTrabajo(c *gin.Context)`
+- `(ScraperHandler).FinalizarTrabajo(c *gin.Context)`
+- `(ScraperHandler).ObtenerTrabajo(c *gin.Context)`
+- `(ScraperHandler).IngestarProductosConTrabajo(c *gin.Context)`
+- `(ScraperHandler).IngestarProductosDirecto(c *gin.Context)`
+- `(ScraperHandler).manejarErrorIngesta(c *gin.Context, err error)`
 
 ### `infrastructure/models.go` (package infrastructure)
 
@@ -143,6 +159,17 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - `(gormProductoRepository).Listar(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoDTO, int64, error)`
 - `(gormProductoRepository).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
 
+### `repositories/scraper_repository.go` (package repositories)
+
+- Structs: gormScraperRepository
+- `NewScraperRepository(db *gorm.DB) ScraperRepository`
+- `(gormScraperRepository).CrearTrabajo(ctx context.Context, trabajo *infrastructure.TrabajoScraper) error`
+- `(gormScraperRepository).ObtenerTrabajoPorID(ctx context.Context, id uuid.UUID) (*infrastructure.TrabajoScraper, error)`
+- `(gormScraperRepository).FinalizarTrabajo(ctx context.Context, id uuid.UUID, estado string, elementosExtraidos *int, registroErrores *string) (*infrastructure.TrabajoScraper, error)`
+- `(gormScraperRepository).ObtenerCadena(ctx context.Context, cadenaID int, nombreCadena string) (*infrastructure.CadenaSupermercado, error)`
+- `(gormScraperRepository).ObtenerSucursal(ctx context.Context, cadenaID int, sucursalID *int, codigoSucursal *string) (*infrastructure.SucursalSupermercado, error)`
+- `(gormScraperRepository).IngestarLote(ctx context.Context, trabajoID *uuid.UUID, sucursalID int, productos []domain.ProductoScrapeadoDTO) (*domain.IngestaResultadoDTO, error)`
+
 ### `repositories/usuario_repository.go` (package repositories)
 
 - Structs: gormUsuarioRepository
@@ -157,6 +184,10 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 ### `routes/producto_routes.go` (package routes)
 
 - `RegistrarRutasProductos(rg *gin.RouterGroup, db *gorm.DB)`
+
+### `routes/scraper_routes.go` (package routes)
+
+- `RegistrarRutasScraper(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client)`
 
 ### `services/auth_service.go` (package services)
 
@@ -174,6 +205,16 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - `NewProductoService(repo repositories.ProductoRepository) ProductoService`
 - `(productoService).ObtenerCatalogo(ctx context.Context, filtro domain.FiltroProductosDTO) (*domain.PaginaProductosDTO, error)`
 - `(productoService).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
+
+### `services/scraper_service.go` (package services)
+
+- Structs: scraperService
+- `NewScraperService(repo repositories.ScraperRepository) ScraperService`
+- `(scraperService).IniciarTrabajo(ctx context.Context, input domain.IniciarTrabajoDTO) (*domain.TrabajoScraperDTO, error)`
+- `(scraperService).FinalizarTrabajo(ctx context.Context, id string, input domain.FinalizarTrabajoDTO) (*domain.TrabajoScraperDTO, error)`
+- `(scraperService).ObtenerTrabajo(ctx context.Context, id string) (*domain.TrabajoScraperDTO, error)`
+- `(scraperService).IngestarProductos(ctx context.Context, trabajoIDStr *string, input domain.IngestaLoteDTO) (*domain.IngestaResultadoDTO, error)`
+- `(scraperService).mapearTrabajoDTO(t *infrastructure.TrabajoScraper, cadenaNombre string) *domain.TrabajoScraperDTO`
 
 ### `tests/auth_service_test.go` (package tests)
 
@@ -215,6 +256,22 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - `TestProductoService_SanitizacionYLimites(t *testing.T)`
 - `TestProductoService_Busqueda_Minimo3Caracteres(t *testing.T)`
 - `TestProductoService_ObtenerPorID(t *testing.T)`
+
+### `tests/scraper_test.go` (package tests)
+
+- Structs: mockScraperRepository
+- `newMockScraperRepository() *mockScraperRepository`
+- `(mockScraperRepository).CrearTrabajo(ctx context.Context, trabajo *infrastructure.TrabajoScraper) error`
+- `(mockScraperRepository).ObtenerTrabajoPorID(ctx context.Context, id uuid.UUID) (*infrastructure.TrabajoScraper, error)`
+- `(mockScraperRepository).FinalizarTrabajo(ctx context.Context, id uuid.UUID, estado string, elementosExtraidos *int, registroErrores *string) (*infrastructure.TrabajoScraper, error)`
+- `(mockScraperRepository).ObtenerCadena(ctx context.Context, cadenaID int, nombreCadena string) (*infrastructure.CadenaSupermercado, error)`
+- `(mockScraperRepository).ObtenerSucursal(ctx context.Context, cadenaID int, sucursalID *int, codigoSucursal *string) (*infrastructure.SucursalSupermercado, error)`
+- `(mockScraperRepository).IngestarLote(ctx context.Context, trabajoID *uuid.UUID, sucursalID int, productos []domain.ProductoScrapeadoDTO) (*domain.IngestaResultadoDTO, error)`
+- `TestScraperService_IniciarTrabajo_Exitoso(t *testing.T)`
+- `TestScraperService_FinalizarTrabajo_Validaciones(t *testing.T)`
+- `TestScraperService_IngestarProductos_LimitesYValidaciones(t *testing.T)`
+- `TestScraperHandler_EndpointsHTTP(t *testing.T)`
+- `stringPtr(s string) *string`
 
 ### `utils/jwt.go` (package utils)
 
@@ -362,8 +419,21 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 ## Mapa auto-generado: Scraper (Scrapy)
 
-**11 archivos .py** detectados
+**18 archivos .py** detectados
 
+
+### `research/test_api_pipeline.py`
+
+- **class FakeResponse**
+  - `__init__(payload)`
+  - `__enter__()`
+  - `__exit__(exc_type, exc_value, traceback)`
+  - `read()`
+- **class APIPipelineTest(unittest.TestCase)**
+  - `test_client_posts_ingestion_contract()`
+  - `test_pipeline_flushes_batches()`
+- **class FakeClient**
+  - `ingest_batch(products, supermarket, work_id)`
 
 ### `research/test_jumbo.py`
 
@@ -371,7 +441,14 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
   - `test_extract_names_from_json_ld()`
   - `test_category_is_taken_from_url()`
   - `test_extracts_comparison_fields()`
+  - `test_category_requests_detail_for_missing_ean_when_enabled()`
+  - `test_detail_parse_fills_ean_and_preserves_catalog_price()`
   - `test_page_url_preserves_category()`
+  - `test_catalog_pagination_stops_at_page_100()`
+  - `test_product_url_starts_one_request_without_category_pagination()`
+  - `test_product_url_rejects_untrusted_domains()`
+  - `test_parse_product_returns_one_item_without_pagination()`
+  - `test_parse_product_selects_requested_product_from_json_ld_graph()`
   - `test_catalog_refresh_is_needed_when_never_updated()`
   - `test_catalog_refresh_handles_naive_datetime_without_type_error()`
   - `test_catalog_refresh_is_not_needed_while_fresh()`
@@ -390,14 +467,42 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
   - `test_result_publisher_sends_item_to_injected_sender()`
   - `test_result_publisher_reports_api_failure()`
   - `test_refresh_flow_consumes_queue_and_publishes_result()`
-  - `test_scrapy_executor_runs_catalog_without_persisting_output_file()`
+  - `test_scrapy_executor_returns_structured_catalog_items()`
+  - `test_runtime_cli_emits_extracted_items_as_jsonlines()`
   - `test_scrapy_executor_targets_product_url_for_queued_job()`
+  - `test_scrapy_executor_rejects_product_id_without_url()`
   - `test_scheduler_decides_catalog_and_product_update_flow()`
   - `test_scheduler_accepts_future_api_configuration()`
   - `test_scheduler_can_force_catalog_refresh_from_manual_trigger()`
   - `test_scrapy_settings_use_ethic_rate_limit()`
   - `test_scrapy_retry_policy_handles_transient_errors()`
   - `test_404_page_stops_pagination_cleanly()`
+
+### `research/test_normalization.py`
+
+- **class ScraperNormalizationTest(unittest.TestCase)**
+  - `test_normalizes_clp_price_formats()`
+  - `test_rejects_invalid_prices()`
+  - `test_normalizes_ean_without_losing_leading_zeroes()`
+  - `test_normalizes_whitespace_in_text()`
+
+### `research/test_santa_isabel.py`
+
+- **class SantaIsabelExtractionTest(unittest.TestCase)**
+  - `_response(payload, page)`
+  - `test_extracts_santa_isabel_render_data()`
+  - `test_category_pagination_preserves_category()`
+  - `test_spider_obeys_robots_txt()`
+  - `test_only_uses_santa_isabel_seller()`
+
+### `scraper_core/api_client.py`
+
+- **class ScraperAPIError(RuntimeError)**
+- **class ScraperAPIClient**
+  - `__init__(endpoint: str, timeout: float, opener)`
+  - `ingest_batch(products: ?, supermarket: ?, branch_id: ?, branch_code: ?, work_id: ?) → dict`
+  - `finalize_work(work_id: str, status: str, extracted_items: int, error_message: ?) → dict`
+  - `_ingestion_endpoint(work_id: ?) → str`
 
 ### `scraper_core/freshness.py`
 
@@ -444,6 +549,13 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
   - `process_exception(request, exception, spider)`
   - `spider_opened(spider)`
 
+### `scraper_core/normalization.py`
+
+- `normalizar_precio_clp(value)`
+- `_uses_thousands_groups(parts)`
+- `normalizar_ean_gtin(value)`
+- `normalizar_texto(value)`
+
 ### `scraper_core/output.py`
 
 - **class ScraperResultPublisher**
@@ -453,7 +565,11 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 ### `scraper_core/pipelines.py`
 
 - **class ScraperCorePipeline**
-  - `process_item(item)`
+  - `__init__(api_client, batch_size)`
+  - `from_crawler(cls, crawler)`
+  - `process_item(item, spider)`
+  - `close_spider(spider)`
+  - `_flush()`
 
 ### `scraper_core/runtime.py`
 
@@ -469,7 +585,13 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 - **class JumboRscSpider(scrapy.Spider)**
   - `parse(response)`
+  - `parse_ean_detail(response, catalog_product, category, category_page_url)`
+  - `handle_ean_detail_error(failure)`
   - `start_requests()`
+  - `parse_product(response)`
+  - `_to_scraped_item(product, category, response_url)`
+  - `_validate_product_url(url)`
+  - `_canonical_product_url(url)`
   - `_page_url(category_url, page)`
   - `handle_error(failure)`
   - `__init__()`
@@ -479,14 +601,36 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
   - `_extract_products(response)`
   - `_first_value(data)`
   - `_first_price(data)`
+  - `_sku_from_url(product_url)`
   - `_normal_price(entry)`
   - `_stock_value(availability)`
   - `_walk_json(value)`
 
+### `scraper_core/spiders/santa_isabel.py`
+
+- **class SantaIsabelRscSpider(scrapy.Spider)**
+  - `__init__()`
+  - `from_crawler(cls, crawler)`
+  - `start_requests()`
+  - `parse(response)`
+  - `_extract_products(response)`
+  - `_number(value)`
+  - `_to_scraped_item(product, category, response_url)`
+  - `_page_url(category_url, page)`
+  - `_read_category_urls(cls)`
+  - `_append_category_url(url)`
+  - `handle_error(failure)`
+  - `_validate_category_url(url)`
+
+### `scraper_core/worker.py`
+
+- `process_job(job: dict, api_client: ScraperAPIClient) → dict`
+- `run_worker()`
+
 
 ## Mapa auto-generado: Frontend (React + TypeScript)
 
-**55 archivos activos** (excluidos kebab-case obsoletos)
+**68 archivos activos** (excluidos kebab-case obsoletos)
 
 
 ### `core/routes.ts`
@@ -498,6 +642,11 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - Exports: HOME, discountPct, formatPrice, mockUser, products, supermarketById, supermarkets
 - Imports locales: ../types
 
+### `hooks/useAuth.ts`
+
+- Exports: useAuth
+- Imports locales: ../contexts/AuthContext
+
 ### `layouts/useActiveTab.ts`
 
 - Exports: useActiveTab
@@ -508,6 +657,10 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - Exports: HOME, discountPct, formatPrice, products, supermarketById, supermarkets
 - Tipos: Product, Supermarket
 
+### `lib/logger.ts`
+
+- Exports: logger
+
 ### `lib/utils.ts`
 
 - Exports: cn
@@ -515,17 +668,12 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 ### `types/index.ts`
 
-- Tipos: CadenaSupermercado, CapturaPrecio, Categoria, Marca, PreferenciasDieteticas, ProductoCrudo, ProductoNormalizado, SucursalSupermercado, UiProduct, UiSupermarket, Usuario
-
-### `App.tsx`
-
-- Exports: App
-- Imports locales: ./contexts/CartContext, ./layouts/MainLayout, ./pages/Chatbot, ./pages/Crowdsourcing, ./pages/Dashboard, ./pages/History, ./pages/Home, ./pages/Login, ./pages/Onboarding, ./pages/ProductDetail, ./pages/Profile, ./pages/RouteViewer
+- Tipos: CadenaSupermercado, CapturaPrecio, Categoria, LoginPayload, Marca, PreferenciasDieteticas, ProductoCrudo, ProductoNormalizado, RegisterPayload, SucursalSupermercado, UiProduct, UiSupermarket, Usuario
 
 ### `app/router.tsx`
 
 - Exports: AppRouter
-- Imports locales: @/core/routes, @/layouts/AppShell, @/layouts/MainLayout, @/pages/Chatbot, @/pages/Crowdsourcing, @/pages/Dashboard, @/pages/History, @/pages/Home, @/pages/Login, @/pages/NotFound, @/pages/Onboarding, @/pages/ProductDetail, @/pages/Profile, @/pages/RouteViewer, @/pages/mocks/MockShell
+- Imports locales: @/components/ErrorBoundary, @/components/auth/ProtectedRoute, @/contexts/AuthContext, @/contexts/CartContext, @/contexts/ToastContext, @/core/routes, @/layouts/MainLayout, @/pages/Chatbot, @/pages/Crowdsourcing, @/pages/Dashboard, @/pages/History, @/pages/Home, @/pages/Login, @/pages/NotFound, @/pages/Onboarding, @/pages/Planes, @/pages/ProductDetail, @/pages/Profile, @/pages/RouteViewer, @/pages/mocks/MockShell
 
 ### `components/BottomNav.tsx`
 
@@ -537,6 +685,11 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 - Exports: CartSidebar
 - Imports locales: @/components/ui/button, @/contexts/CartContext, @/data/mock
+
+### `components/ErrorBoundary.tsx`
+
+- Exports: ErrorBoundary
+- Imports locales: @/lib/logger
 
 ### `components/Footer.tsx`
 
@@ -563,12 +716,12 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 - Exports: TopNav
 - Tipos: TopNavProps
-- Imports locales: @/components/ui/button
+- Imports locales: @/components/ui/button, @/core/routes, @/hooks/useAuth
 
 ### `components/auth/AuthPanel.tsx`
 
 - Exports: AuthPanel
-- Imports locales: @/components/auth/PasswordStrength, @/components/auth/SocialButtons, @/components/ui/button, @/components/ui/field, @/components/ui/input, @/components/ui/tabs
+- Imports locales: @/components/auth/PasswordStrength, @/components/auth/SocialButtons, @/components/ui/button, @/components/ui/field, @/components/ui/input, @/components/ui/tabs, @/contexts/ToastContext, @/hooks/useAuth
 
 ### `components/auth/AuthVisual.tsx`
 
@@ -579,10 +732,32 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - Exports: PasswordStrength
 - Imports locales: @/lib/utils
 
+### `components/auth/ProtectedRoute.tsx`
+
+- Exports: ProtectedRoute
+- Imports locales: @/hooks/useAuth
+
 ### `components/auth/SocialButtons.tsx`
 
 - Exports: SocialButtons
 - Imports locales: @/components/ui/button
+
+### `components/chatbot/OutOfStockAlert.tsx`
+
+- Exports: OutOfStockAlert
+- Tipos: OutOfStockAlertProps
+- Imports locales: @/lib/utils
+
+### `components/chatbot/RichRecipeCard.tsx`
+
+- Exports: RichRecipeCard
+- Tipos: RichRecipeCardProps
+- Imports locales: @/data/mock, @/lib/utils
+
+### `components/chatbot/TypingIndicator.tsx`
+
+- Exports: TypingIndicator
+- Imports locales: @/lib/utils
 
 ### `components/landing/LandingCTA.tsx`
 
@@ -631,7 +806,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 ### `components/onboarding/OnboardingWizard.tsx`
 
 - Exports: OnboardingWizard
-- Imports locales: ./ProgressSteps, ./StepDiet, ./StepLocation, ./StepSupermarkets, @/lib/utils
+- Imports locales: ./ProgressSteps, ./StepDiet, ./StepLocation, ./StepProfile, ./StepSupermarkets, @/lib/utils
 
 ### `components/onboarding/ProgressSteps.tsx`
 
@@ -650,10 +825,27 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - Exports: StepLocation
 - Tipos: StepLocationProps
 
+### `components/onboarding/StepProfile.tsx`
+
+- Exports: StepProfile
+- Tipos: StepProfileProps
+- Imports locales: @/lib/utils
+
 ### `components/onboarding/StepSupermarkets.tsx`
 
 - Exports: StepSupermarkets
 - Tipos: Chain, StepSupermarketsProps
+- Imports locales: @/lib/utils
+
+### `components/ui/ProductSkeleton.tsx`
+
+- Exports: ProductSkeleton
+- Imports locales: @/components/ui/skeleton
+
+### `components/ui/SuccessCard.tsx`
+
+- Exports: SuccessCard
+- Tipos: SuccessCardProps
 - Imports locales: @/lib/utils
 
 ### `components/ui/button.tsx`
@@ -671,11 +863,23 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - Tipos: VariantProps
 - Imports locales: @/lib/utils
 
+### `contexts/AuthContext.tsx`
+
+- Exports: AuthContext, AuthProvider
+- Tipos: AuthContextType, ReactNode
+- Imports locales: @/types
+
 ### `contexts/CartContext.tsx`
 
 - Exports: CartProvider, useCart
 - Tipos: CartContextType, CartItem
-- Imports locales: @/types
+- Imports locales: @/contexts/ToastContext, @/types
+
+### `contexts/ToastContext.tsx`
+
+- Exports: ToastProvider, useToast
+- Tipos: ReactNode, Toast, ToastContextType, ToastType
+- Imports locales: @/lib/utils
 
 ### `layouts/AppShell.tsx`
 
@@ -687,23 +891,23 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 - Exports: MainLayout, useLayoutContext
 - Tipos: LayoutContextType
-- Imports locales: @/components/CartSidebar, @/components/Sidebar, @/components/TopNav
+- Imports locales: @/components/BottomNav, @/components/CartSidebar, @/components/Sidebar, @/components/TopNav
 
 ### `pages/Chatbot.tsx`
 
 - Exports: Chatbot
 - Tipos: Message
-- Imports locales: @/data/mock, @/lib/utils
+- Imports locales: @/components/chatbot/OutOfStockAlert, @/components/chatbot/RichRecipeCard, @/components/chatbot/TypingIndicator, @/contexts/ToastContext, @/data/mock, @/hooks/useAuth, @/lib/utils
 
 ### `pages/Crowdsourcing.tsx`
 
 - Exports: Crowdsourcing
-- Imports locales: @/components/Footer, @/data/mock, @/lib/utils
+- Imports locales: @/components/Footer, @/components/ui/SuccessCard, @/contexts/ToastContext, @/data/mock, @/lib/utils
 
 ### `pages/Dashboard.tsx`
 
 - Exports: Page
-- Imports locales: @/components/Footer, @/components/ProductCard, @/contexts/CartContext, @/data/mock, @/layouts/MainLayout, @/types
+- Imports locales: @/components/Footer, @/components/ProductCard, @/components/ui/ProductSkeleton, @/contexts/CartContext, @/data/mock, @/layouts/MainLayout, @/types
 
 ### `pages/History.tsx`
 
@@ -730,22 +934,26 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - Exports: Page
 - Imports locales: @/components/onboarding/OnboardingWizard
 
+### `pages/Planes.tsx`
+
+- Exports: Planes
+- Imports locales: @/data/mock, @/pages/mocks/MockShell
+
 ### `pages/ProductDetail.tsx`
 
 - Exports: ProductDetail
-- Tipos: RelatedItem
 - Imports locales: @/components/Footer, @/components/ui/button, @/contexts/CartContext, @/data/mock
 
 ### `pages/Profile.tsx`
 
 - Exports: Profile
-- Imports locales: @/data/mock, @/lib/utils
+- Imports locales: @/data/mock, @/lib/utils, @/pages/mocks/MockShell
 
 ### `pages/RouteViewer.tsx`
 
 - Exports: RouteViewer
 - Tipos: as
-- Imports locales: @/data/mock, @/lib/utils
+- Imports locales: @/components/ui/skeleton, @/data/mock, @/lib/utils
 
 ### `pages/mocks/MockShell.tsx`
 

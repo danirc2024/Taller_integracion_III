@@ -60,7 +60,7 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 
 ## Mapa auto-generado: API Gateway (Go + Gin)
 
-**22 archivos .go** detectados
+**28 archivos .go** detectados
 
 
 ### `cmd/seed_productos/main.go` (package main)
@@ -71,6 +71,10 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 ### `domain/producto.go` (package domain)
 
 - Structs: FiltroProductosDTO, ProductoDTO, MetadatosPaginacionDTO, PaginaProductosDTO, HistorialPrecioDTO, ProductoDetalleDTO
+
+### `domain/scraper.go` (package domain)
+
+- Structs: IniciarTrabajoDTO, TrabajoScraperDTO, FinalizarTrabajoDTO, ProductoScrapeadoDTO, IngestaLoteDTO, IngestaResultadoDTO
 
 ### `handlers/auth_handler.go` (package handlers)
 
@@ -88,6 +92,18 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 - `(ProductoHandler).ObtenerProductos(c *gin.Context)`
 - `(ProductoHandler).BuscarProductos(c *gin.Context)`
 - `(ProductoHandler).ObtenerDetalleProducto(c *gin.Context)`
+
+### `handlers/scraper_handler.go` (package handlers)
+
+- Structs: ScraperHandler, ejecutarScraperRequest
+- `NewScraperHandler(service services.ScraperService, rdb ...*redis.Client) *ScraperHandler`
+- `(ScraperHandler).EjecutarTrabajo(c *gin.Context)`
+- `(ScraperHandler).IniciarTrabajo(c *gin.Context)`
+- `(ScraperHandler).FinalizarTrabajo(c *gin.Context)`
+- `(ScraperHandler).ObtenerTrabajo(c *gin.Context)`
+- `(ScraperHandler).IngestarProductosConTrabajo(c *gin.Context)`
+- `(ScraperHandler).IngestarProductosDirecto(c *gin.Context)`
+- `(ScraperHandler).manejarErrorIngesta(c *gin.Context, err error)`
 
 ### `infrastructure/models.go` (package infrastructure)
 
@@ -125,6 +141,17 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 - `(gormProductoRepository).Listar(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoDTO, int64, error)`
 - `(gormProductoRepository).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
 
+### `repositories/scraper_repository.go` (package repositories)
+
+- Structs: gormScraperRepository
+- `NewScraperRepository(db *gorm.DB) ScraperRepository`
+- `(gormScraperRepository).CrearTrabajo(ctx context.Context, trabajo *infrastructure.TrabajoScraper) error`
+- `(gormScraperRepository).ObtenerTrabajoPorID(ctx context.Context, id uuid.UUID) (*infrastructure.TrabajoScraper, error)`
+- `(gormScraperRepository).FinalizarTrabajo(ctx context.Context, id uuid.UUID, estado string, elementosExtraidos *int, registroErrores *string) (*infrastructure.TrabajoScraper, error)`
+- `(gormScraperRepository).ObtenerCadena(ctx context.Context, cadenaID int, nombreCadena string) (*infrastructure.CadenaSupermercado, error)`
+- `(gormScraperRepository).ObtenerSucursal(ctx context.Context, cadenaID int, sucursalID *int, codigoSucursal *string) (*infrastructure.SucursalSupermercado, error)`
+- `(gormScraperRepository).IngestarLote(ctx context.Context, trabajoID *uuid.UUID, sucursalID int, productos []domain.ProductoScrapeadoDTO) (*domain.IngestaResultadoDTO, error)`
+
 ### `repositories/usuario_repository.go` (package repositories)
 
 - Structs: gormUsuarioRepository
@@ -139,6 +166,10 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 ### `routes/producto_routes.go` (package routes)
 
 - `RegistrarRutasProductos(rg *gin.RouterGroup, db *gorm.DB)`
+
+### `routes/scraper_routes.go` (package routes)
+
+- `RegistrarRutasScraper(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client)`
 
 ### `services/auth_service.go` (package services)
 
@@ -156,6 +187,16 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 - `NewProductoService(repo repositories.ProductoRepository) ProductoService`
 - `(productoService).ObtenerCatalogo(ctx context.Context, filtro domain.FiltroProductosDTO) (*domain.PaginaProductosDTO, error)`
 - `(productoService).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
+
+### `services/scraper_service.go` (package services)
+
+- Structs: scraperService
+- `NewScraperService(repo repositories.ScraperRepository) ScraperService`
+- `(scraperService).IniciarTrabajo(ctx context.Context, input domain.IniciarTrabajoDTO) (*domain.TrabajoScraperDTO, error)`
+- `(scraperService).FinalizarTrabajo(ctx context.Context, id string, input domain.FinalizarTrabajoDTO) (*domain.TrabajoScraperDTO, error)`
+- `(scraperService).ObtenerTrabajo(ctx context.Context, id string) (*domain.TrabajoScraperDTO, error)`
+- `(scraperService).IngestarProductos(ctx context.Context, trabajoIDStr *string, input domain.IngestaLoteDTO) (*domain.IngestaResultadoDTO, error)`
+- `(scraperService).mapearTrabajoDTO(t *infrastructure.TrabajoScraper, cadenaNombre string) *domain.TrabajoScraperDTO`
 
 ### `tests/auth_service_test.go` (package tests)
 
@@ -197,6 +238,22 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 - `TestProductoService_SanitizacionYLimites(t *testing.T)`
 - `TestProductoService_Busqueda_Minimo3Caracteres(t *testing.T)`
 - `TestProductoService_ObtenerPorID(t *testing.T)`
+
+### `tests/scraper_test.go` (package tests)
+
+- Structs: mockScraperRepository
+- `newMockScraperRepository() *mockScraperRepository`
+- `(mockScraperRepository).CrearTrabajo(ctx context.Context, trabajo *infrastructure.TrabajoScraper) error`
+- `(mockScraperRepository).ObtenerTrabajoPorID(ctx context.Context, id uuid.UUID) (*infrastructure.TrabajoScraper, error)`
+- `(mockScraperRepository).FinalizarTrabajo(ctx context.Context, id uuid.UUID, estado string, elementosExtraidos *int, registroErrores *string) (*infrastructure.TrabajoScraper, error)`
+- `(mockScraperRepository).ObtenerCadena(ctx context.Context, cadenaID int, nombreCadena string) (*infrastructure.CadenaSupermercado, error)`
+- `(mockScraperRepository).ObtenerSucursal(ctx context.Context, cadenaID int, sucursalID *int, codigoSucursal *string) (*infrastructure.SucursalSupermercado, error)`
+- `(mockScraperRepository).IngestarLote(ctx context.Context, trabajoID *uuid.UUID, sucursalID int, productos []domain.ProductoScrapeadoDTO) (*domain.IngestaResultadoDTO, error)`
+- `TestScraperService_IniciarTrabajo_Exitoso(t *testing.T)`
+- `TestScraperService_FinalizarTrabajo_Validaciones(t *testing.T)`
+- `TestScraperService_IngestarProductos_LimitesYValidaciones(t *testing.T)`
+- `TestScraperHandler_EndpointsHTTP(t *testing.T)`
+- `stringPtr(s string) *string`
 
 ### `utils/jwt.go` (package utils)
 
