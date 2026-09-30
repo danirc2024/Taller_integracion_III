@@ -75,7 +75,7 @@ src/
 
 ## Mapa auto-generado: Frontend (React + TypeScript)
 
-**68 archivos activos** (excluidos kebab-case obsoletos)
+**70 archivos activos** (excluidos kebab-case obsoletos)
 
 
 ### `core/routes.ts`
@@ -105,6 +105,12 @@ src/
 ### `lib/logger.ts`
 
 - Exports: logger
+
+### `lib/products-api.ts`
+
+- Exports: toUiProduct
+- Tipos: ApiPriceHistory, ApiProduct, ApiProductDetail, ProductPage
+- Imports locales: @/data/mock, @/types
 
 ### `lib/utils.ts`
 
@@ -144,7 +150,12 @@ src/
 
 - Exports: ProductCard
 - Tipos: ProductCardProps
-- Imports locales: @/components/ui/button, @/data/mock, @/types
+- Imports locales: @/components/ui/button, @/core/routes, @/data/mock, @/types
+
+### `components/ProductCarousel.tsx`
+
+- Exports: ProductCarousel
+- Imports locales: @/components/ProductCard, @/types
 
 ### `components/RouteMap.tsx`
 
@@ -352,7 +363,7 @@ src/
 ### `pages/Dashboard.tsx`
 
 - Exports: Page
-- Imports locales: @/components/Footer, @/components/ProductCard, @/components/ui/ProductSkeleton, @/contexts/CartContext, @/data/mock, @/layouts/MainLayout, @/types
+- Imports locales: @/components/Footer, @/components/ProductCard, @/components/ui/ProductSkeleton, @/contexts/CartContext, @/data/mock, @/layouts/MainLayout, @/lib/products-api, @/types
 
 ### `pages/History.tsx`
 
@@ -387,7 +398,7 @@ src/
 ### `pages/ProductDetail.tsx`
 
 - Exports: ProductDetail
-- Imports locales: @/components/Footer, @/components/ui/button, @/contexts/CartContext, @/data/mock
+- Imports locales: @/components/Footer, @/components/ProductCarousel, @/components/ui/button, @/contexts/CartContext, @/data/mock, @/lib/products-api, @/types
 
 ### `pages/Profile.tsx`
 

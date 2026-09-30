@@ -47,7 +47,9 @@ services:
     # - /app/tmp
     restart: unless-stopped
     networks:
-    - microservices_net
+      microservices_net:
+        aliases:
+          - api
     deploy:
       resources:
         limits:
