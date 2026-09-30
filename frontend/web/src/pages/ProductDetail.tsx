@@ -1,12 +1,11 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, Store, Plus, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  products,
-  supermarketById,
-  discountPct,
-  formatPrice,
-} from '@/data/mock'
+import { supermarketById, discountPct, formatPrice } from '@/data/mock'
+import { getProductDetail, getProducts } from '@/lib/products-api'
+import type { UiProduct as Product } from '@/types'
+import { ProductCarousel } from '@/components/ProductCarousel'
 import { useCart } from '@/contexts/CartContext'
 import { Footer } from '@/components/Footer'
 
@@ -14,8 +13,31 @@ export default function ProductDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { addToCart } = useCart()
+  const [product, setProduct] = useState<Product | null>(null)
+  const [history, setHistory] = useState<{ precio_normal: number; precio_oferta?: number; capturado_el: string }[]>([])
+  const [related, setRelated] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const product = products.find((p) => p.id === id)
+  useEffect(() => {
+    if (!id) return
+    const controller = new AbortController()
+    setIsLoading(true)
+    Promise.all([getProductDetail(id), getProducts('?limit=100')])
+      .then(([detail, catalog]) => {
+        if (controller.signal.aborted) return
+        setProduct(detail.product)
+        setHistory(detail.history)
+        setRelated(catalog.products.filter((item) => item.id !== id).slice(0, 8))
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false)
+      })
+    return () => controller.abort()
+  }, [id])
+
+  if (isLoading) {
+    return <main className="flex flex-1 items-center justify-center p-6">Cargando producto...</main>
+  }
 
   if (!product) {
     return (
@@ -97,6 +119,11 @@ export default function ProductDetail() {
                 Ahorras {formatPrice(product.originalPrice - product.price)} en este producto
               </p>
             )}
+            {history.length > 1 && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                {history.length} capturas de precio registradas en la base de datos.
+              </p>
+            )}
           </div>
 
           <div className="mt-auto flex flex-col gap-3 sm:flex-row">
@@ -115,6 +142,7 @@ export default function ProductDetail() {
           </div>
         </section>
       </div>
+      <ProductCarousel products={related} />
       <Footer />
     </main>
   )
