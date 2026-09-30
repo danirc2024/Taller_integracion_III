@@ -7,11 +7,19 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+)
+
+var (
+	reviewDebounceMutex  sync.Mutex
+	reviewDebounceTimers = make(map[int]*time.Timer)
+	reviewDebounceUsers  = make(map[int][]string)
 )
 
 func main() {
@@ -276,9 +284,41 @@ func handlePullRequest(s *discordgo.Session, channelID string, payload map[strin
 
 		if reqRev, ok := payload["requested_reviewer"].(map[string]interface{}); ok {
 			reviewer := reqRev["login"].(string)
-			// Las URL entre <> evitan que Discord genere la caja gigante de previsualización
-			msg := fmt.Sprintf("👀 **Review Solicitado** en el PR #%d\nSe ha solicitado la revisión de %s.\n**Link**: <%s>", number, mapGitHubToDiscord(reviewer), url)
-			s.ChannelMessageSend(channelID, msg)
+			reviewerDiscord := mapGitHubToDiscord(reviewer)
+
+			reviewDebounceMutex.Lock()
+			
+			// Solo añadir si no existe ya para evitar duplicados en la lista (por si acaso GitHub manda eventos de mas)
+			exists := false
+			for _, u := range reviewDebounceUsers[number] {
+				if u == reviewerDiscord {
+					exists = true
+					break
+				}
+			}
+			if !exists {
+				reviewDebounceUsers[number] = append(reviewDebounceUsers[number], reviewerDiscord)
+			}
+
+			if timer, ok := reviewDebounceTimers[number]; ok {
+				timer.Stop()
+			}
+
+			// Iniciar timer de 2.5 segundos para acumular requests de reviews
+			reviewDebounceTimers[number] = time.AfterFunc(2500*time.Millisecond, func() {
+				reviewDebounceMutex.Lock()
+				users := reviewDebounceUsers[number]
+				delete(reviewDebounceUsers, number)
+				delete(reviewDebounceTimers, number)
+				reviewDebounceMutex.Unlock()
+
+				if len(users) > 0 {
+					// Las URL entre <> evitan que Discord genere la caja gigante de previsualización
+					msg := fmt.Sprintf("👀 **Review Solicitado** en el PR #%d\nSe ha solicitado la revisión de %s.\n**Link**: <%s>", number, strings.Join(users, ", "), url)
+					s.ChannelMessageSend(channelID, msg)
+				}
+			})
+			reviewDebounceMutex.Unlock()
 		}
 
 	case "labeled":
