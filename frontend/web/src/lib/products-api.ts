@@ -1,7 +1,7 @@
 import { supermarkets } from '@/data/mock'
 import type { UiProduct as Product } from '@/types'
 
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '')
+const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 
 type ApiProduct = {
   id: string
