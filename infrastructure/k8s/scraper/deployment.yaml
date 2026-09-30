@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: scraper
   labels:
     app: scraper
+  name: scraper
 spec:
   replicas: 1
   selector:
@@ -15,9 +15,10 @@ spec:
         app: scraper
     spec:
       containers:
-      - name: scraper
-        image: ghcr.io/danirc2024/taller_integracion_iii-scraper:develop
-        imagePullPolicy: Always
+      - command:
+        - python
+        - -m
+        - scraper_core.worker
         env:
         - name: POSTGRES_HOST
           value: db
@@ -26,24 +27,28 @@ spec:
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
-              name: db-secret
               key: POSTGRES_USER
+              name: db-secret
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: db-secret
               key: POSTGRES_PASSWORD
+              name: db-secret
         - name: POSTGRES_DB
           valueFrom:
             secretKeyRef:
-              name: db-secret
               key: POSTGRES_DB
+              name: db-secret
         - name: REDIS_URL
-          value: "redis://redis:6379/0"
+          value: redis://redis:6379/0
         - name: SCRAPER_API_URL
-          value: "http://api:8080/api/v1/scraper/productos"
-        command: ["python", "-m", "scraper_core.worker"]
+          value: http://api:8080/api/v1/scraper/productos
+        image: ghcr.io/danirc2024/taller_integracion_iii-scraper:develop
+        imagePullPolicy: Always
+        name: scraper
         resources:
+          limits:
+            cpu: 350m
           requests:
-            memory: 64Mi
             cpu: 50m
+            memory: 64Mi
