@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bot
+  labels:
+    app: bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bot
+  template:
+    metadata:
+      labels:
+        app: bot
+    spec:
+      containers:
+      - name: bot
+        image: ghcr.io/danirc2024/taller_integracion_iii-bot:develop
+        imagePullPolicy: Always
+        env:
+        - name: DISCORD_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: bot-secret
+              key: token
+        - name: DISCORD_CHANNEL_ID
+          valueFrom:
+            secretKeyRef:
+              name: bot-secret
+              key: channel_id
+        - name: SCRAPER_API_BASE_URL
+          value: "http://api:8080/api/v1/scraper/trabajos"
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
