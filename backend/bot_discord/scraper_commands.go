@@ -13,7 +13,13 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var apiURL = "http://go_service_api:8080/api/v1/scraper/trabajos"
+func getApiURL() string {
+	url := os.Getenv("SCRAPER_API_BASE_URL")
+	if url == "" {
+		url = "http://api:8080/api/v1/scraper/trabajos" // Fallback para k8s
+	}
+	return url
+}
 
 func sendScraperMenu(s *discordgo.Session, channelID string) {
 	msg := &discordgo.MessageSend{
@@ -108,7 +114,7 @@ func handleScrapeStart(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	createBytes, _ := json.Marshal(createPayload)
 
-	resp, err := http.Post(apiURL, "application/json", bytes.NewBuffer(createBytes))
+	resp, err := http.Post(getApiURL(), "application/json", bytes.NewBuffer(createBytes))
 	if err != nil {
 		s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 			Content: fmt.Sprintf("❌ Error de red al crear trabajo para %s: %v", nombre, err),
@@ -135,7 +141,7 @@ func handleScrapeStart(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	startBytes, _ := json.Marshal(startPayload)
 
-	respStart, err := http.Post(fmt.Sprintf("%s/%s/ejecutar", apiURL, trabajoID), "application/json", bytes.NewBuffer(startBytes))
+	respStart, err := http.Post(fmt.Sprintf("%s/%s/ejecutar", getApiURL(), trabajoID), "application/json", bytes.NewBuffer(startBytes))
 	if err != nil {
 		s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 			Content: fmt.Sprintf("❌ Error de red al iniciar spider %s: %v", spider, err),
@@ -179,7 +185,7 @@ func monitorJobAndNotify(s *discordgo.Session, channelID, trabajoID, nombre, use
 	for {
 		time.Sleep(5 * time.Second)
 
-		resp, err := http.Get(fmt.Sprintf("%s/%s", apiURL, trabajoID))
+		resp, err := http.Get(fmt.Sprintf("%s/%s", getApiURL(), trabajoID))
 		if err != nil {
 			continue // reintentar
 		}
@@ -224,7 +230,7 @@ func handleRefresh(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	trabajoID := strings.TrimPrefix(customID, "refresh_")
 
 	// Obtener estado
-	resp, err := http.Get(fmt.Sprintf("%s/%s", apiURL, trabajoID))
+	resp, err := http.Get(fmt.Sprintf("%s/%s", getApiURL(), trabajoID))
 	if err != nil {
 		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
