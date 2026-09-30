@@ -1,13 +1,13 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: rutahorro-ingress
+  name: api-ingress
   labels:
-    app: rutahorro
+    app: api
   annotations:
-    kubernetes.io/ingress.class: "nginx"
     external-dns.alpha.kubernetes.io/target: "proxy.inf.uct.cl"
 spec:
+  ingressClassName: nginx
   rules:
     - host: api-vmatus.dev.censei.cl
       http:
@@ -19,13 +19,3 @@ spec:
                 name: api
                 port:
                   number: 8080
-    - host: miweb-vmatus.dev.censei.cl
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 80

@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend
   labels:
     app: frontend
+  name: frontend
 spec:
   replicas: 1
   selector:
@@ -15,15 +15,15 @@ spec:
         app: frontend
     spec:
       containers:
-      - name: frontend
-        image: ghcr.io/danirc2024/taller_integracion_iii-frontend:develop
+      - image: ghcr.io/danirc2024/taller_integracion_iii-frontend:develop
         imagePullPolicy: Always
+        name: frontend
         ports:
         - containerPort: 3000
         resources:
-          requests:
-            memory: 64Mi
-            cpu: 30m
           limits:
+            cpu: 350m
+            memory: 300Mi
+          requests:
+            cpu: 30m
             memory: 64Mi
-            cpu: 100m
