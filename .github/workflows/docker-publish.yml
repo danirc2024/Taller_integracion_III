@@ -7,6 +7,7 @@ on:
       - develop
     paths:
       - 'backend/api/**'
+      - 'backend/bot_discord/**'
       - 'frontend/web/**'
       - '.github/workflows/**'
 
@@ -91,3 +92,22 @@ jobs:
           push: true
           tags: ${{ steps.meta-scraper.outputs.tags }}
           labels: ${{ steps.meta-scraper.outputs.labels }}
+
+      # ==== BUILD DISCORD BOT ====
+      - name: Extract metadata for Bot Discord
+        id: meta-bot
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-bot
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=sha
+
+      - name: Build and push Bot Discord image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/bot_discord
+          push: true
+          tags: ${{ steps.meta-bot.outputs.tags }}
+          labels: ${{ steps.meta-bot.outputs.labels }}
