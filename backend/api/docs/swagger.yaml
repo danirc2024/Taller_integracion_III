@@ -93,6 +93,23 @@ definitions:
       total_registros:
         type: integer
     type: object
+  domain.PaginaProductosAdminDTO:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.ProductoAdminDTO'
+        type: array
+      limite:
+        type: integer
+      pagina_actual:
+        type: integer
+      paginacion:
+        $ref: '#/definitions/domain.MetadatosPaginacionDTO'
+      total_paginas:
+        type: integer
+      total_registros:
+        type: integer
+    type: object
   domain.PaginaProductosDTO:
     properties:
       data:
@@ -127,6 +144,37 @@ definitions:
       rol:
         type: string
       telefono:
+        type: string
+    type: object
+  domain.ProductoAdminDTO:
+    properties:
+      categoria:
+        type: string
+      en_oferta:
+        type: boolean
+      en_stock:
+        type: boolean
+      id:
+        type: string
+      marca:
+        type: string
+      nombre:
+        type: string
+      precio_normal:
+        type: integer
+      precio_oferta:
+        type: integer
+      sku:
+        type: string
+      sucursal_id:
+        type: integer
+      supermercado:
+        type: string
+      ultima_extraccion_el:
+        type: string
+      unidad:
+        type: string
+      url_imagen:
         type: string
     type: object
   domain.ProductoDTO:
@@ -375,6 +423,89 @@ paths:
       summary: Muestra mensaje de bienvenida
       tags:
       - root
+  /api/v1/admin/productos:
+    get:
+      description: Obtiene listado paginado y filtrado de productos con datos técnicos
+        de scraping para Superadmin
+      parameters:
+      - description: Búsqueda por texto libre
+        in: query
+        name: q
+        type: string
+      - description: 'Número de página (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Cantidad de productos por página (default: 20)'
+        in: query
+        name: limit
+        type: integer
+      - description: Filtrar por categoría
+        in: query
+        name: categoria
+        type: string
+      - description: Filtrar por supermercado o cadena
+        in: query
+        name: supermercado
+        type: string
+      - description: Filtrar por marca
+        in: query
+        name: marca
+        type: string
+      - description: Filtrar por SKU
+        in: query
+        name: sku
+        type: string
+      - description: Filtrar por disponibilidad de stock
+        in: query
+        name: en_stock
+        type: boolean
+      - description: Precio mínimo
+        in: query
+        name: precio_min
+        type: number
+      - description: Precio máximo
+        in: query
+        name: precio_max
+        type: number
+      - description: Filtrar solo productos en oferta
+        in: query
+        name: en_oferta
+        type: boolean
+      - description: Criterio de ordenamiento (precio, nombre, marca, sku, fecha)
+        in: query
+        name: sort_by
+        type: string
+      - description: Dirección del orden (asc, desc)
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.PaginaProductosAdminDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/middleware.RespuestaError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/middleware.RespuestaError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/middleware.RespuestaError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/middleware.RespuestaError'
+      summary: Catálogo de productos para administración
+      tags:
+      - admin
   /api/v1/auth/google:
     post:
       consumes:

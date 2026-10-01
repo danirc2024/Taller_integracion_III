@@ -197,3 +197,78 @@ func TestProductoHandler_ObtenerDetalleProducto(t *testing.T) {
 		}
 	})
 }
+
+func TestProductoHandler_ObtenerProductosAdmin(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	oferta := 1490
+	fecha := time.Date(2026, 10, 1, 15, 0, 0, 0, time.UTC)
+	mockRepo := &mockProductoRepository{
+		adminItems: []domain.ProductoAdminDTO{
+			{
+				ID:                 "admin-prod-99",
+				SKU:                "SKU-JUMBO-99",
+				Nombre:             "Aceite Vegetal 1L",
+				Marca:              "Chef",
+				Categoria:          "Despensa",
+				Supermercado:       "Jumbo",
+				PrecioNormal:       1990,
+				PrecioOferta:       &oferta,
+				EnOferta:           true,
+				URLImagen:          "https://img.jumbo.cl/aceite.jpg",
+				Unidad:             "1 L",
+				EnStock:            true,
+				UltimaExtraccionEl: fecha,
+				SucursalID:         12,
+			},
+		},
+		total: 1,
+	}
+
+	service := services.NewProductoService(mockRepo)
+	handler := handlers.NewProductoHandler(service)
+
+	router := gin.New()
+	router.GET("/api/v1/admin/productos", handler.ObtenerProductosAdmin)
+
+	t.Run("200 OK con filtros completos de administración", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/api/v1/admin/productos?page=1&limit=10&sku=SKU-JUMBO-99&en_stock=true&sort_by=sku&order=asc", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("se esperaba HTTP 200, se obtuvo %d. Body: %s", w.Code, w.Body.String())
+		}
+
+		var res domain.PaginaProductosAdminDTO
+		if err := json.Unmarshal(w.Body.Bytes(), &res); err != nil {
+			t.Fatalf("error parseando JSON: %v", err)
+		}
+
+		if len(res.Data) != 1 {
+			t.Fatalf("se esperaba 1 producto admin, se obtuvieron %d", len(res.Data))
+		}
+		if res.Data[0].SKU != "SKU-JUMBO-99" {
+			t.Errorf("se esperaba SKU 'SKU-JUMBO-99', se obtuvo '%s'", res.Data[0].SKU)
+		}
+		if res.Data[0].PrecioNormal != 1990 {
+			t.Errorf("se esperaba PrecioNormal=1990, se obtuvo %d", res.Data[0].PrecioNormal)
+		}
+		if res.Data[0].PrecioOferta == nil || *res.Data[0].PrecioOferta != 1490 {
+			t.Errorf("se esperaba PrecioOferta=1490")
+		}
+		if !res.Data[0].EnStock {
+			t.Errorf("se esperaba EnStock=true")
+		}
+	})
+
+	t.Run("400 Bad Request cuando búsqueda por texto libre q es corta", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/api/v1/admin/productos?q=ab", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("se esperaba HTTP 400 por búsqueda corta, se obtuvo %d. Body: %s", w.Code, w.Body.String())
+		}
+	})
+}

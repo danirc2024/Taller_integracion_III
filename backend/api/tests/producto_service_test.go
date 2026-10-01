@@ -13,6 +13,7 @@ import (
 // mockProductoRepository simula la capa de acceso a datos para pruebas unitarias
 type mockProductoRepository struct {
 	items      []domain.ProductoDTO
+	adminItems []domain.ProductoAdminDTO
 	total      int64
 	err        error
 	lastFilter domain.FiltroProductosDTO
@@ -25,6 +26,14 @@ func (m *mockProductoRepository) Listar(ctx context.Context, filtro domain.Filtr
 		return nil, 0, m.err
 	}
 	return m.items, m.total, nil
+}
+
+func (m *mockProductoRepository) ListarParaAdmin(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoAdminDTO, int64, error) {
+	m.lastFilter = filtro
+	if m.err != nil {
+		return nil, 0, m.err
+	}
+	return m.adminItems, m.total, nil
 }
 
 func (m *mockProductoRepository) ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error) {
@@ -205,6 +214,82 @@ func TestProductoService_ObtenerPorID(t *testing.T) {
 		_, err := service.ObtenerPorID(context.Background(), "   ")
 		if !errors.Is(err, services.ErrProductoNoEncontrado) {
 			t.Errorf("se esperaba ErrProductoNoEncontrado para id vacio, se obtuvo %v", err)
+		}
+	})
+}
+
+func TestProductoService_ObtenerCatalogoAdmin(t *testing.T) {
+	stock := true
+	oferta := 990
+	fecha := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	mockRepo := &mockProductoRepository{
+		adminItems: []domain.ProductoAdminDTO{
+			{
+				ID:                 "admin-prod-1",
+				SKU:                "SKU12345",
+				Nombre:             "Leche Entera",
+				Marca:              "Colun",
+				Categoria:          "Lácteos",
+				Supermercado:       "Lider",
+				PrecioNormal:       1290,
+				PrecioOferta:       &oferta,
+				EnOferta:           true,
+				URLImagen:          "https://img.ejemplo.com/leche.jpg",
+				Unidad:             "1 L",
+				EnStock:            true,
+				UltimaExtraccionEl: fecha,
+				SucursalID:         10,
+			},
+		},
+		total: 50,
+	}
+
+	service := services.NewProductoService(mockRepo)
+
+	t.Run("Valores por defecto y cálculo de paginación", func(t *testing.T) {
+		res, err := service.ObtenerCatalogoAdmin(context.Background(), domain.FiltroProductosDTO{})
+		if err != nil {
+			t.Fatalf("se esperaba nil error, se obtuvo: %v", err)
+		}
+		if mockRepo.lastFilter.Page != 1 {
+			t.Errorf("se esperaba Page=1, se obtuvo %d", mockRepo.lastFilter.Page)
+		}
+		if mockRepo.lastFilter.Limit != 20 {
+			t.Errorf("se esperaba Limit=20, se obtuvo %d", mockRepo.lastFilter.Limit)
+		}
+		if res.Paginacion.TotalPaginas != 3 {
+			t.Errorf("se esperaba 3 páginas para 50 registros, se obtuvo %d", res.Paginacion.TotalPaginas)
+		}
+		if len(res.Data) != 1 {
+			t.Fatalf("se esperaba 1 producto admin, se obtuvieron %d", len(res.Data))
+		}
+		if res.Data[0].SKU != "SKU12345" {
+			t.Errorf("se esperaba SKU 'SKU12345', se obtuvo '%s'", res.Data[0].SKU)
+		}
+		if res.Data[0].SucursalID != 10 {
+			t.Errorf("se esperaba SucursalID 10, se obtuvo %d", res.Data[0].SucursalID)
+		}
+	})
+
+	t.Run("Sanitización de SKU y filtros", func(t *testing.T) {
+		filtro := domain.FiltroProductosDTO{
+			SKU:     "SKU-ABC-123!@#$%",
+			EnStock: &stock,
+			SortBy:  "sku",
+			Order:   "DESC",
+		}
+		_, err := service.ObtenerCatalogoAdmin(context.Background(), filtro)
+		if err != nil {
+			t.Fatalf("error inesperado: %v", err)
+		}
+		if mockRepo.lastFilter.SKU != "SKU-ABC-123" {
+			t.Errorf("se esperaba SKU sanitizado 'SKU-ABC-123', se obtuvo '%s'", mockRepo.lastFilter.SKU)
+		}
+		if mockRepo.lastFilter.EnStock == nil || !*mockRepo.lastFilter.EnStock {
+			t.Errorf("se esperaba EnStock=true")
+		}
+		if mockRepo.lastFilter.SortBy != "sku" {
+			t.Errorf("se esperaba SortBy=sku, se obtuvo %s", mockRepo.lastFilter.SortBy)
 		}
 	})
 }
