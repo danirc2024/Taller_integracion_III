@@ -36,6 +36,130 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/admin/productos": {
+            "get": {
+                "description": "Obtiene listado paginado y filtrado de productos con datos técnicos de scraping para Superadmin",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Catálogo de productos para administración",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Búsqueda por texto libre",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Número de página (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Cantidad de productos por página (default: 20)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por categoría",
+                        "name": "categoria",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por supermercado o cadena",
+                        "name": "supermercado",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por marca",
+                        "name": "marca",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtrar por SKU",
+                        "name": "sku",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filtrar por disponibilidad de stock",
+                        "name": "en_stock",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Precio mínimo",
+                        "name": "precio_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Precio máximo",
+                        "name": "precio_max",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filtrar solo productos en oferta",
+                        "name": "en_oferta",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Criterio de ordenamiento (precio, nombre, marca, sku, fecha)",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Dirección del orden (asc, desc)",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.PaginaProductosAdminDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/google": {
             "post": {
                 "description": "Valida el token de Google y aplica lógica find-or-create para la cuenta de usuario",
@@ -999,6 +1123,32 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.PaginaProductosAdminDTO": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.ProductoAdminDTO"
+                    }
+                },
+                "limite": {
+                    "type": "integer"
+                },
+                "pagina_actual": {
+                    "type": "integer"
+                },
+                "paginacion": {
+                    "$ref": "#/definitions/domain.MetadatosPaginacionDTO"
+                },
+                "total_paginas": {
+                    "type": "integer"
+                },
+                "total_registros": {
+                    "type": "integer"
+                }
+            }
+        },
         "domain.PaginaProductosDTO": {
             "type": "object",
             "properties": {
@@ -1050,6 +1200,53 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "telefono": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ProductoAdminDTO": {
+            "type": "object",
+            "properties": {
+                "categoria": {
+                    "type": "string"
+                },
+                "en_oferta": {
+                    "type": "boolean"
+                },
+                "en_stock": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "marca": {
+                    "type": "string"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "precio_normal": {
+                    "type": "integer"
+                },
+                "precio_oferta": {
+                    "type": "integer"
+                },
+                "sku": {
+                    "type": "string"
+                },
+                "sucursal_id": {
+                    "type": "integer"
+                },
+                "supermercado": {
+                    "type": "string"
+                },
+                "ultima_extraccion_el": {
+                    "type": "string"
+                },
+                "unidad": {
+                    "type": "string"
+                },
+                "url_imagen": {
                     "type": "string"
                 }
             }

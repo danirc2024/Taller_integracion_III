@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/danirc2024/Taller_integracion_III/backend/api/domain"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/services"
 	"github.com/gin-gonic/gin"
 )
@@ -94,6 +95,92 @@ func (h *ProductoHandler) ObtenerProductos(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error interno al obtener los productos del catálogo",
 		})
+		return
+	}
+
+	c.JSON(http.StatusOK, resultado)
+}
+
+// ObtenerProductosAdmin godoc
+// @Summary      Catálogo de productos para administración
+// @Description  Obtiene listado paginado y filtrado de productos con datos técnicos de scraping para Superadmin
+// @Tags         admin
+// @Produce      json
+// @Param        q             query     string  false  "Búsqueda por texto libre"
+// @Param        page          query     int     false  "Número de página (default: 1)"
+// @Param        limit         query     int     false  "Cantidad de productos por página (default: 20)"
+// @Param        categoria     query     string  false  "Filtrar por categoría"
+// @Param        supermercado  query     string  false  "Filtrar por supermercado o cadena"
+// @Param        marca         query     string  false  "Filtrar por marca"
+// @Param        sku           query     string  false  "Filtrar por SKU"
+// @Param        en_stock      query     bool    false  "Filtrar por disponibilidad de stock"
+// @Param        precio_min    query     number  false  "Precio mínimo"
+// @Param        precio_max    query     number  false  "Precio máximo"
+// @Param        en_oferta     query     bool    false  "Filtrar solo productos en oferta"
+// @Param        sort_by       query     string  false  "Criterio de ordenamiento (precio, nombre, marca, sku, fecha)"
+// @Param        order         query     string  false  "Dirección del orden (asc, desc)"
+// @Success      200           {object}  domain.PaginaProductosAdminDTO
+// @Failure      400           {object}  middleware.RespuestaError
+// @Failure      401           {object}  middleware.RespuestaError
+// @Failure      403           {object}  middleware.RespuestaError
+// @Failure      500           {object}  middleware.RespuestaError
+// @Router       /api/v1/admin/productos [get]
+func (h *ProductoHandler) ObtenerProductosAdmin(c *gin.Context) {
+	var filtro domain.FiltroProductosDTO
+
+	filtro.Query = c.Query("q")
+
+	if pageStr := c.Query("page"); pageStr != "" {
+		if page, err := strconv.Atoi(pageStr); err == nil {
+			filtro.Page = page
+		}
+	}
+
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if limit, err := strconv.Atoi(limitStr); err == nil {
+			filtro.Limit = limit
+		}
+	}
+
+	filtro.Categoria = c.Query("categoria")
+	filtro.Supermercado = c.Query("supermercado")
+	filtro.Marca = c.Query("marca")
+	filtro.SKU = c.Query("sku")
+
+	if enStockStr := c.Query("en_stock"); enStockStr != "" {
+		if enStock, err := strconv.ParseBool(enStockStr); err == nil {
+			filtro.EnStock = &enStock
+		}
+	}
+
+	if pMinStr := c.Query("precio_min"); pMinStr != "" {
+		if pMin, err := strconv.ParseFloat(pMinStr, 64); err == nil {
+			filtro.PrecioMin = &pMin
+		}
+	}
+
+	if pMaxStr := c.Query("precio_max"); pMaxStr != "" {
+		if pMax, err := strconv.ParseFloat(pMaxStr, 64); err == nil {
+			filtro.PrecioMax = &pMax
+		}
+	}
+
+	if enOfertaStr := c.Query("en_oferta"); enOfertaStr != "" {
+		if enOferta, err := strconv.ParseBool(enOfertaStr); err == nil {
+			filtro.EnOferta = &enOferta
+		}
+	}
+
+	filtro.SortBy = c.Query("sort_by")
+	filtro.Order = c.Query("order")
+
+	resultado, err := h.service.ObtenerCatalogoAdmin(c.Request.Context(), filtro)
+	if err != nil {
+		if errors.Is(err, services.ErrBusquedaCorta) {
+			middleware.ResponderError(c, http.StatusBadRequest, err.Error(), err)
+			return
+		}
+		middleware.ResponderError(c, http.StatusInternalServerError, "Error interno al obtener los productos para administración", err)
 		return
 	}
 

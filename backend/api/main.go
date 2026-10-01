@@ -112,6 +112,7 @@ func setupRouter() *gin.Engine {
 	routes.RegistrarRutasAuth(v1, DB, RDB)
 	routes.RegistrarRutasProductos(v1, DB)
 	routes.RegistrarRutasScraper(v1, DB, RDB)
+	routes.RegistrarRutasAdmin(v1, DB)
 
 	return r
 }

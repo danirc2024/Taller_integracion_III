@@ -13,6 +13,8 @@ type FiltroProductosDTO struct {
 	PrecioMin    *float64 `json:"precio_min" form:"precio_min"`
 	PrecioMax    *float64 `json:"precio_max" form:"precio_max"`
 	EnOferta     *bool    `json:"en_oferta" form:"en_oferta"`
+	SKU          string   `json:"sku" form:"sku"`
+	EnStock      *bool    `json:"en_stock" form:"en_stock"`
 	SortBy       string   `json:"sort_by" form:"sort_by"`
 	Order        string   `json:"order" form:"order"`
 }
@@ -33,6 +35,24 @@ type ProductoDTO struct {
 	EnStock      bool     `json:"en_stock"`
 }
 
+// ProductoAdminDTO incluye la información técnica y sensible del scraper para el dashboard de administración.
+type ProductoAdminDTO struct {
+	ID                 string    `json:"id"`
+	SKU                string    `json:"sku"`
+	Nombre             string    `json:"nombre"`
+	Marca              string    `json:"marca"`
+	Categoria          string    `json:"categoria"`
+	Supermercado       string    `json:"supermercado"`
+	PrecioNormal       int       `json:"precio_normal"`
+	PrecioOferta       *int      `json:"precio_oferta,omitempty"`
+	EnOferta           bool      `json:"en_oferta"`
+	URLImagen          string    `json:"url_imagen"`
+	Unidad             string    `json:"unidad"`
+	EnStock            bool      `json:"en_stock"`
+	UltimaExtraccionEl time.Time `json:"ultima_extraccion_el"`
+	SucursalID         int       `json:"sucursal_id"`
+}
+
 // MetadatosPaginacionDTO describe los metadatos de paginación devueltos en la respuesta.
 type MetadatosPaginacionDTO struct {
 	TotalRegistros int64 `json:"total_registros"`
@@ -44,6 +64,16 @@ type MetadatosPaginacionDTO struct {
 // PaginaProductosDTO estructura la respuesta completa del catálogo con la lista de productos y metadatos de paginación.
 type PaginaProductosDTO struct {
 	Data           []ProductoDTO          `json:"data"`
+	Paginacion     MetadatosPaginacionDTO `json:"paginacion"`
+	TotalRegistros int64                  `json:"total_registros"`
+	PaginaActual   int                    `json:"pagina_actual"`
+	TotalPaginas   int                    `json:"total_paginas"`
+	Limite         int                    `json:"limite"`
+}
+
+// PaginaProductosAdminDTO estructura la respuesta del catálogo administrativo con metadatos de paginación.
+type PaginaProductosAdminDTO struct {
+	Data           []ProductoAdminDTO     `json:"data"`
 	Paginacion     MetadatosPaginacionDTO `json:"paginacion"`
 	TotalRegistros int64                  `json:"total_registros"`
 	PaginaActual   int                    `json:"pagina_actual"`
