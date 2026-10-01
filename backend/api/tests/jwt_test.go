@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"os" 
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -122,4 +123,10 @@ func TestMiddleware_RequireAuth(t *testing.T) {
 			t.Errorf("Claims devueltos no coinciden con los inyectados: %v", res)
 		}
 	})
+}
+
+func init() {
+	if os.Getenv("JWT_SECRET") == "" {
+		os.Setenv("JWT_SECRET", "test-secret-key-32-characters-long-jwt!")
+	}
 }
