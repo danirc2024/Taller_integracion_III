@@ -4,15 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"google.golang.org/api/idtoken"
+	"net/mail"
 	"os"
 	"strings"
+	"time"
 	"unicode"
 
+	"github.com/danirc2024/Taller_integracion_III/backend/api/domain"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/infrastructure"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/repositories"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/utils"
+	"github.com/google/uuid"
+	"google.golang.org/api/idtoken"
 )
 
 var (
@@ -24,6 +27,10 @@ var (
 	ErrCredencialesInvalidas = errors.New("Credenciales incorrectas")
 	// ErrCuentaInactiva se emite cuando la cuenta aún no ha sido activada mediante correo
 	ErrCuentaInactiva = errors.New("La cuenta requiere verificación de correo")
+	// ErrUsuarioNoEncontrado se emite cuando el usuario no existe en la base de datos
+	ErrUsuarioNoEncontrado = errors.New("usuario no encontrado")
+	// ErrCorreoInvalido se emite cuando el correo no tiene un formato válido
+	ErrCorreoInvalido = errors.New("el formato del correo electrónico es inválido")
 )
 
 // RegistroDTO contiene los parámetros requeridos para el registro de un usuario
@@ -50,6 +57,7 @@ type AuthService interface {
 	Login(correo, password string) (*infrastructure.Usuario, error)
 	LoginWithContext(ctx context.Context, correo, password string) (*infrastructure.Usuario, error)
 	GoogleLogin(ctx context.Context, tokenGoogle string) (*infrastructure.Usuario, error)
+	ActualizarPerfil(ctx context.Context, userID string, input domain.ActualizarPerfilDTO) (*domain.PerfilUsuarioDTO, error)
 }
 
 type authService struct {
@@ -94,6 +102,12 @@ func validarComplejidadPassword(password string) error {
 	return nil
 }
 
+// validarEmail verifica que el correo tenga un formato sintácticamente válido
+func validarEmail(email string) bool {
+	parsed, err := mail.ParseAddress(email)
+	return err == nil && parsed.Address != "" && strings.Contains(email, "@") && strings.Contains(email, ".")
+}
+
 // Registrar ejecuta el caso de uso completo de registro con validaciones de seguridad
 func (s *authService) Registrar(ctx context.Context, input RegistroDTO) (*UsuarioCreadoDTO, error) {
 	// 1. Validar complejidad de contraseña antes de computar hash
@@ -123,14 +137,14 @@ func (s *authService) Registrar(ctx context.Context, input RegistroDTO) (*Usuari
 	// 5. Generar token de verificación UUID
 	tokenVerificacion := uuid.New()
 
-	// 6. Instanciar modelo de dominio con Estado Inactivo obligatorio
+	// 6. Instanciar modelo de dominio
 	nuevoUsuario := &infrastructure.Usuario{
 		Correo:            correoNormalizado,
 		PasswordHash:      &hash,
 		NombreCompleto:    nombreSanitizado,
 		Rol:               "registrado",
 		CuotaTokensIA:     1000,
-		EstaActivo:        true, // TODO: revertir a false cuando se implemente el sistema de verificación por correo
+		EstaActivo:        true, // Activado temporalmente según requerimiento de auto-login
 		TokenVerificacion: &tokenVerificacion,
 	}
 
@@ -233,4 +247,106 @@ func (s *authService) GoogleLogin(ctx context.Context, tokenGoogle string) (*inf
 	}
 
 	return usuario, nil
+}
+
+// ActualizarPerfil procesa las actualizaciones parciales del perfil de usuario
+func (s *authService) ActualizarPerfil(ctx context.Context, userID string, input domain.ActualizarPerfilDTO) (*domain.PerfilUsuarioDTO, error) {
+	userID = strings.TrimSpace(userID)
+	if userID == "" {
+		return nil, ErrUsuarioNoEncontrado
+	}
+
+	// 1. Verificar existencia del usuario actual
+	usuarioActual, err := s.usuarioRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error al verificar usuario: %w", err)
+	}
+	if usuarioActual == nil {
+		return nil, ErrUsuarioNoEncontrado
+	}
+
+	datos := make(map[string]interface{})
+
+	// 2. Procesar NombreCompleto si viene presente
+	if input.NombreCompleto != nil {
+		nombreSanitizado := utils.SanitizarInputBusqueda(*input.NombreCompleto)
+		if nombreSanitizado == "" {
+			return nil, errors.New("el nombre completo no puede quedar vacío")
+		}
+		datos["nombre_completo"] = nombreSanitizado
+	}
+
+	// 3. Procesar Correo si viene presente
+	if input.Correo != nil {
+		correoNormalizado := strings.ToLower(strings.TrimSpace(*input.Correo))
+		if !validarEmail(correoNormalizado) {
+			return nil, ErrCorreoInvalido
+		}
+		// Validar unicidad si el correo ha cambiado
+		if correoNormalizado != usuarioActual.Correo {
+			existente, err := s.usuarioRepo.FindByEmail(ctx, correoNormalizado)
+			if err != nil {
+				return nil, fmt.Errorf("error consultando disponibilidad del correo: %w", err)
+			}
+			if existente != nil && existente.ID.String() != userID {
+				return nil, ErrCorreoDuplicado
+			}
+			datos["correo"] = correoNormalizado
+		}
+	}
+
+	// 4. Procesar Teléfono si viene presente
+	if input.Telefono != nil {
+		datos["telefono"] = strings.TrimSpace(*input.Telefono)
+	}
+
+	// 5. Procesar Dirección si viene presente
+	if input.Direccion != nil {
+		datos["direccion"] = strings.TrimSpace(*input.Direccion)
+	}
+
+	// 6. Procesar Contraseña si viene presente
+	if input.Password != nil {
+		if err := validarComplejidadPassword(*input.Password); err != nil {
+			return nil, err
+		}
+		hash, err := utils.HashPassword(*input.Password)
+		if err != nil {
+			return nil, fmt.Errorf("error al generar hash de contraseña: %w", err)
+		}
+		datos["password_hash"] = hash
+	}
+
+	// 7. Seguridad: Prohibir explícitamente alterar esta_activo, rol o cuota desde este caso de uso
+	delete(datos, "esta_activo")
+	delete(datos, "rol")
+	delete(datos, "cuota_tokens_ia")
+
+	// 8. Si hay cambios dinámicos, persistir
+	if len(datos) > 0 {
+		datos["actualizado_el"] = time.Now()
+		if err := s.usuarioRepo.Actualizar(ctx, userID, datos); err != nil {
+			return nil, fmt.Errorf("error al actualizar el perfil en base de datos: %w", err)
+		}
+	}
+
+	// 9. Consultar datos actualizados para retornar DTO consistente
+	actualizado, err := s.usuarioRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error al consultar usuario actualizado: %w", err)
+	}
+	if actualizado == nil {
+		return nil, ErrUsuarioNoEncontrado
+	}
+
+	return &domain.PerfilUsuarioDTO{
+		ID:             actualizado.ID.String(),
+		Correo:         actualizado.Correo,
+		NombreCompleto: actualizado.NombreCompleto,
+		Telefono:       actualizado.Telefono,
+		Direccion:      actualizado.Direccion,
+		Rol:            actualizado.Rol,
+		EstaActivo:     actualizado.EstaActivo,
+		Mensaje:        "Perfil actualizado exitosamente.",
+	}, nil
 }

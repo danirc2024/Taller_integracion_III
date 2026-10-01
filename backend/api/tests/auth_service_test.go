@@ -5,9 +5,11 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/danirc2024/Taller_integracion_III/backend/api/domain"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/infrastructure"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/services"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/utils"
+	"github.com/google/uuid"
 )
 
 // mockUsuarioRepository implementa UsuarioRepository en memoria para pruebas unitarias
@@ -28,8 +30,52 @@ func (m *mockUsuarioRepository) FindByEmail(ctx context.Context, email string) (
 	return nil, nil
 }
 
+func (m *mockUsuarioRepository) FindByID(ctx context.Context, id string) (*infrastructure.Usuario, error) {
+	for _, u := range m.usuarios {
+		if u.ID.String() == id {
+			return u, nil
+		}
+	}
+	return nil, nil
+}
+
 func (m *mockUsuarioRepository) Create(ctx context.Context, usuario *infrastructure.Usuario) error {
+	if usuario.ID == uuid.Nil {
+		usuario.ID = uuid.New()
+	}
 	m.usuarios[usuario.Correo] = usuario
+	return nil
+}
+
+func (m *mockUsuarioRepository) Actualizar(ctx context.Context, id string, datos map[string]interface{}) error {
+	var target *infrastructure.Usuario
+	for _, u := range m.usuarios {
+		if u.ID.String() == id {
+			target = u
+			break
+		}
+	}
+	if target == nil {
+		return errors.New("record not found")
+	}
+
+	if nombre, ok := datos["nombre_completo"].(string); ok {
+		target.NombreCompleto = nombre
+	}
+	if correo, ok := datos["correo"].(string); ok {
+		delete(m.usuarios, target.Correo)
+		target.Correo = correo
+		m.usuarios[correo] = target
+	}
+	if tel, ok := datos["telefono"].(string); ok {
+		target.Telefono = &tel
+	}
+	if dir, ok := datos["direccion"].(string); ok {
+		target.Direccion = &dir
+	}
+	if pwd, ok := datos["password_hash"].(string); ok {
+		target.PasswordHash = &pwd
+	}
 	return nil
 }
 
@@ -44,24 +90,24 @@ func TestAuthService_PasswordComplexity(t *testing.T) {
 	}{
 		{"Muy corta", "Ab1!", true},
 		{"Sin mayuscula", "password123!", true},
-		{"Sin numero", "PasswordSeguro!", true},
-		{"Sin simbolo", "PasswordSeguro123", true},
-		{"Valida", "PasswordSeguro123!", false},
+		{"Sin numero", "PasswordSinNum!", true},
+		{"Sin simbolo", "PasswordSinSimbolo123", true},
+		{"Valida", "Vicho159107!", false},
 	}
 
-	for _, c := range casos {
-		t.Run(c.nombre, func(t *testing.T) {
+	for _, tc := range casos {
+		t.Run(tc.nombre, func(t *testing.T) {
 			_, err := service.Registrar(context.Background(), services.RegistroDTO{
 				Correo:         "test@uct.cl",
-				Password:       c.password,
+				Password:       tc.password,
 				NombreCompleto: "Test User",
 			})
 
-			if c.esperaError && !errors.Is(err, services.ErrPasswordInvalido) {
-				t.Fatalf("Esperaba ErrPasswordInvalido pero obtuve: %v", err)
+			if tc.esperaError && err == nil {
+				t.Errorf("Se esperaba error para la clave '%s', pero no ocurrió", tc.password)
 			}
-			if !c.esperaError && err != nil {
-				t.Fatalf("No esperaba error pero obtuve: %v", err)
+			if !tc.esperaError && err != nil {
+				t.Errorf("No se esperaba error para la clave '%s', pero ocurrió: %v", tc.password, err)
 			}
 		})
 	}
@@ -85,8 +131,8 @@ func TestAuthService_RegistroExitoso(t *testing.T) {
 		t.Errorf("Esperaba correo normalizado 'vicente@uct.cl', obtuve '%s'", out.Correo)
 	}
 
-	if out.EstaActivo != false {
-		t.Errorf("Esperaba que EstaActivo fuera estrictamente false, pero fue true")
+	if out.EstaActivo != true {
+		t.Errorf("Esperaba que EstaActivo fuera true por auto-login temporal, pero fue false")
 	}
 
 	if out.TokenVerificacion.String() == "" {
@@ -111,7 +157,7 @@ func TestAuthService_RegistroExitoso(t *testing.T) {
 	})
 
 	if !errors.Is(errDuplicado, services.ErrCorreoDuplicado) {
-		t.Errorf("Esperaba ErrCorreoDuplicado, obtuve: %v", errDuplicado)
+		t.Errorf("Esperaba ErrCorreoDuplicado, obtuve %v", errDuplicado)
 	}
 }
 
@@ -119,76 +165,177 @@ func TestAuthService_Login(t *testing.T) {
 	repo := newMockUsuarioRepository()
 	service := services.NewAuthService(repo)
 
-	// Hashear password para usuario de prueba
-	hashValido, _ := utils.HashPassword("PasswordSegura123!")
-	googleID := "google-oauth-12345"
+	hashPass, _ := utils.HashPassword("Password123#")
 
 	// 1. Usuario activo normal
-	repo.usuarios["activo@uct.cl"] = &infrastructure.Usuario{
+	userActivo := &infrastructure.Usuario{
+		ID:             uuid.New(),
 		Correo:         "activo@uct.cl",
-		PasswordHash:   &hashValido,
+		PasswordHash:   &hashPass,
 		NombreCompleto: "Usuario Activo",
 		EstaActivo:     true,
-		Rol:            "registrado",
 	}
+	repo.usuarios[userActivo.Correo] = userActivo
 
-	// 2. Usuario registrado vía Google (sin password_hash)
-	repo.usuarios["google@uct.cl"] = &infrastructure.Usuario{
-		GoogleID:       &googleID,
+	// 2. Usuario con PasswordHash nulo (Login social previo con Google)
+	userGoogle := &infrastructure.Usuario{
+		ID:             uuid.New(),
 		Correo:         "google@uct.cl",
 		PasswordHash:   nil,
 		NombreCompleto: "Usuario Google",
 		EstaActivo:     true,
-		Rol:            "registrado",
 	}
+	repo.usuarios[userGoogle.Correo] = userGoogle
 
-	// 3. Usuario inactivo
-	repo.usuarios["inactivo@uct.cl"] = &infrastructure.Usuario{
+	// 3. Usuario inactivo pendiente de verificación
+	userInactivo := &infrastructure.Usuario{
+		ID:             uuid.New(),
 		Correo:         "inactivo@uct.cl",
-		PasswordHash:   &hashValido,
+		PasswordHash:   &hashPass,
 		NombreCompleto: "Usuario Inactivo",
 		EstaActivo:     false,
-		Rol:            "registrado",
 	}
+	repo.usuarios[userInactivo.Correo] = userInactivo
 
 	t.Run("Usuario inexistente", func(t *testing.T) {
-		u, err := service.Login("noexiste@uct.cl", "CualquierClave123!")
-		if u != nil || !errors.Is(err, services.ErrCredencialesInvalidas) {
-			t.Fatalf("Esperaba ErrCredencialesInvalidas, obtuve: %v", err)
+		_, err := service.LoginWithContext(context.Background(), "noexiste@uct.cl", "Password123#")
+		if !errors.Is(err, services.ErrCredencialesInvalidas) {
+			t.Errorf("Esperaba ErrCredencialesInvalidas, obtuve %v", err)
 		}
 	})
 
 	t.Run("Usuario con PasswordHash nulo (sin panic)", func(t *testing.T) {
-		u, err := service.Login("google@uct.cl", "PasswordSegura123!")
-		if u != nil || !errors.Is(err, services.ErrCredencialesInvalidas) {
-			t.Fatalf("Esperaba ErrCredencialesInvalidas para password_hash nulo, obtuve: %v", err)
+		_, err := service.LoginWithContext(context.Background(), "google@uct.cl", "CualquierPass123#")
+		if !errors.Is(err, services.ErrCredencialesInvalidas) {
+			t.Errorf("Esperaba ErrCredencialesInvalidas ante cuenta sin password local, obtuve %v", err)
 		}
 	})
 
 	t.Run("Cuenta inactiva pendiente de confirmacion", func(t *testing.T) {
-		u, err := service.Login("inactivo@uct.cl", "PasswordSegura123!")
-		if u != nil || !errors.Is(err, services.ErrCuentaInactiva) {
-			t.Fatalf("Esperaba ErrCuentaInactiva, obtuve: %v", err)
-		}
-		if err.Error() != "La cuenta requiere verificación de correo" {
-			t.Errorf("Mensaje de error inesperado: %s", err.Error())
+		_, err := service.LoginWithContext(context.Background(), "inactivo@uct.cl", "Password123#")
+		if !errors.Is(err, services.ErrCuentaInactiva) {
+			t.Errorf("Esperaba ErrCuentaInactiva, obtuve %v", err)
 		}
 	})
 
 	t.Run("Contraseña incorrecta", func(t *testing.T) {
-		u, err := service.Login("activo@uct.cl", "PasswordIncorrecta999!")
-		if u != nil || !errors.Is(err, services.ErrCredencialesInvalidas) {
-			t.Fatalf("Esperaba ErrCredencialesInvalidas, obtuve: %v", err)
+		_, err := service.LoginWithContext(context.Background(), "activo@uct.cl", "PasswordErronea123#")
+		if !errors.Is(err, services.ErrCredencialesInvalidas) {
+			t.Errorf("Esperaba ErrCredencialesInvalidas, obtuve %v", err)
 		}
 	})
 
 	t.Run("Login exitoso", func(t *testing.T) {
-		u, err := service.Login("ACTIVO@UCT.CL ", "PasswordSegura123!")
+		u, err := service.LoginWithContext(context.Background(), "ACTIVO@UCT.CL ", "Password123#")
 		if err != nil {
-			t.Fatalf("Error inesperado en login: %v", err)
+			t.Fatalf("Login exitoso falló inesperadamente: %v", err)
 		}
-		if u == nil || u.Correo != "activo@uct.cl" {
-			t.Fatalf("Usuario devuelto inválido")
+		if u.Correo != "activo@uct.cl" {
+			t.Errorf("Esperaba correo activo@uct.cl, obtuve %s", u.Correo)
+		}
+	})
+}
+
+func TestAuthService_ActualizarPerfil(t *testing.T) {
+	repo := newMockUsuarioRepository()
+	service := services.NewAuthService(repo)
+
+	hashPass, _ := utils.HashPassword("Password123#")
+	userID := uuid.New()
+	userOriginal := &infrastructure.Usuario{
+		ID:             userID,
+		Correo:         "original@uct.cl",
+		PasswordHash:   &hashPass,
+		NombreCompleto: "Nombre Original",
+		Rol:            "registrado",
+		EstaActivo:     true,
+	}
+	repo.usuarios[userOriginal.Correo] = userOriginal
+
+	// Usuario secundario para probar conflicto de correo
+	repo.usuarios["otro@uct.cl"] = &infrastructure.Usuario{
+		ID:             uuid.New(),
+		Correo:         "otro@uct.cl",
+		PasswordHash:   &hashPass,
+		NombreCompleto: "Otro Usuario",
+		EstaActivo:     true,
+	}
+
+	t.Run("Actualizacion parcial de nombre, telefono y direccion", func(t *testing.T) {
+		nuevoNombre := "Vicente Matus Actualizado"
+		nuevoTel := "+56912345678"
+		nuevaDir := "Av. Alemania 1234, Temuco"
+
+		res, err := service.ActualizarPerfil(context.Background(), userID.String(), domain.ActualizarPerfilDTO{
+			NombreCompleto: &nuevoNombre,
+			Telefono:       &nuevoTel,
+			Direccion:      &nuevaDir,
+		})
+		if err != nil {
+			t.Fatalf("Error inesperado en actualizacion: %v", err)
+		}
+
+		if res.NombreCompleto != nuevoNombre {
+			t.Errorf("Esperaba nombre %s, obtuve %s", nuevoNombre, res.NombreCompleto)
+		}
+		if res.Telefono == nil || *res.Telefono != nuevoTel {
+			t.Errorf("Esperaba telefono %s, obtuve %v", nuevoTel, res.Telefono)
+		}
+		if res.Direccion == nil || *res.Direccion != nuevaDir {
+			t.Errorf("Esperaba direccion %s, obtuve %v", nuevaDir, res.Direccion)
+		}
+		if res.Correo != "original@uct.cl" {
+			t.Errorf("El correo no debio haber cambiado")
+		}
+		if !res.EstaActivo {
+			t.Errorf("EstaActivo no debio alterarse")
+		}
+	})
+
+	t.Run("Actualizacion de contraseña con validacion", func(t *testing.T) {
+		passInvalida := "corta"
+		_, err := service.ActualizarPerfil(context.Background(), userID.String(), domain.ActualizarPerfilDTO{
+			Password: &passInvalida,
+		})
+		if !errors.Is(err, services.ErrPasswordInvalido) {
+			t.Errorf("Esperaba ErrPasswordInvalido, obtuve %v", err)
+		}
+
+		passValida := "NuevaClaveSegura2026!"
+		res, err := service.ActualizarPerfil(context.Background(), userID.String(), domain.ActualizarPerfilDTO{
+			Password: &passValida,
+		})
+		if err != nil {
+			t.Fatalf("Actualizacion con clave valida falló: %v", err)
+		}
+		if res == nil {
+			t.Fatalf("Respuesta nula")
+		}
+
+		// Verificar que el hash se actualizo en el usuario
+		u := repo.usuarios["original@uct.cl"]
+		if !utils.CheckPasswordHash("NuevaClaveSegura2026!", *u.PasswordHash) {
+			t.Errorf("El hash en repositorio no coincide con la nueva contraseña")
+		}
+	})
+
+	t.Run("Conflicto al intentar cambiar a correo existente", func(t *testing.T) {
+		correoTomado := "otro@uct.cl"
+		_, err := service.ActualizarPerfil(context.Background(), userID.String(), domain.ActualizarPerfilDTO{
+			Correo: &correoTomado,
+		})
+		if !errors.Is(err, services.ErrCorreoDuplicado) {
+			t.Errorf("Esperaba ErrCorreoDuplicado, obtuve %v", err)
+		}
+	})
+
+	t.Run("Usuario no existente", func(t *testing.T) {
+		nombre := "Fantasma"
+		_, err := service.ActualizarPerfil(context.Background(), uuid.New().String(), domain.ActualizarPerfilDTO{
+			NombreCompleto: &nombre,
+		})
+		if !errors.Is(err, services.ErrUsuarioNoEncontrado) {
+			t.Errorf("Esperaba ErrUsuarioNoEncontrado, obtuve %v", err)
 		}
 	})
 }

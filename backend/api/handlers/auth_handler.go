@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/danirc2024/Taller_integracion_III/backend/api/domain"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/services"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/utils"
@@ -23,7 +24,7 @@ type RegistroResponse struct {
 	Correo            string `json:"correo" example:"usuario.test@uct.cl"`
 	NombreCompleto    string `json:"nombre_completo" example:"Vicente Matu"`
 	Rol               string `json:"rol" example:"registrado"`
-	EstaActivo        bool   `json:"esta_activo" example:"false"`
+	EstaActivo        bool   `json:"esta_activo" example:"true"`
 	TokenVerificacion string `json:"token_verificacion" example:"f81d4fae-7dec-11d0-a765-00a0c91e6bf6"`
 	Mensaje           string `json:"mensaje" example:"Usuario registrado con éxito. Se requiere confirmar el correo electrónico antes de iniciar sesión."`
 }
@@ -58,8 +59,8 @@ func NewAuthHandler(authService services.AuthService) *AuthHandler {
 }
 
 // RegistrarUsuario godoc
-// @Summary      Registrar nuevo usuario con verificación
-// @Description  Valida complejidad de contraseña, encripta con bcrypt y crea usuario inactivo con token UUID de verificación
+// @Summary      Registrar nuevo usuario con auto-login
+// @Description  Valida complejidad de contraseña, encripta con bcrypt, crea usuario y genera automáticamente cookie HttpOnly para inicio de sesión inmediato
 // @Tags         auth
 // @Accept       json
 // @Produce      json
@@ -94,6 +95,15 @@ func (h *AuthHandler) RegistrarUsuario(c *gin.Context) {
 		}
 		return
 	}
+
+	// Auto-login: emisión del JWT centralizado e inyección de cookie HttpOnly
+	tokenString, err := utils.GenerarToken(creado.ID.String(), creado.Rol, "local")
+	if err != nil {
+		middleware.ResponderError(c, http.StatusInternalServerError, "Error generando token de autorización tras registro.", err)
+		return
+	}
+
+	c.SetCookie("jwt", tokenString, 86400, "/", "", false, true)
 
 	c.JSON(http.StatusCreated, RegistroResponse{
 		ID:                creado.ID.String(),
@@ -180,6 +190,57 @@ func (h *AuthHandler) PerfilUsuario(c *gin.Context) {
 		"provider": provider,
 		"mensaje":  "Acceso autorizado a ruta protegida con JWT.",
 	})
+}
+
+// ActualizarPerfil godoc
+// @Summary      Actualización parcial del perfil de usuario
+// @Description  Permite al usuario autenticado actualizar su nombre, correo, teléfono, dirección o contraseña. El ID se extrae directamente del token JWT (prevención IDOR).
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        payload body domain.ActualizarPerfilDTO true "Campos a actualizar"
+// @Success      200  {object}  domain.PerfilUsuarioDTO
+// @Failure      400  {object}  middleware.RespuestaError
+// @Failure      401  {object}  middleware.RespuestaError
+// @Failure      409  {object}  middleware.RespuestaError
+// @Failure      500  {object}  middleware.RespuestaError
+// @Router       /api/v1/auth/me [put]
+func (h *AuthHandler) ActualizarPerfil(c *gin.Context) {
+	// Prevención IDOR: Extraer identidad exclusivamente del contexto seguro inyectado por RequireAuth
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		middleware.ResponderError(c, http.StatusUnauthorized, "Acceso no autorizado.", errors.New("identificador de usuario no presente en sesión"))
+		return
+	}
+
+	userID, ok := userIDVal.(string)
+	if !ok || userID == "" {
+		middleware.ResponderError(c, http.StatusUnauthorized, "Identificador de usuario inválido.", errors.New("formato de user_id erróneo"))
+		return
+	}
+
+	var req domain.ActualizarPerfilDTO
+	if err := c.ShouldBindJSON(&req); err != nil {
+		middleware.ResponderError(c, http.StatusBadRequest, "Datos de entrada inválidos para actualización de perfil.", err)
+		return
+	}
+
+	perfil, err := h.authService.ActualizarPerfil(c.Request.Context(), userID, req)
+	if err != nil {
+		switch {
+		case errors.Is(err, services.ErrPasswordInvalido), errors.Is(err, services.ErrCorreoInvalido):
+			middleware.ResponderError(c, http.StatusBadRequest, err.Error(), err)
+		case errors.Is(err, services.ErrCorreoDuplicado):
+			middleware.ResponderError(c, http.StatusConflict, err.Error(), err)
+		case errors.Is(err, services.ErrUsuarioNoEncontrado):
+			middleware.ResponderError(c, http.StatusNotFound, err.Error(), err)
+		default:
+			middleware.ResponderError(c, http.StatusInternalServerError, "Error interno al actualizar perfil.", err)
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, perfil)
 }
 
 // GoogleLoginRequest DTO de entrada para autenticación con Google

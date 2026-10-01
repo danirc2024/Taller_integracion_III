@@ -177,11 +177,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/api/v1/auth/register": {
-            "post": {
-                "description": "Valida complejidad de contraseña, encripta con bcrypt y crea usuario inactivo con token UUID de verificación",
+            },
+            "put": {
+                "description": "Permite al usuario autenticado actualizar su nombre, correo, teléfono, dirección o contraseña. El ID se extrae directamente del token JWT (prevención IDOR).",
                 "consumes": [
                     "application/json"
                 ],
@@ -191,7 +189,65 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "summary": "Registrar nuevo usuario con verificación",
+                "summary": "Actualización parcial del perfil de usuario",
+                "parameters": [
+                    {
+                        "description": "Campos a actualizar",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.ActualizarPerfilDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.PerfilUsuarioDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/middleware.RespuestaError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/register": {
+            "post": {
+                "description": "Valida complejidad de contraseña, encripta con bcrypt, crea usuario y genera automáticamente cookie HttpOnly para inicio de sesión inmediato",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Registrar nuevo usuario con auto-login",
                 "parameters": [
                     {
                         "description": "Datos de registro",
@@ -801,6 +857,26 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "domain.ActualizarPerfilDTO": {
+            "type": "object",
+            "properties": {
+                "correo": {
+                    "type": "string"
+                },
+                "direccion": {
+                    "type": "string"
+                },
+                "nombre_completo": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "telefono": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.FinalizarTrabajoDTO": {
             "type": "object",
             "required": [
@@ -946,6 +1022,35 @@ const docTemplate = `{
                 },
                 "total_registros": {
                     "type": "integer"
+                }
+            }
+        },
+        "domain.PerfilUsuarioDTO": {
+            "type": "object",
+            "properties": {
+                "correo": {
+                    "type": "string"
+                },
+                "direccion": {
+                    "type": "string"
+                },
+                "esta_activo": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "mensaje": {
+                    "type": "string"
+                },
+                "nombre_completo": {
+                    "type": "string"
+                },
+                "rol": {
+                    "type": "string"
+                },
+                "telefono": {
+                    "type": "string"
                 }
             }
         },
@@ -1222,7 +1327,7 @@ const docTemplate = `{
                 },
                 "esta_activo": {
                     "type": "boolean",
-                    "example": false
+                    "example": true
                 },
                 "id": {
                     "type": "string",
