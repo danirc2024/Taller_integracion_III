@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS api.usuarios (
     correo VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255),
     nombre_completo VARCHAR(255) NOT NULL,
+    telefono VARCHAR(50),
+    direccion VARCHAR(255),
     url_avatar VARCHAR(500),
     rol VARCHAR(30) NOT NULL DEFAULT 'registrado',
     cuota_tokens_ia INTEGER NOT NULL DEFAULT 1000,
