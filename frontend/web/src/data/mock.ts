@@ -58,7 +58,14 @@ export const supermarkets: UiSupermarket[] = [
 ];
 
 export const supermarketById = (id: string) =>
-  supermarkets.find((s) => s.id === id)!;
+  supermarkets.find((s) => s.id === id) || {
+    id,
+    dbId: 0,
+    name: id.charAt(0).toUpperCase() + id.slice(1),
+    logo: '/placeholder.svg',
+    color: 'oklch(0.5 0 0)',
+    coords: [-38.74, -72.6]
+  };
 
 export const products: UiProduct[] = [
   {
