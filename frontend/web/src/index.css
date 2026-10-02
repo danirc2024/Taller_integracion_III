@@ -208,7 +208,7 @@
 
 :root {
   /* Landing page pastel colors */
-  --landing-olive: oklch(0.72 0.06 130);
+  --landing-olive: #5E7250;
   --landing-olive-soft: oklch(0.92 0.07 130);
   --landing-amber: oklch(0.82 0.06 75);
   --landing-amber-soft: oklch(0.95 0.05 75);
