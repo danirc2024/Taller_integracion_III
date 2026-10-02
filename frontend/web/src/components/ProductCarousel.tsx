@@ -5,12 +5,13 @@ import type { UiProduct as Product } from '@/types'
 
 export function ProductCarousel({ products }: { products: Product[] }) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const availableProducts = products.filter((product) => product.inStock === true)
 
   const scroll = (direction: number) => {
     containerRef.current?.scrollBy({ left: direction * 280, behavior: 'smooth' })
   }
 
-  if (products.length === 0) return null
+  if (availableProducts.length === 0) return null
 
   return (
     <section className="mt-8 border-t border-border pt-6" aria-label="Productos relacionados">
@@ -26,7 +27,7 @@ export function ProductCarousel({ products }: { products: Product[] }) {
         </div>
       </div>
       <div ref={containerRef} className="flex snap-x gap-4 overflow-x-auto pb-3 scrollbar-hide">
-        {products.map((product) => (
+        {availableProducts.map((product) => (
           <div key={product.id} className="w-48 shrink-0 snap-start sm:w-56">
             <ProductCard product={product} />
           </div>

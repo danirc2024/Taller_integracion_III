@@ -9,6 +9,7 @@ import type { UiSupermarket } from "@/types";
 type LayoutContextType = {
   query: string;
   activeMarket: string | null;
+  category: string;
 };
 
 export function useLayoutContext() {
@@ -17,6 +18,7 @@ export function useLayoutContext() {
 
 export function MainLayout() {
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMarket, setActiveMarket] = useState<string | null>(null);
   const [availableMarkets, setAvailableMarkets] = useState<UiSupermarket[]>([]);
@@ -68,6 +70,10 @@ export function MainLayout() {
         onClose={() => setSidebarOpen(false)}
         activeMarket={activeMarket}
         availableMarkets={availableMarkets}
+        onSelectCategory={(value) => {
+          setQuery("");
+          setCategory(value);
+        }}
         onSelectMarket={(id) => {
           setActiveMarket(id);
           setSidebarOpen(false);
@@ -76,13 +82,16 @@ export function MainLayout() {
       
       <TopNav
         query={query}
-        onQueryChange={setQuery}
+        onQueryChange={(value) => {
+          setQuery(value);
+          if (value.trim()) setCategory("");
+        }}
         onMenuClick={() => setSidebarOpen(true)}
       />
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden pb-16 md:pb-0">
         {/* Main Content Area */}
-        <Outlet context={{ query, activeMarket } satisfies LayoutContextType} />
+        <Outlet context={{ query, activeMarket, category } satisfies LayoutContextType} />
       </div>
       
       <div className="md:hidden">
