@@ -22,12 +22,12 @@ export default function ProductDetail() {
     if (!id) return
     const controller = new AbortController()
     setIsLoading(true)
-    Promise.all([getProductDetail(id), getProducts('?limit=100&en_stock=true')])
+    Promise.all([getProductDetail(id), getProducts('?limit=100')])
       .then(([detail, catalog]) => {
         if (controller.signal.aborted) return
         setProduct(detail.product)
         setHistory(detail.history)
-        setRelated(catalog.products.filter((item) => item.id !== id && item.inStock === true).slice(0, 8))
+        setRelated(catalog.products.filter((item) => item.id !== id).slice(0, 8))
       })
       .finally(() => {
         if (!controller.signal.aborted) setIsLoading(false)

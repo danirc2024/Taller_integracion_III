@@ -28,7 +28,6 @@ type SideBarProps = {
  onClose: () => void
  activeMarket: string | null
  availableMarkets: UiSupermarket[]
- onSelectCategory: (category: string) => void
  onSelectMarket: (id: string | null) => void
 }
 
@@ -98,7 +97,6 @@ export function SideBar({
  onClose,
  activeMarket,
  availableMarkets,
- onSelectCategory,
  onSelectMarket,
 }: SideBarProps) {
  const [openDept, setOpenDept] = useState<string | null>(null)
@@ -107,12 +105,6 @@ export function SideBar({
  const handleLinkClick = () => {
  navigate('/dashboard')
  onClose()
- }
-
- const handleCategoryClick = (category: string, closeSidebar = true) => {
- onSelectCategory(category)
- navigate('/dashboard')
- if (closeSidebar) onClose()
  }
 
  // Close on Escape for accessibility.
@@ -256,10 +248,11 @@ export function SideBar({
  <li key={dept.id}>
  <button
  type="button"
- onClick={() => {
- setOpenDept((prev) => (prev === dept.id ? null : dept.id))
- handleCategoryClick(dept.label, false)
- }}
+ onClick={() =>
+ setOpenDept((prev) =>
+ prev === dept.id ? null : dept.id,
+ )
+ }
  aria-expanded={expanded}
  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
  >
@@ -285,7 +278,7 @@ export function SideBar({
  <li key={item}>
  <button
  type="button"
- onClick={() => handleCategoryClick(item)}
+ onClick={handleLinkClick}
  className="flex w-full items-center rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
  >
  {item}
