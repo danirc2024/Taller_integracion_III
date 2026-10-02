@@ -22,12 +22,11 @@ export default function Page() {
     setError(null)
     const market = supermarkets.find((item) => item.id === activeMarket)?.name
     const search = query.trim()
-    const params = new URLSearchParams({ limit: '100', en_stock: 'true' })
-    if (search.length >= 3) params.set('q', search)
-    if (category) params.set('categoria', category)
-    if (market) params.set('supermercado', market)
+    const params = search.length >= 3
+      ? `?q=${encodeURIComponent(search)}&limit=100&en_stock=true`
+      : `?limit=100&en_stock=true${market ? `&supermercado=${encodeURIComponent(market)}` : ''}`
 
-    getProducts(`?${params.toString()}`)
+    getProducts(params)
       .then(({ products: result }) => {
         if (!controller.signal.aborted) setProducts(result)
       })
@@ -38,7 +37,7 @@ export default function Page() {
         if (!controller.signal.aborted) setIsLoading(false)
       })
     return () => controller.abort()
-  }, [query, category, activeMarket])
+  }, [query, activeMarket])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -52,7 +51,7 @@ export default function Page() {
         p.brand.toLowerCase().includes(q)
       return isAvailable && matchesMarket && matchesQuery
     })
-  }, [products, query, category, activeMarket])
+  }, [products, query, activeMarket])
 
   const supermarketCount = useMemo(() => {
     const ids = new Set(filtered.map((p) => p.supermarketId))
@@ -64,8 +63,8 @@ export default function Page() {
 
   // Reset pagination on filter change
   useEffect(() => {
-      setVisibleCount(12)
-    }, [query, category, activeMarket])
+    setVisibleCount(12)
+  }, [query, activeMarket])
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;

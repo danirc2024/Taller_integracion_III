@@ -21,7 +21,7 @@ export default function ProductDetail() {
     if (!id) return
     const controller = new AbortController()
     setIsLoading(true)
-    Promise.all([getProductDetail(id), getProducts('?limit=100&en_stock=true')])
+    Promise.all([getProductDetail(id), getProducts('?limit=100')])
       .then(([detail, catalog]) => {
         if (controller.signal.aborted) return
         setProduct(detail.product)
