@@ -1070,4 +1070,19 @@ paths:
       summary: Almacena un lote de productos asociado a un trabajo
       tags:
       - scraper
+  /health:
+    get:
+      description: Verifica la disponibilidad de la API Gateway y sus dependencias
+        (PostgreSQL, Redis).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Comprobación de salud del servicio (Healthcheck)
+      tags:
+      - health
 swagger: "2.0"

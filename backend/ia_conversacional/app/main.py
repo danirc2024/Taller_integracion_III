@@ -66,6 +66,18 @@ proveedor_fallback = FallbackProveedor(
     timeout=30.0,               
 )
 # --------------------------------------------------------------------------
+# Healthcheck & Root
+# --------------------------------------------------------------------------
+
+@app.get("/health", tags=["health"])
+def health_check():
+    return {
+        "status": "ok",
+        "service": "ia_conversacional",
+        "productos_cargados": len(repositorio_productos)
+    }
+
+# --------------------------------------------------------------------------
 # Routers
 # --------------------------------------------------------------------------
 

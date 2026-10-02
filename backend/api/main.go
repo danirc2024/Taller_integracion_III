@@ -104,11 +104,13 @@ func setupRouter() *gin.Engine {
 	})
 
 	r.GET("/", RootHandler)
+	r.GET("/health", HealthHandler)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Grupo de rutas de la API v1
 	v1 := r.Group("/api/v1")
+	v1.GET("/health", HealthHandler)
 	routes.RegistrarRutasAuth(v1, DB, RDB)
 	routes.RegistrarRutasProductos(v1, DB)
 	routes.RegistrarRutasScraper(v1, DB, RDB)
@@ -128,6 +130,46 @@ func RootHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Bienvenido a la API Gateway de Supermercados.",
 		"docs":    "Visita /swagger/index.html para ver el autocompletado Swagger UI.",
+	})
+}
+
+// HealthHandler godoc
+// @Summary      Comprobación de salud del servicio (Healthcheck)
+// @Description  Verifica la disponibilidad de la API Gateway y sus dependencias (PostgreSQL, Redis).
+// @Tags         health
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Router       /health [get]
+func HealthHandler(c *gin.Context) {
+	dbStatus := "ok"
+	if DB != nil {
+		sqlDB, err := DB.DB()
+		if err != nil || sqlDB.Ping() != nil {
+			dbStatus = "error"
+		}
+	} else {
+		dbStatus = "not_configured"
+	}
+
+	redisStatus := "ok"
+	if RDB != nil {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 1*time.Second)
+		defer cancel()
+		if err := RDB.Ping(ctx).Err(); err != nil {
+			redisStatus = "error"
+		}
+	} else {
+		redisStatus = "not_configured"
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":    "ok",
+		"service":   "api-gateway",
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
+		"checks": gin.H{
+			"database": dbStatus,
+			"redis":    redisStatus,
+		},
 	})
 }
 
