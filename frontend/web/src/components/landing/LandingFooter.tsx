@@ -3,9 +3,9 @@ import { Brain, Coffee, ShoppingBasket } from "lucide-react";
 
 export function LandingFooter() {
   return (
-    <footer className="bg-[var(--brand-dark-2)] text-[oklch(0.85_0.02_83)] p-[3.5rem_0_1.75rem] mt-[2rem] border-t-[3px] border-border">
-      <div className="max-w-[1600px] mx-auto px-4 md:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr_1fr] gap-[1.75rem] md:gap-[2.5rem] mb-[2.5rem]">
+    <footer className="bg-[var(--brand-dark-2)] text-[oklch(0.85_0.02_83)] p-[2.5rem_0_1.25rem] mt-[1.5rem] border-t-[3px] border-border">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr_1fr] gap-[1.5rem] md:gap-[2.25rem] mb-[2rem]">
 
           <div>
             <div className="flex items-center gap-2 mb-3 text-white font-['Fredoka'] font-bold text-lg">
@@ -42,7 +42,7 @@ export function LandingFooter() {
           </div>
         </div>
 
-        <div className="pt-[1.5rem] border-t-2 border-[oklch(0.4_0.02_60)] flex flex-wrap justify-between gap-[0.75rem] text-[0.75rem] opacity-65">
+        <div className="pt-[1.25rem] border-t-2 border-[oklch(0.4_0.02_60)] flex flex-wrap justify-between gap-[0.75rem] text-[0.75rem] opacity-65">
           <span>© 2026 RutaAhorro Todos los derechos reservados</span>
           <span className="inline-flex items-center gap-1.5">Hecho con <Coffee size={14} /> y <Brain size={14} /> en Temuco, Chile.</span>
         </div>

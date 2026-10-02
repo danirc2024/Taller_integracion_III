@@ -47,6 +47,7 @@ export function toUiProduct(product: ApiProduct): Product {
     price: product.precio,
     originalPrice: product.precio_normal || product.precio,
     supermarketId: supermarketId(product.supermercado),
+    supermarketName: product.supermercado,
     inStock: product.en_stock,
   }
 }

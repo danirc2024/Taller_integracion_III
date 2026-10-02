@@ -20,12 +20,14 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
-import { supermarkets, mockUser } from '@/data/mock'
+import { mockUser } from '@/data/mock'
+import type { UiSupermarket } from '@/types'
 
 type SideBarProps = {
  open: boolean
  onClose: () => void
  activeMarket: string | null
+ availableMarkets: UiSupermarket[]
  onSelectMarket: (id: string | null) => void
 }
 
@@ -94,6 +96,7 @@ export function SideBar({
  open,
  onClose,
  activeMarket,
+ availableMarkets,
  onSelectMarket,
 }: SideBarProps) {
  const [openDept, setOpenDept] = useState<string | null>(null)
@@ -316,7 +319,7 @@ export function SideBar({
  Todos
  </button>
  </li>
- {supermarkets.map((s) => (
+ {availableMarkets.map((s) => (
  <li key={s.id}>
  <button
  type="button"

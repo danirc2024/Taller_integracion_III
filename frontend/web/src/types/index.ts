@@ -125,5 +125,6 @@ export type UiProduct = {
   price: number;
   originalPrice: number;
   supermarketId: string; // reference to UiSupermarket
+  supermarketName?: string;
   inStock?: boolean;
 };

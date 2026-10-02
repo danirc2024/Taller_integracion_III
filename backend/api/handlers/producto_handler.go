@@ -33,6 +33,7 @@ func NewProductoHandler(service services.ProductoService) *ProductoHandler {
 // @Param        categoria     query     string  false  "Filtrar por categoría"
 // @Param        supermercado  query     string  false  "Filtrar por supermercado o cadena"
 // @Param        marca         query     string  false  "Filtrar por marca"
+// @Param        en_stock      query     bool    false  "Filtrar por disponibilidad de stock"
 // @Param        precio_min    query     number  false  "Precio mínimo"
 // @Param        precio_max    query     number  false  "Precio máximo"
 // @Param        en_oferta     query     bool    false  "Filtrar solo productos en oferta"
@@ -62,6 +63,12 @@ func (h *ProductoHandler) ObtenerProductos(c *gin.Context) {
 	filtro.Categoria = c.Query("categoria")
 	filtro.Supermercado = c.Query("supermercado")
 	filtro.Marca = c.Query("marca")
+
+	if enStockStr := c.Query("en_stock"); enStockStr != "" {
+		if enStock, err := strconv.ParseBool(enStockStr); err == nil {
+			filtro.EnStock = &enStock
+		}
+	}
 
 	if pMinStr := c.Query("precio_min"); pMinStr != "" {
 		if pMin, err := strconv.ParseFloat(pMinStr, 64); err == nil {
