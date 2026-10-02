@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Store, Plus, ShoppingCart } from 'lucide-react'
+import { PackageCheck, Plus, ShoppingCart, Store, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { supermarketById, discountPct, formatPrice } from '@/data/mock'
 import { getProductDetail, getProducts } from '@/lib/products-api'
@@ -14,7 +14,6 @@ export default function ProductDetail() {
   const navigate = useNavigate()
   const { addToCart } = useCart()
   const [product, setProduct] = useState<Product | null>(null)
-  const [history, setHistory] = useState<{ precio_normal: number; precio_oferta?: number; capturado_el: string }[]>([])
   const [related, setRelated] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -26,8 +25,28 @@ export default function ProductDetail() {
       .then(([detail, catalog]) => {
         if (controller.signal.aborted) return
         setProduct(detail.product)
-        setHistory(detail.history)
-        setRelated(catalog.products.filter((item) => item.id !== id && item.inStock === true).slice(0, 8))
+        const currentCategory = detail.product.category?.trim().toLowerCase()
+        const currentBrand = detail.product.brand.trim().toLowerCase()
+        const hasUsefulCategory = currentCategory && currentCategory !== 'scraped category'
+        const relatedProducts = catalog.products
+          .filter((item) => item.id !== id && item.inStock === true)
+          .map((item) => {
+            const itemCategory = item.category?.trim().toLowerCase()
+            const itemBrand = item.brand.trim().toLowerCase()
+            const sameCategory = Boolean(hasUsefulCategory && itemCategory === currentCategory)
+            const sameBrand = Boolean(currentBrand && itemBrand === currentBrand)
+
+            return {
+              item,
+              score: (sameCategory ? 2 : 0) + (sameBrand ? 1 : 0),
+            }
+          })
+          .filter(({ score }) => score > 0)
+          .sort((left, right) => right.score - left.score)
+          .slice(0, 8)
+          .map(({ item }) => item)
+
+        setRelated(relatedProducts)
       })
       .finally(() => {
         if (!controller.signal.aborted) setIsLoading(false)
@@ -119,11 +138,32 @@ export default function ProductDetail() {
                 Ahorras {formatPrice(product.originalPrice - product.price)} en este producto
               </p>
             )}
-            {history.length > 1 && (
-              <p className="mt-3 text-sm text-muted-foreground">
-                {history.length} capturas de precio registradas en la base de datos.
-              </p>
-            )}
+          </div>
+
+          <div className="mb-8 grid grid-cols-1 gap-3 rounded-2xl border border-border bg-muted/40 p-4 text-sm sm:grid-cols-2">
+            <div className="flex items-start gap-2">
+              <Tag className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              <div>
+                <p className="text-xs text-muted-foreground">Categoría</p>
+                <p className="font-semibold">{product.category || 'Sin categoría'}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <PackageCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              <div>
+                <p className="text-xs text-muted-foreground">Disponibilidad</p>
+                <p className={product.inStock ? 'font-semibold text-green-700' : 'font-semibold text-destructive'}>
+                  {product.inStock ? 'En stock' : 'Sin stock'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <Store className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              <div>
+                <p className="text-xs text-muted-foreground">Supermercado</p>
+                <p className="font-semibold">{market.name}</p>
+              </div>
+            </div>
           </div>
 
           <div className="mt-auto flex flex-col gap-3 sm:flex-row">
@@ -142,6 +182,7 @@ export default function ProductDetail() {
           </div>
         </section>
       </div>
+
       <ProductCarousel products={related} />
       <Footer />
     </main>

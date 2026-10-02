@@ -40,14 +40,18 @@ export function TopNav({ query, onQueryChange, onMenuClick }: TopNavProps) {
                     <Menu className="h-5 w-5" aria-hidden="true" />
                 </Button>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <Link
+                    to="/dashboard"
+                    aria-label="Ir al dashboard"
+                    className="flex items-center gap-2 shrink-0"
+                >
                     <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                         <ShoppingBasket className="h-5 w-5" aria-hidden="true" />
                     </span>
                     <span className="hidden text-lg font-semibold tracking-tight sm:inline">
                         Ruta<span className="text-primary">Ahorro</span>
                     </span>
-                </div>
+                </Link>
 
                 <form
                     role="search"
