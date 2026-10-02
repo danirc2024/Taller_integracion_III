@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Store, ShoppingBasket, Loader2 } from 'lucide-react'
+import { Store, Loader2 } from 'lucide-react'
 import { useLayoutContext } from '@/layouts/MainLayout'
 import { ProductCard } from '@/components/ProductCard'
 import { ProductSkeleton } from '@/components/ui/ProductSkeleton'
@@ -9,25 +9,9 @@ import { getProducts } from '@/lib/products-api'
 import type { UiProduct as Product } from '@/types'
 import { useCart } from '@/contexts/CartContext'
 
-function normalizeCategoryTerm(term: string) {
-  const normalized = term.trim().toLowerCase()
-  if (normalized.length > 4 && normalized.endsWith('es')) return normalized.slice(0, -2)
-  if (normalized.length > 3 && normalized.endsWith('s')) return normalized.slice(0, -1)
-  return normalized
-}
-
-function productMatchesCategory(product: Product, category: string) {
-  const terms = category
-    .split(/[\s,/;]+/)
-    .filter((term) => term !== 'y' && term !== 'e')
-    .map(normalizeCategoryTerm)
-  const productName = product.name.toLowerCase()
-  return terms.some((term) => term && productName.includes(term))
-}
-
 export default function Page() {
   const { query, activeMarket, category } = useLayoutContext()
-  const { addToCart, totalItems, totalPrice, setIsCartOpen } = useCart()
+  const { addToCart } = useCart()
   const [isLoading, setIsLoading] = useState(true)
   const [products, setProducts] = useState<Product[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -66,8 +50,7 @@ export default function Page() {
         !q ||
         p.name.toLowerCase().includes(q) ||
         p.brand.toLowerCase().includes(q)
-      const matchesSelectedCategory = !category || productMatchesCategory(p, category)
-      return isAvailable && matchesMarket && matchesQuery && matchesSelectedCategory
+      return isAvailable && matchesMarket && matchesQuery
     })
   }, [products, query, category, activeMarket])
 
@@ -181,29 +164,6 @@ export default function Page() {
 
       </main>
 
-      {/* Floating Cart Button */}
-      {totalItems > 0 && (
-        <button
-          onClick={() => setIsCartOpen(true)}
-          className="fixed bottom-[5.5rem] md:absolute md:bottom-6 right-4 md:right-6 z-50 flex items-center gap-2.5 rounded-full bg-primary px-4 py-2.5 text-primary-foreground shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] active:scale-95 border border-primary-foreground/20"
-          aria-label="Ver carrito"
-        >
-          <div className="relative flex items-center justify-center">
-            <ShoppingBasket className="h-5 w-5" />
-            <span className="absolute -right-2 -top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-background">
-              {totalItems}
-            </span>
-          </div>
-          <div className="flex flex-col text-left ml-0.5">
-            <span className="text-[9px] font-medium leading-none opacity-90">
-              Ver Carrito
-            </span>
-            <span className="text-xs font-bold leading-tight mt-0.5">
-              ${totalPrice.toLocaleString('es-CL')}
-            </span>
-          </div>
-        </button>
-      )}
     </div>
   )
 }

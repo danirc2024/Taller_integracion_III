@@ -6,6 +6,8 @@ import { CartSidebar } from "@/components/CartSidebar";
 import BottomNav from "@/components/BottomNav";
 import { getProducts } from "@/lib/products-api";
 import type { UiSupermarket } from "@/types";
+import { ShoppingBasket } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
 type LayoutContextType = {
   query: string;
   activeMarket: string | null;
@@ -22,6 +24,7 @@ export function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMarket, setActiveMarket] = useState<string | null>(null);
   const [availableMarkets, setAvailableMarkets] = useState<UiSupermarket[]>([]);
+  const { totalItems, totalPrice, setIsCartOpen } = useCart();
   const { pathname } = useLocation();
   const activeTab = 
     pathname.startsWith('/chat') ? 'chat' :
@@ -93,6 +96,25 @@ export function MainLayout() {
         {/* Main Content Area */}
         <Outlet context={{ query, activeMarket, category } satisfies LayoutContextType} />
       </div>
+
+      {totalItems > 0 && (
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="fixed bottom-[5.5rem] right-4 z-50 flex items-center gap-2.5 rounded-full border border-primary-foreground/20 bg-primary px-4 py-2.5 text-primary-foreground shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] active:scale-95 md:bottom-6"
+          aria-label="Ver carrito"
+        >
+          <div className="relative flex items-center justify-center">
+            <ShoppingBasket className="h-5 w-5" />
+            <span className="absolute -right-2 -top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-background">
+              {totalItems}
+            </span>
+          </div>
+          <div className="ml-0.5 flex flex-col text-left">
+            <span className="text-[9px] font-medium leading-none opacity-90">Ver Carrito</span>
+            <span className="mt-0.5 text-xs font-bold leading-tight">${totalPrice.toLocaleString('es-CL')}</span>
+          </div>
+        </button>
+      )}
       
       <div className="md:hidden">
         <BottomNav active={activeTab} />

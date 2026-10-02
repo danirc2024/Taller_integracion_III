@@ -26,9 +26,9 @@ export function ProductCarousel({ products }: { products: Product[] }) {
           </button>
         </div>
       </div>
-      <div ref={containerRef} className="flex snap-x gap-4 overflow-x-auto pb-3 scrollbar-hide">
+      <div ref={containerRef} className="flex items-stretch snap-x gap-4 overflow-x-auto pb-3 scrollbar-hide">
         {availableProducts.map((product) => (
-          <div key={product.id} className="w-48 shrink-0 snap-start sm:w-56">
+          <div key={product.id} className="flex h-auto w-48 shrink-0 snap-start sm:w-56">
             <ProductCard product={product} />
           </div>
         ))}
