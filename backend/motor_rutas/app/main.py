@@ -7,3 +7,10 @@ app = FastAPI(title="Motor Geoespacial y de Rutas")
 @app.get("/")
 def root():
     return {"message": "Microservicio Motor de Rutas activo. Esperando definición de endpoints."}
+
+@app.get("/health", tags=["health"])
+def health_check():
+    return {
+        "status": "ok",
+        "service": "motor_rutas"
+    }
