@@ -116,7 +116,10 @@ func presenceUpdate(s *discordgo.Session, p *discordgo.PresenceUpdate) {
 		return // Si no está configurado, este bot no actúa como vigía
 	}
 
+    log.Printf("DEBUG: PresenceUpdate recibido para usuario %s. Estado: %s", p.User.ID, p.Presence.Status)
+
 	if p.User.ID == targetID {
+		log.Printf("DEBUG: ¡Es nuestro bot objetivo! Estado nuevo: %s", p.Presence.Status)
 		if p.Presence.Status == discordgo.StatusOffline {
 			channelID := os.Getenv("DISCORD_CHANNEL_ID")
 			alertMsg := "⚠️ @everyone **¡ALERTA CRÍTICA!**\nEl bot `Lilo Cluster` se acaba de desconectar.\n¡Es altamente probable que el clúster de Kubernetes haya perdido conexión o se haya caído!"
