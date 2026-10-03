@@ -1,0 +1,19 @@
+# Git
+.git
+.gitignore
+
+# Entornos Virtuales y Dependencias
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Variables de Entorno y Secretos
+.env
+
+# Archivos de SO
+.DS_Store
+Thumbs.db

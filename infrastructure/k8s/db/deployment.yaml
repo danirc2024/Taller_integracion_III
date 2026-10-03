@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: db
+  name: db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+      - env:
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        envFrom:
+        - secretRef:
+            name: db-secret
+        image: postgis/postgis:15-3.3-alpine
+        name: postgis
+        ports:
+        - containerPort: 5432
+        resources:
+          limits:
+            cpu: 250m
+            memory: 300Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: db-data
+        - mountPath: /docker-entrypoint-initdb.d
+          name: db-init
+      volumes:
+      - name: db-data
+        persistentVolumeClaim:
+          claimName: db-pvc
+      - configMap:
+          name: db-init-scripts
+        name: db-init
