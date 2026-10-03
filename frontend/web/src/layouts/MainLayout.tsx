@@ -21,7 +21,7 @@ export function useLayoutContext() {
 export function MainLayout() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 1024);
   const [activeMarket, setActiveMarket] = useState<string | null>(null);
   const [availableMarkets, setAvailableMarkets] = useState<UiSupermarket[]>([]);
   const { totalItems, totalPrice, setIsCartOpen } = useCart();
@@ -81,6 +81,7 @@ export function MainLayout() {
           setActiveMarket(id);
           setSidebarOpen(false);
         }}
+        activeCategory={category}
       />
       
       <TopNav
@@ -90,6 +91,10 @@ export function MainLayout() {
           if (value.trim()) setCategory("");
         }}
         onMenuClick={() => setSidebarOpen(true)}
+        onResetFilters={() => {
+          setQuery("");
+          setCategory("");
+        }}
       />
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden pb-16 md:pb-0">

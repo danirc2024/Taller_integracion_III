@@ -43,7 +43,11 @@ export default function Page() {
     const search = query.trim()
     const params = new URLSearchParams({ limit: '100', en_stock: 'true' })
     if (search.length >= 3) params.set('q', search)
-    if (category) params.set('categoria', category)
+    
+    // No enviar categorías especiales a la API
+    const specialCategories = ['ofertas', 'descuentos', 'marcas', 'favoritos'];
+    if (category && !specialCategories.includes(category)) params.set('categoria', category)
+    
     if (market) params.set('supermercado', market)
 
     getProducts(`?${params.toString()}`)
@@ -73,6 +77,11 @@ export default function Page() {
     })
 
     if (!category) return baseProducts
+
+    if (category === 'ofertas') return baseProducts.filter(p => p.originalPrice > p.price)
+    if (category === 'descuentos') return [...baseProducts].sort((a, b) => ((b.originalPrice - b.price)/b.originalPrice) - ((a.originalPrice - a.price)/a.originalPrice))
+    if (category === 'marcas') return baseProducts.filter(p => ['acuenta', 'líder', 'lider', 'cuisine & co', 'jumbo', 'merkat'].includes(p.brand.toLowerCase()))
+    if (category === 'favoritos') return []
 
     const categoryTerms = getCategoryTerms(category)
     return baseProducts.filter((product) =>
