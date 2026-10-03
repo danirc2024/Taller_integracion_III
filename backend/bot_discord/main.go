@@ -49,7 +49,8 @@ func main() {
 
 	dg.AddHandler(messageCreate)
 	dg.AddHandler(handleInteraction)
-	dg.Identify.Intents = discordgo.IntentsGuildMessages
+	dg.AddHandler(presenceUpdate)
+	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsGuildPresences | discordgo.IntentMessageContent
 
 	err = dg.Open()
 	if err != nil {
@@ -106,6 +107,22 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
+}
+
+// presenceUpdate vigila si un bot/usuario específico se desconecta (Dead Man's Switch)
+func presenceUpdate(s *discordgo.Session, p *discordgo.PresenceUpdate) {
+	targetID := os.Getenv("MONITOR_TARGET_BOT_ID")
+	if targetID == "" {
+		return // Si no está configurado, este bot no actúa como vigía
+	}
+
+	if p.User.ID == targetID {
+		if p.Presence.Status == discordgo.StatusOffline {
+			channelID := os.Getenv("DISCORD_CHANNEL_ID")
+			alertMsg := "⚠️ @everyone **¡ALERTA CRÍTICA!**\nEl bot `Lilo Cluster` se acaba de desconectar.\n¡Es altamente probable que el clúster de Kubernetes haya perdido conexión o se haya caído!"
+			s.ChannelMessageSend(channelID, alertMsg)
+		}
+	}
 }
 
 // messageCreate responde a comandos de texto simples
