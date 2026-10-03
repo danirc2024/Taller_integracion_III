@@ -9,6 +9,25 @@ import { getProducts } from '@/lib/products-api'
 import type { UiProduct as Product } from '@/types'
 import { useCart } from '@/contexts/CartContext'
 
+function normalizeCategoryTerm(term: string) {
+  const normalized = term.trim().toLowerCase()
+  if (normalized.length > 4 && normalized.endsWith('es')) return normalized.slice(0, -2)
+  if (normalized.length > 3 && normalized.endsWith('s')) return normalized.slice(0, -1)
+  return normalized
+}
+
+function getCategoryTerms(category: string) {
+  return category
+    .split(/[\s,/;]+/)
+    .filter((term) => term !== 'y' && term !== 'e')
+    .map(normalizeCategoryTerm)
+    .filter(Boolean)
+}
+
+function productMatchesCategoryTerm(product: Product, term: string) {
+  return product.name.toLowerCase().includes(term)
+}
+
 export default function Page() {
   const { query, activeMarket, category } = useLayoutContext()
   const { addToCart } = useCart()
@@ -22,11 +41,12 @@ export default function Page() {
     setError(null)
     const market = supermarkets.find((item) => item.id === activeMarket)?.name
     const search = query.trim()
-    const params = search.length >= 3
-      ? `?q=${encodeURIComponent(search)}&limit=100&en_stock=true`
-      : `?limit=100&en_stock=true${market ? `&supermercado=${encodeURIComponent(market)}` : ''}`
+    const params = new URLSearchParams({ limit: '100', en_stock: 'true' })
+    if (search.length >= 3) params.set('q', search)
+    if (category) params.set('categoria', category)
+    if (market) params.set('supermercado', market)
 
-    getProducts(params)
+    getProducts(`?${params.toString()}`)
       .then(({ products: result }) => {
         if (!controller.signal.aborted) setProducts(result)
       })
@@ -37,11 +57,11 @@ export default function Page() {
         if (!controller.signal.aborted) setIsLoading(false)
       })
     return () => controller.abort()
-  }, [query, activeMarket])
+  }, [query, category, activeMarket])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return products.filter((p) => {
+    const baseProducts = products.filter((p) => {
       const isAvailable = p.inStock === true
       const matchesMarket =
         activeMarket === null || p.supermarketId === activeMarket
@@ -51,7 +71,14 @@ export default function Page() {
         p.brand.toLowerCase().includes(q)
       return isAvailable && matchesMarket && matchesQuery
     })
-  }, [products, query, activeMarket])
+
+    if (!category) return baseProducts
+
+    const categoryTerms = getCategoryTerms(category)
+    return baseProducts.filter((product) =>
+      categoryTerms.some((term) => productMatchesCategoryTerm(product, term)),
+    )
+  }, [products, query, category, activeMarket])
 
   const supermarketCount = useMemo(() => {
     const ids = new Set(filtered.map((p) => p.supermarketId))
@@ -64,7 +91,7 @@ export default function Page() {
   // Reset pagination on filter change
   useEffect(() => {
     setVisibleCount(12)
-  }, [query, activeMarket])
+  }, [query, category, activeMarket])
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
