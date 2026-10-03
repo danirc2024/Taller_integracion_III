@@ -38,7 +38,7 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
       to={ROUTES.PRODUCTO_DETALLE(product.id)}
       className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5"
     >
-      <div className="relative aspect-square bg-secondary/50">
+      <div className="relative aspect-square bg-white">
         {pct > 0 && (
           <span className="absolute top-2 left-2 z-10 rounded bg-discount px-1.5 py-0.5 text-[10px] font-bold text-white">-{pct}%</span>
         )}
