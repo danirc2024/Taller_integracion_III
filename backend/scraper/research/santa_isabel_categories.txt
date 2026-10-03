@@ -1,6 +1,0 @@
-# Categorias principales verificadas en el sitemap publico de Santa Isabel
-https://www.santaisabel.cl/frutas-y-verduras
-https://www.santaisabel.cl/lacteos-huevos-y-congelados
-https://www.santaisabel.cl/quesos-y-fiambres
-https://www.santaisabel.cl/despensa
-https://www.santaisabel.cl/carnes-y-pescados
