@@ -44,7 +44,7 @@ curl -X POST http://localhost:8080/api/v1/scraper/trabajos/{ID}/ejecutar \
 	-d '{"spider":"jumbo_rsc"}'
 ```
 
-Los spiders permitidos son `jumbo_rsc` y `santa_isabel_rsc`. El estado se
+Los spiders permitidos son `jumbo_rsc`, `santa_isabel_rsc` y `cugat_rsc`. El estado se
 consulta con `GET /api/v1/scraper/trabajos/{ID}` y debe avanzar de
 `en_progreso` a `completado` o `fallido`. La ingesta se realiza por lotes en
 `POST /api/v1/scraper/trabajos/{ID}/productos`.
@@ -124,6 +124,24 @@ acepta categorias desde `research/santa_isabel_categories.txt` o desde
 El valor `supermercado` de los items es `Santa Isabel`; no se usan URLs de
 producto que el marcado de la pagina atribuye a otra cadena.
 
+Para Cugat, la categoría inicial está en `research/cugat_categories.txt` y usa
+paginación `/page/N/`. También acepta URLs adicionales mediante
+`CUGAT_CATEGORY_URLS` o `-a add_url=...`:
+
+```bash
+docker run --rm \
+	-v "$PWD/backend/scraper:/app" \
+	-v "$PWD:/salida" \
+	taller-integracion-scraper:local \
+	scrapy crawl cugat_rsc \
+	-a enrich_details=true \
+	-s JOBDIR= \
+	-O /salida/cugat.json
+```
+
+`enrich_details=true` consulta el JSON-LD de cada ficha para completar marca,
+EAN/GTIN, imagen y disponibilidad cuando el listado no los publica.
+
 Para ejecutar ambos spiders en secuencia desde la raíz del repositorio y
 guardar cada catálogo por separado:
 
@@ -132,7 +150,7 @@ docker run --rm \
 	-v "$PWD/backend/scraper:/app" \
 	-v "$PWD:/salida" \
 	taller-integracion-scraper:local \
-	sh -c 'scrapy crawl jumbo_rsc -a enrich_ean=true -s JOBDIR= -O /salida/jumbo.json && scrapy crawl santa_isabel_rsc -s JOBDIR= -O /salida/santa_isabel.json'
+	sh -c 'scrapy crawl jumbo_rsc -a enrich_ean=true -s JOBDIR= -O /salida/jumbo.json && scrapy crawl santa_isabel_rsc -s JOBDIR= -O /salida/santa_isabel.json && scrapy crawl cugat_rsc -s JOBDIR= -O /salida/cugat.json'
 ```
 
 El archivo queda en `jumbo.json` dentro de la carpeta desde la que se ejecuta
