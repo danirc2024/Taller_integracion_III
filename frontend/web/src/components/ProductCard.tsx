@@ -36,7 +36,7 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
   return (
     <Link 
       to={ROUTES.PRODUCTO_DETALLE(product.id)}
-      className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5"
+      className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5"
     >
       <div className="relative aspect-square bg-secondary/50">
         {pct > 0 && (

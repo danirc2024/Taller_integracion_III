@@ -42,6 +42,7 @@ export function toUiProduct(product: ApiProduct): Product {
     id: product.id,
     name: product.nombre,
     brand: product.marca || 'Sin marca',
+    category: product.categoria || undefined,
     image: product.url_imagen,
     unit: product.unidad || 'Unidad',
     price: product.precio,

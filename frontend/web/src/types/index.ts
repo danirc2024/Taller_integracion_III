@@ -121,6 +121,7 @@ export type UiProduct = {
   name: string;
   brand: string;
   image: string;
+  category?: string;
   unit: string;
   price: number;
   originalPrice: number;

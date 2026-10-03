@@ -42,7 +42,28 @@ func (r *gormProductoRepository) Listar(ctx context.Context, filtro domain.Filtr
 	}
 
 	if filtro.Categoria != "" {
-		baseQuery = baseQuery.Where("pc.categoria_cruda ILIKE ?", "%"+filtro.Categoria+"%")
+		terms := strings.FieldsFunc(filtro.Categoria, func(r rune) bool {
+			return r == ' ' || r == ',' || r == '/' || r == ';'
+		})
+		conditions := make([]string, 0, len(terms))
+		args := make([]interface{}, 0, len(terms))
+		for _, term := range terms {
+			if strings.EqualFold(term, "y") || strings.EqualFold(term, "e") {
+				continue
+			}
+			term = strings.ToLower(term)
+			switch {
+			case strings.HasSuffix(term, "es") && len(term) > 4:
+				term = strings.TrimSuffix(term, "es")
+			case strings.HasSuffix(term, "s") && len(term) > 3:
+				term = strings.TrimSuffix(term, "s")
+			}
+			conditions = append(conditions, "pc.titulo_crudo ILIKE ?")
+			args = append(args, "%"+term+"%")
+		}
+		if len(conditions) > 0 {
+			baseQuery = baseQuery.Where("("+strings.Join(conditions, " OR ")+")", args...)
+		}
 	}
 
 	if filtro.Supermercado != "" {

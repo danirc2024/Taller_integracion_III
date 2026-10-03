@@ -28,6 +28,7 @@ type SideBarProps = {
  onClose: () => void
  activeMarket: string | null
  availableMarkets: UiSupermarket[]
+ onSelectCategory: (category: string) => void
  onSelectMarket: (id: string | null) => void
 }
 
@@ -48,30 +49,33 @@ const departments: { id: string; label: string; items: string[] }[] = [
  id: 'despensa',
  label: 'Despensa y Abarrotes',
  items: [
- 'Arroz y Legumbres',
- 'Fideos y Pastas',
+ 'Arroz',
+ 'Legumbres',
+ 'Fideos',
+ 'Pastas',
  'Aceites',
- 'Harinas y Azúcar',
+ 'Harinas',
+ 'Azúcares',
  'Conservas',
  ],
  },
  {
  id: 'panaderia',
  label: 'Panadería y Pastelería',
- items: ['Pan de Molde', 'Pan Tradicional', 'Galletas', 'Tortas y Masas'],
+ items: ['Pan', 'Galletas', 'Tortas', 'Masas'],
  },
  {
  id: 'carnes',
  label: 'Carnes y Pescados',
- items: ['Vacuno', 'Pollo', 'Cerdo', 'Pescados y Mariscos'],
+ items: ['Vacuno', 'Pollo', 'Cerdo', 'Pescados', 'Mariscos'],
  },
  {
  id: 'bebidas',
  label: 'Bebidas, Aguas y Licores',
  items: [
- 'Bebidas Gaseosas',
+ 'Bebidas',
  'Jugos',
- 'Aguas Minerales',
+ 'Aguas',
  'Cervezas',
  'Vinos',
  ],
@@ -79,16 +83,12 @@ const departments: { id: string; label: string; items: string[] }[] = [
  {
  id: 'hogar',
  label: 'Electrodomésticos y Hogar',
- items: [
- 'Pequeños Electrodomésticos',
- 'Menaje Cocina',
- 'Limpieza y Aseo',
- ],
+ items: ['Electrodomésticos', 'Menaje', 'Limpieza', 'Aseo'],
  },
  {
  id: 'libreria',
  label: 'Librería y Oficina',
- items: ['Cuadernos', 'Papelería', 'Útiles Escolares'],
+ items: ['Cuadernos', 'Papelería', 'Útiles'],
  },
 ]
 
@@ -97,6 +97,7 @@ export function SideBar({
  onClose,
  activeMarket,
  availableMarkets,
+ onSelectCategory,
  onSelectMarket,
 }: SideBarProps) {
  const [openDept, setOpenDept] = useState<string | null>(null)
@@ -105,6 +106,12 @@ export function SideBar({
  const handleLinkClick = () => {
  navigate('/dashboard')
  onClose()
+ }
+
+ const handleCategoryClick = (category: string, closeSidebar = true) => {
+ onSelectCategory(category)
+ navigate('/dashboard')
+ if (closeSidebar) onClose()
  }
 
  // Close on Escape for accessibility.
@@ -248,11 +255,10 @@ export function SideBar({
  <li key={dept.id}>
  <button
  type="button"
- onClick={() =>
- setOpenDept((prev) =>
- prev === dept.id ? null : dept.id,
- )
- }
+ onClick={() => {
+ setOpenDept((prev) => (prev === dept.id ? null : dept.id))
+ handleCategoryClick(dept.label, false)
+ }}
  aria-expanded={expanded}
  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
  >
@@ -278,7 +284,7 @@ export function SideBar({
  <li key={item}>
  <button
  type="button"
- onClick={handleLinkClick}
+ onClick={() => handleCategoryClick(item)}
  className="flex w-full items-center rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
  >
  {item}
