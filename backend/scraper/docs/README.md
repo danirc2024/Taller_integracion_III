@@ -44,7 +44,7 @@ curl -X POST http://localhost:8080/api/v1/scraper/trabajos/{ID}/ejecutar \
 	-d '{"spider":"jumbo_rsc"}'
 ```
 
-Los spiders permitidos son `jumbo_rsc`, `santa_isabel_rsc` y `cugat_rsc`. El estado se
+Los spiders permitidos son `jumbo_rsc`, `santa_isabel_rsc`, `cugat_rsc` y `acuenta_rsc`. El estado se
 consulta con `GET /api/v1/scraper/trabajos/{ID}` y debe avanzar de
 `en_progreso` a `completado` o `fallido`. La ingesta se realiza por lotes en
 `POST /api/v1/scraper/trabajos/{ID}/productos`.
@@ -123,6 +123,22 @@ acepta categorias desde `research/santa_isabel_categories.txt` o desde
 `SANTA_ISABEL_CATEGORY_URLS`, y normaliza cada producto al esquema compartido.
 El valor `supermercado` de los items es `Santa Isabel`; no se usan URLs de
 producto que el marcado de la pagina atribuye a otra cadena.
+
+Para A Cuenta, la categoría inicial está en `research/acuenta_categories.txt`.
+La paginación usa `currentPage=N`; el parámetro interno `_rsc` no se persiste.
+
+```bash
+docker run --rm \
+	-v "$PWD/backend/scraper:/app" \
+	-v "$PWD:/salida" \
+	taller-integracion-scraper:local \
+	scrapy crawl acuenta_rsc \
+	-s JOBDIR= \
+	-O /salida/acuenta.json
+```
+
+Acepta categorías adicionales mediante `ACUENTA_CATEGORY_URLS` o
+`-a add_url=...`.
 
 Para Cugat, la categoría inicial está en `research/cugat_categories.txt` y usa
 paginación `/page/N/`. También acepta URLs adicionales mediante
