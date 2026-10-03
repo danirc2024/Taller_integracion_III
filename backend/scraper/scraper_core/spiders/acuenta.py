@@ -1,7 +1,7 @@
 import os
 import re
 from pathlib import Path
-from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
+from urllib.parse import parse_qs, quote, urlencode, urljoin, urlparse, urlunparse
 
 import scrapy
 
@@ -98,7 +98,7 @@ class AcuentaRscSpider(scrapy.Spider):
     def _extract_products(response):
         rsc_products = AcuentaRscSpider._extract_rsc_products(response)
         if rsc_products:
-            return rsc_products
+            return AcuentaRscSpider._merge_visible_prices(response, rsc_products)
 
         products = []
         seen_urls = set()
@@ -138,44 +138,132 @@ class AcuentaRscSpider(scrapy.Spider):
         return products
 
     @staticmethod
+    def _merge_visible_prices(response, products):
+        products_by_url = {product["url_producto"]: product for product in products}
+        for link in response.css('a[href^="/p/"]'):
+            product_url = urljoin(response.url, link.attrib.get("href", ""))
+            product = products_by_url.get(product_url)
+            if product is None:
+                continue
+
+            card = link.xpath("ancestor::*[.//text()[contains(., '$')]][1]")
+            text = normalizar_texto(" ".join(card.xpath(".//text()").getall()))
+            prices, promotion = AcuentaRscSpider._prices_from_text(text)
+            if prices is None:
+                continue
+
+            current_price, normal_price = prices
+            if current_price < normal_price:
+                product["precio"] = current_price
+                product["precio_normal"] = normal_price
+                product["precio_oferta"] = current_price
+                product["mecanica_promocion"] = product["mecanica_promocion"] or "promoción"
+            if promotion:
+                product["mecanica_promocion"] = promotion
+
+        return products
+
+    @staticmethod
+    def _extract_rsc_promotion_prices(text):
+        references = dict(
+            re.findall(
+                r'(?:^|\\n)([a-z0-9]+):(.*?)(?=\\n[a-z0-9]+:|$)',
+                text,
+                re.DOTALL,
+            )
+        )
+        promotion_prices = {}
+        for promotion_ref, promotion_data in references.items():
+            promotion_type = re.search(
+                r'\\"type\\":\\"([^"\\]+)\\"', promotion_data
+            )
+            if not promotion_type or promotion_type.group(1) != "specialPrice":
+                continue
+
+            conditions_match = re.search(
+                r'\\"conditions\\":\\"\$([a-z0-9]+)\\"', promotion_data
+            )
+            if not conditions_match:
+                continue
+
+            condition_refs = re.findall(
+                r'\\"\$([a-z0-9]+)\\"',
+                references.get(conditions_match.group(1), ""),
+            )
+            prices = []
+            for condition_ref in condition_refs:
+                condition_data = references.get(condition_ref, "")
+                price_match = re.search(
+                    r'\\"priceBeforeTaxes\\":(\d+)',
+                    condition_data,
+                )
+                if price_match:
+                    price = normalizar_precio_clp(price_match.group(1))
+                    if price is not None:
+                        prices.append(price)
+            if prices:
+                promotion_prices[promotion_ref] = min(prices)
+
+        return promotion_prices
+
+    @staticmethod
     def _extract_rsc_products(response):
         text = response.text
-        product_pattern = re.compile(
-            r'\\"name(?:Complete)?\\":\\"(?P<name>.*?)\\".*?'
-            r'\\"sku\\":\\"(?P<sku>\d+)\\".*?'
-            r'\\"ean\\":(?P<ean>.*?),\\"maxQty\\".*?'
-            r'\\"slug\\":\\"(?P<slug>.*?)\\",\\"brand\\":\\"(?P<brand>.*?)\\".*?'
-            r'\\"stock\\":(?P<stock>[-]?\d+).*?'
-            r'\\"priceBeforeTaxes\\":(?P<normal>[-]?\d+).*?'
-            r'\\"promotion\\":(?P<promotion>null|\\"\$(?P<promotion_ref>[a-z0-9]+)\\")',
-            re.DOTALL,
-        )
-        promotion_prices = {
-            key: float(price)
-            for key, price in re.findall(
-                r'(?:^|\\n)([a-z0-9]+):\{"quantity":\d+,"price":(\d+)',
+        promotion_prices = AcuentaRscSpider._extract_rsc_promotion_prices(text)
+        ean_references = {
+            key: value
+            for key, value in re.findall(
+                r'(?:^|\\n)([a-z0-9]+):\[\\"?(\d{8,14})',
                 text,
             )
         }
         products = []
         seen_skus = set()
-        for match in product_pattern.finditer(text):
-            sku = normalizar_texto(match.group("sku"))
-            if not sku or sku in seen_skus:
+        sku_pattern = re.compile(r'\\"sku\\":\\"(?P<sku>\d+)\\"')
+        for sku_match in sku_pattern.finditer(text):
+            sku = sku_match.group("sku")
+            if sku in seen_skus:
                 continue
-            seen_skus.add(sku)
-            normal_price = normalizar_precio_clp(match.group("normal"))
-            current_price = normal_price
-            promotion_ref = match.group("promotion_ref")
-            if promotion_ref and promotion_ref in promotion_prices:
-                current_price = promotion_prices[promotion_ref]
-            ean_values = re.findall(r"\d{8,14}", match.group("ean"))
-            ean = normalizar_ean_gtin(ean_values[0]) if ean_values else None
-            slug = match.group("slug")
-            name = normalizar_texto(match.group("name"))
-            if not AcuentaRscSpider._name_matches_slug(name, slug):
+            window = text[max(0, sku_match.start() - 1200) : sku_match.end() + 1800]
+            slug_match = re.search(r'\\"slug\\":\\"([^"\\]+)\\"', window)
+            brand_match = re.search(r'\\"brand\\":\\"([^"\\]+)\\"', window)
+            stock_match = re.search(r'\\"stock\\":(-?\d+)', window)
+            price_match = re.search(r'\\"priceBeforeTaxes\\":(-?\d+)', window)
+            image = AcuentaRscSpider._image_from_rsc(text, sku)
+            image = image or AcuentaRscSpider._resolve_image_reference(text, window)
+            if not slug_match or not price_match:
+                continue
+
+            slug = slug_match.group(1)
+            normal_price = normalizar_precio_clp(price_match.group(1))
+            if normal_price is None:
+                continue
+            name_match = re.search(r'\\"name\\":\\"([^"\\]+)\\"', window)
+            name = normalizar_texto(name_match.group(1)) if name_match else None
+            if not name or not AcuentaRscSpider._name_matches_slug(name, slug):
                 name = AcuentaRscSpider._name_from_slug(slug)
-            product_url = urljoin(response.url, f"/p/{slug}")
+            ean_field = re.search(
+                r'\\"ean\\":(.*?),\\"maxQty\\"',
+                window,
+            )
+            ean_values = (
+                re.findall(r"\d{8,14}", ean_field.group(1))
+                if ean_field
+                else []
+            )
+            if not ean_values and ean_field:
+                reference_match = re.search(r'\\"\$(?P<reference>[a-z0-9]+)\\"', ean_field.group(1))
+                if reference_match:
+                    referenced_ean = ean_references.get(reference_match.group("reference"))
+                    if referenced_ean:
+                        ean_values = [referenced_ean]
+            ean = normalizar_ean_gtin(ean_values[0]) if ean_values else None
+            promotion_ref_match = re.search(r'\\"promotion\\":\\"\$([a-z0-9]+)\\"', window)
+            promotion_ref = promotion_ref_match.group(1) if promotion_ref_match else None
+            current_price = promotion_prices.get(promotion_ref, normal_price)
+            image = image or AcuentaRscSpider._image_from_sku(sku)
+            image = AcuentaRscSpider._canonical_image_url(image)
+            seen_skus.add(sku)
             products.append(
                 {
                     "producto": name,
@@ -184,15 +272,50 @@ class AcuentaRscSpider(scrapy.Spider):
                     "precio_oferta": current_price if current_price < normal_price else None,
                     "ean_gtin": ean,
                     "sku": sku,
-                    "marca": normalizar_texto(match.group("brand")),
+                    "marca": normalizar_texto(brand_match.group(1)) if brand_match else None,
                     "formato_crudo": AcuentaRscSpider._format_from_text(name),
                     "mecanica_promocion": "promoción" if promotion_ref else None,
-                    "en_stock": int(match.group("stock")) > 0,
-                    "url_producto": product_url,
-                    "imagen": None,
+                    "en_stock": int(stock_match.group(1)) > 0 if stock_match else None,
+                    "url_producto": urljoin(response.url, f"/p/{slug}"),
+                    "imagen": image,
                 }
             )
         return products
+
+    @staticmethod
+    def _resolve_image_reference(text, window):
+        reference_match = re.search(
+            r'\\"photosUrl\\":\\"\$(?P<reference>[a-z0-9]+)\\"',
+            window,
+        )
+        if not reference_match:
+            return None
+        reference = re.escape(reference_match.group("reference"))
+        image_match = re.search(
+            rf'{reference}:\[\\?"(https?://[^"\\]+)',
+            text,
+        )
+        return image_match.group(1).replace(r"\u0026", "&") if image_match else None
+
+    @staticmethod
+    def _image_from_rsc(text, sku):
+        escaped_sku = re.escape(sku)
+        match = re.search(
+            rf'(https://images\.lider\.cl/wmtcl\?source=url\[file:/productos/{escaped_sku}[^\]"\\]*\.(?:jpe?g|png|webp)\](?:\\u0026|&)sink)',
+            text,
+            re.IGNORECASE,
+        )
+        if not match:
+            return None
+        return match.group(1).replace(r"\u0026", "&")
+
+    @staticmethod
+    def _image_from_sku(sku):
+        return f"https://images.lider.cl/wmtcl?source=url[file:/productos/{sku}a.jpg]&sink"
+
+    @staticmethod
+    def _canonical_image_url(image_url):
+        return quote(image_url, safe=":/?=&.%") if image_url else None
 
     @staticmethod
     def _name_matches_slug(name, slug):
