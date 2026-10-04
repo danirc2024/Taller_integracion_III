@@ -22,10 +22,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- 2. Actualizar la secuencia para evitar colisiones en auto-creates del Go
 SELECT setval(
     'scraper.cadenas_supermercado_id_seq',
-    GREATEST(
-        (SELECT MAX(id) FROM scraper.cadenas_supermercado),
-        currval('scraper.cadenas_supermercado_id_seq')
-    )
+    (SELECT MAX(id) FROM scraper.cadenas_supermercado)
 );
 
 -- 3. Insertar sucursales por defecto para las cadenas nuevas
@@ -40,10 +37,7 @@ ON CONFLICT (id) DO NOTHING;
 -- 4. Actualizar la secuencia de sucursales
 SELECT setval(
     'scraper.sucursales_supermercado_id_seq',
-    GREATEST(
-        (SELECT MAX(id) FROM scraper.sucursales_supermercado),
-        currval('scraper.sucursales_supermercado_id_seq')
-    )
+    (SELECT MAX(id) FROM scraper.sucursales_supermercado)
 );
 
 -- 5. Verificación: mostrar las cadenas y sucursales registradas
