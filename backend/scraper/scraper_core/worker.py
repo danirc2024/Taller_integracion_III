@@ -12,7 +12,13 @@ from scraper_core.runtime import ScrapyCommandExecutor
 
 
 QUEUE_NAME = os.getenv("SCRAPER_QUEUE", "scraper:jobs")
-ALLOWED_SPIDERS = {"jumbo_rsc", "santa_isabel_rsc", "cugat_rsc", "acuenta_rsc"}
+ALLOWED_SPIDERS = {
+    "jumbo_rsc",
+    "santa_isabel_rsc",
+    "cugat_rsc",
+    "acuenta_rsc",
+    "lider_rsc",
+}
 logger = logging.getLogger(__name__)
 
 

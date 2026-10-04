@@ -44,7 +44,7 @@ curl -X POST http://localhost:8080/api/v1/scraper/trabajos/{ID}/ejecutar \
 	-d '{"spider":"jumbo_rsc"}'
 ```
 
-Los spiders permitidos son `jumbo_rsc`, `santa_isabel_rsc`, `cugat_rsc` y `acuenta_rsc`. El estado se
+Los spiders permitidos son `jumbo_rsc`, `santa_isabel_rsc`, `cugat_rsc`, `acuenta_rsc` y `lider_rsc`. El estado se
 consulta con `GET /api/v1/scraper/trabajos/{ID}` y debe avanzar de
 `en_progreso` a `completado` o `fallido`. La ingesta se realiza por lotes en
 `POST /api/v1/scraper/trabajos/{ID}/productos`.
@@ -157,6 +157,22 @@ docker run --rm \
 
 `enrich_details=true` consulta el JSON-LD de cada ficha para completar marca,
 EAN/GTIN, imagen y disponibilidad cuando el listado no los publica.
+
+Para Lider Supermercado, el spider usa exclusivamente `super.lider.cl` y rutas
+públicas `/browse/` permitidas por su `robots.txt`. Las categorías configuradas
+están en `research/lider_categories.txt`; admite URLs
+adicionales mediante `LIDER_CATEGORY_URLS` o `-a add_url=...` y pagina con
+`?page=N`:
+
+```bash
+docker run --rm \
+	-v "$PWD/backend/scraper:/app" \
+	-v "$PWD:/salida" \
+	taller-integracion-scraper:local \
+	scrapy crawl lider_rsc \
+	-s JOBDIR= \
+	-O /salida/lider.json
+```
 
 Para ejecutar ambos spiders en secuencia desde la raíz del repositorio y
 guardar cada catálogo por separado:
