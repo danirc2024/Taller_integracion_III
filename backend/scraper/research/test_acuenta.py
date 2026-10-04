@@ -62,6 +62,11 @@ class AcuentaExtractionTest(unittest.TestCase):
         )
         self.assertEqual(AcuentaRscSpider._category_from_url(url), "congelados")
 
+    def test_max_pages_argument_sets_per_category_limit(self):
+        spider = AcuentaRscSpider(max_pages="1")
+
+        self.assertEqual(spider.max_pages, 1)
+
     def test_extracts_multiunit_promotion(self):
         prices, promotion = AcuentaRscSpider._prices_from_text(
             "$3.090 2 X $5.700 Carne molida"
@@ -84,9 +89,27 @@ class AcuentaExtractionTest(unittest.TestCase):
         products = AcuentaRscSpider._extract_rsc_products(self._response(body))
 
         self.assertEqual(len(products), 1)
-        self.assertEqual(products[0]["producto"], "Producto Limpio 123")
+        self.assertEqual(products[0]["producto"], "Producto Limpio")
         self.assertEqual(products[0]["ean_gtin"], "7800000000001")
         self.assertNotIn("Script", products[0]["producto"])
+
+    def test_uses_product_fields_after_sku_not_previous_category_fields(self):
+        body = (
+            '<script>self.__next_f.push([1,'
+            r'\"name\":\"Congelados\",\"slug\":\"congelados/04\",'
+            r'\"brand\":\"Categoria\",\"stock\":1,\"priceBeforeTaxes\":5000,'
+            r'\"sku\":\"434645\",\"ean\":null,\"maxQty\":1,'
+            r'\"slug\":\"salteado-chapsui-wok-congelado-500-g-frutos-del-maipo-434645\",'
+            r'\"brand\":\"Frutos del Maipo\",\"stock\":25,\"priceBeforeTaxes\":2000,'
+            r'\"promotion\":null'
+            '])</script>'
+        )
+
+        product = AcuentaRscSpider._extract_rsc_products(self._response(body))[0]
+
+        self.assertEqual(product["producto"], "Salteado Chapsui Wok Congelado 500 G Frutos Del Maipo")
+        self.assertEqual(product["url_producto"], "https://www.acuenta.cl/p/salteado-chapsui-wok-congelado-500-g-frutos-del-maipo-434645")
+        self.assertEqual(product["precio"], 2000.0)
 
     def test_resolves_rsc_ean_reference(self):
         body = (

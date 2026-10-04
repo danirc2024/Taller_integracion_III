@@ -25,10 +25,12 @@ class AcuentaRscSpider(scrapy.Spider):
         },
     }
 
-    def __init__(self, *args, add_url=None, **kwargs):
+    def __init__(self, *args, add_url=None, max_pages=None, **kwargs):
         super().__init__(*args, **kwargs)
         if add_url:
             self._append_category_url(add_url)
+        if max_pages is not None:
+            self.max_pages = max(1, int(max_pages))
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
@@ -224,7 +226,7 @@ class AcuentaRscSpider(scrapy.Spider):
             sku = sku_match.group("sku")
             if sku in seen_skus:
                 continue
-            window = text[max(0, sku_match.start() - 1200) : sku_match.end() + 1800]
+            window = text[sku_match.start() : sku_match.end() + 1800]
             slug_match = re.search(r'\\"slug\\":\\"([^"\\]+)\\"', window)
             brand_match = re.search(r'\\"brand\\":\\"([^"\\]+)\\"', window)
             stock_match = re.search(r'\\"stock\\":(-?\d+)', window)
@@ -333,7 +335,7 @@ class AcuentaRscSpider(scrapy.Spider):
 
     @staticmethod
     def _name_from_slug(slug):
-        readable = re.sub(r"-\d+$", "", slug.replace("-", " "))
+        readable = re.sub(r"-\d+$", "", slug).replace("-", " ")
         return normalizar_texto(readable.title())
 
     @staticmethod
