@@ -81,7 +81,14 @@ func (h *ScraperHandler) EjecutarTrabajo(c *gin.Context) {
 	if input.Spider == "" {
 		input.Spider = "jumbo_rsc"
 	}
-	if input.Spider != "jumbo_rsc" && input.Spider != "santa_isabel_rsc" {
+	spidersPermitidos := map[string]bool{
+		"jumbo_rsc":         true,
+		"santa_isabel_rsc":  true,
+		"lider_rsc":         true,
+		"acuenta_rsc":       true,
+		"cugat_rsc":         true,
+	}
+	if !spidersPermitidos[input.Spider] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Spider no permitido"})
 		return
 	}
