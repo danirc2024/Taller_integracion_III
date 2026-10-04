@@ -2,25 +2,19 @@
 
 Este microservicio está destinado a extraer de manera asíncrona los catálogos de productos y ofertas desde sitios web de supermercados, implementando el framework **Scrapy**. 
 
-La imagen del scraper se construye de forma independiente porque el
-`docker-compose.yml` actual no incluye este servicio. Esto permite ejecutar
-Scrapy bajo demanda sin modificar los demás microservicios.
+El microservicio está integrado en `docker-compose.yml` bajo el servicio `scraper_worker`, escuchando la cola Redis para procesar trabajos en segundo plano enviados desde el API Gateway. También permite ejecutarse de forma independiente para tareas de desarrollo y pruebas locales.
 
 ## Tecnologías y Entorno
-El contenedor ya cuenta con las dependencias necesarias inyectadas en su `Dockerfile`:
+El contenedor cuenta con las dependencias necesarias inyectadas en su `Dockerfile`:
 - `Scrapy`: Framework de extracción web.
 - `psycopg2-binary`: Dependencia disponible para integraciones auxiliares.
 - `redis`: Cliente usado por el worker para consumir trabajos desde Redis.
 
-La API publica trabajos en la cola Redis `scraper:jobs`. El worker consume esos
-trabajos, ejecuta el spider indicado y envía los productos a la API para su
-persistencia. La cola de refresh (`RefreshQueue`) continúa siendo local al
-proceso y evita duplicados durante una ejecución.
+La API publica trabajos en la cola Redis `scraper:jobs`. El worker consume esos trabajos, ejecuta el spider indicado y envía los productos a la API para su persistencia. La cola de refresh (`RefreshQueue`) continúa siendo local al proceso y evita duplicados durante una ejecución.
 
 ## Ejecución disparada desde la API
 
-La API y el worker se conectan mediante Redis. Primero se inicia el worker
-desde `backend/scraper` y se deja escuchando:
+La API y el worker se conectan mediante Redis. Primero se inicia el worker desde `backend/scraper` y se deja escuchando:
 
 ```bash
 REDIS_URL=redis://localhost:6379/0 \
@@ -44,10 +38,7 @@ curl -X POST http://localhost:8080/api/v1/scraper/trabajos/{ID}/ejecutar \
 	-d '{"spider":"jumbo_rsc"}'
 ```
 
-Los spiders permitidos son `jumbo_rsc`, `santa_isabel_rsc`, `cugat_rsc`, `acuenta_rsc` y `lider_rsc`. El estado se
-consulta con `GET /api/v1/scraper/trabajos/{ID}` y debe avanzar de
-`en_progreso` a `completado` o `fallido`. La ingesta se realiza por lotes en
-`POST /api/v1/scraper/trabajos/{ID}/productos`.
+Los spiders permitidos son `jumbo_rsc`, `santa_isabel_rsc`, `cugat_rsc`, `acuenta_rsc` y `lider_rsc`. El estado se consulta con `GET /api/v1/scraper/trabajos/{ID}` y debe avanzar de `en_progreso` a `completado` o `fallido`. La ingesta se realiza por lotes en `POST /api/v1/scraper/trabajos/{ID}/productos`.
 
 Para comprobar la cola pendiente:
 
@@ -57,17 +48,14 @@ docker exec redis_broker redis-cli LLEN scraper:jobs
 
 ## Documentación de Uso (Modo Desarrollo)
 
-A diferencia de FastAPI, **Scrapy no es un servidor web permanente**. Es un
-entorno de ejecución de _scripts_ (Spiders). Desde la raíz del repositorio,
-construye la imagen actual así:
+A diferencia de FastAPI, **Scrapy no es un servidor web permanente**. Es un entorno de ejecución de _scripts_ (Spiders). Desde la raíz del repositorio, construye la imagen actual así:
 
 ```bash
 docker build -t taller-integracion-scraper:local ./backend/scraper
 ```
 
 ### 1. Inicializar el proyecto Scrapy
-Si aún no has andamiado la estructura estándar de Scrapy, ejecuta el comando
-desde el directorio `backend/scraper` usando el entorno local:
+Si aún no has andamiado la estructura estándar de Scrapy, ejecuta el comando desde el directorio `backend/scraper` usando el entorno local:
 
 ```bash
 scrapy startproject scraper_core .
@@ -82,15 +70,8 @@ docker run --rm taller-integracion-scraper:local \
 ```
 
 ### 3. Ejecutar la recolección de datos manualmente
-Cuando el desarrollador haya programado su araña (ej. `ejemplo_supermercado`), puede disparar la recolección lanzando:
 
-```bash
-docker run --rm taller-integracion-scraper:local \
-	scrapy crawl ejemplo_supermercado
-```
-
-Para Jumbo:
-
+#### Jumbo (`jumbo_rsc`)
 ```bash
 docker run --rm \
 	-v "$PWD:/salida" \
@@ -100,14 +81,9 @@ docker run --rm \
 	-s JOBDIR= \
 	-O /salida/jumbo.json
 ```
+La opción `-a enrich_ean=true` consulta la ficha de cada producto sin EAN en el listado.
 
-La opción `-a enrich_ean=true` consulta la ficha de cada producto sin EAN en
-el listado. Puede aumentar bastante la duración del scraping; mantiene la
-concurrencia y la demora configuradas en Scrapy.
-
-Para Santa Isabel, el spider usa las categorias verificadas en su sitemap y
-respeta `robots.txt`:
-
+#### Santa Isabel (`santa_isabel_rsc`)
 ```bash
 docker run --rm \
 	-v "$PWD/backend/scraper:/app" \
@@ -117,16 +93,9 @@ docker run --rm \
 	-s JOBDIR= \
 	-O /salida/santa_isabel.json
 ```
+El spider lee el estado SSR de Santa Isabel (`window.__renderData`) y acepta categorías desde `research/santa_isabel_categories.txt` o `SANTA_ISABEL_CATEGORY_URLS`.
 
-El spider lee el estado SSR propio de Santa Isabel (`window.__renderData`),
-acepta categorias desde `research/santa_isabel_categories.txt` o desde
-`SANTA_ISABEL_CATEGORY_URLS`, y normaliza cada producto al esquema compartido.
-El valor `supermercado` de los items es `Santa Isabel`; no se usan URLs de
-producto que el marcado de la pagina atribuye a otra cadena.
-
-Para A Cuenta, la categoría inicial está en `research/acuenta_categories.txt`.
-La paginación usa `currentPage=N`; el parámetro interno `_rsc` no se persiste.
-
+#### A Cuenta (`acuenta_rsc`)
 ```bash
 docker run --rm \
 	-v "$PWD/backend/scraper:/app" \
@@ -136,14 +105,9 @@ docker run --rm \
 	-s JOBDIR= \
 	-O /salida/acuenta.json
 ```
+Acepta categorías desde `research/acuenta_categories.txt` o la variable `ACUENTA_CATEGORY_URLS`.
 
-Acepta categorías adicionales mediante `ACUENTA_CATEGORY_URLS` o
-`-a add_url=...`.
-
-Para Cugat, la categoría inicial está en `research/cugat_categories.txt` y usa
-paginación `/page/N/`. También acepta URLs adicionales mediante
-`CUGAT_CATEGORY_URLS` o `-a add_url=...`:
-
+#### Cugat (`cugat_rsc`)
 ```bash
 docker run --rm \
 	-v "$PWD/backend/scraper:/app" \
@@ -154,16 +118,9 @@ docker run --rm \
 	-s JOBDIR= \
 	-O /salida/cugat.json
 ```
+La opción `-a enrich_details=true` consulta el JSON-LD de cada ficha para enriquecer la marca, EAN/GTIN e imagen.
 
-`enrich_details=true` consulta el JSON-LD de cada ficha para completar marca,
-EAN/GTIN, imagen y disponibilidad cuando el listado no los publica.
-
-Para Lider Supermercado, el spider usa exclusivamente `super.lider.cl` y rutas
-públicas `/browse/` permitidas por su `robots.txt`. Las categorías configuradas
-están en `research/lider_categories.txt`; admite URLs
-adicionales mediante `LIDER_CATEGORY_URLS` o `-a add_url=...` y pagina con
-`?page=N`:
-
+#### Lider Supermercado (`lider_rsc`)
 ```bash
 docker run --rm \
 	-v "$PWD/backend/scraper:/app" \
@@ -173,142 +130,56 @@ docker run --rm \
 	-s JOBDIR= \
 	-O /salida/lider.json
 ```
+Usa únicamente rutas públicas `/browse/` permitidas por `robots.txt` y categorías desde `research/lider_categories.txt` o `LIDER_CATEGORY_URLS`.
 
-Para ejecutar ambos spiders en secuencia desde la raíz del repositorio y
-guardar cada catálogo por separado:
-
-```bash
-docker run --rm \
-	-v "$PWD/backend/scraper:/app" \
-	-v "$PWD:/salida" \
-	taller-integracion-scraper:local \
-	sh -c 'scrapy crawl jumbo_rsc -a enrich_ean=true -s JOBDIR= -O /salida/jumbo.json && scrapy crawl santa_isabel_rsc -s JOBDIR= -O /salida/santa_isabel.json && scrapy crawl cugat_rsc -s JOBDIR= -O /salida/cugat.json'
-```
-
-El archivo queda en `jumbo.json` dentro de la carpeta desde la que se ejecuta
-el comando. Para obtener una prueba de un solo producto, agrega
-`-s CLOSESPIDER_ITEMCOUNT=1`.
-
-La lista persistente está en `research/jumbo_categories.txt`. Para agregar una
-categoría y ejecutar todas las URLs guardadas:
+#### Ejecutar spiders en secuencia
+Para ejecutar los spiders en secuencia desde la raíz del repositorio y guardar cada catálogo por separado:
 
 ```bash
 docker run --rm \
 	-v "$PWD/backend/scraper:/app" \
 	-v "$PWD:/salida" \
 	taller-integracion-scraper:local \
-	scrapy crawl jumbo_rsc \
-	-a add_url="https://www.jumbo.cl/ruta-de-la-categoria" \
-	-s JOBDIR= \
-	-O /salida/jumbo.json
+	sh -c 'scrapy crawl jumbo_rsc -a enrich_ean=true -s JOBDIR= -O /salida/jumbo.json && scrapy crawl santa_isabel_rsc -s JOBDIR= -O /salida/santa_isabel.json && scrapy crawl cugat_rsc -a enrich_details=true -s JOBDIR= -O /salida/cugat.json && scrapy crawl acuenta_rsc -s JOBDIR= -O /salida/acuenta.json && scrapy crawl lider_rsc -s JOBDIR= -O /salida/lider.json'
 ```
-
-El comando agrega la URL sólo si no existe. Ejecuta el comando una vez por cada
-nueva categoría, o edita directamente el archivo dejando una URL pública por
-línea. Como el archivo no se monta como volumen, reconstruye la imagen después
-de modificarlo para que el contenedor reciba la lista actualizada.
-
-El spider `jumbo_rsc` procesa todas las categorías guardadas y avanza por sus
-páginas hasta encontrar una respuesta sin productos, con un máximo de 20
-páginas por categoría. Respeta `robots.txt`, usa una identidad identificable,
-mantiene una sola solicitud simultánea por dominio y aplica un delay mínimo de
-2 segundos entre peticiones. La política de politeness se gestiona con
-`AUTOTHROTTLE_ENABLED`, `DOWNLOAD_DELAY`, `CONCURRENT_REQUESTS` y
-`CONCURRENT_REQUESTS_PER_DOMAIN`, con un backoff automático para evitar
-sobrecargar el sitio y el contenedor.
-
-La estrategia de reintentos es conservadora y solo aplica a errores temporales
-como `429`, `500`, `503` y `504`, con `RETRY_TIMES = 3` y factor de backoff de
-2 segundos. Esto evita bucles infinitos ante caídas transitorias y ayuda a
-mantener la extracción estable en servidores con recursos limitados.
-
-Cuando una página responde `404` por fin de paginación, el spider la detecta
-como cierre natural de la iteración y no intenta seguir navegando. Si una
-respuesta llega vacía o con formato inesperado, registra una advertencia en vez
-de emitir datos incorrectos en silencio. Este manejo de errores ayuda a detectar
-cambios del sitio sin dejar de ser resiliente.
 
 ### Ejecución local sin persistencia
 
-Desde `backend/scraper`, el runtime ejecuta el scraping masivo de las categorías
-configuradas y entrega cada producto extraído como una línea JSON por `stdout`.
-Los mensajes de Scrapy se mantienen en `stderr`:
+Desde `backend/scraper`, el runtime ejecuta el scraping masivo y entrega cada producto extraído como una línea JSON por `stdout`. Los mensajes de Scrapy se mantienen en `stderr`:
 
 ```bash
 python -m scraper_core.runtime
 ```
 
-Para actualizar un producto concreto, pasa su URL pública de Jumbo:
+Para actualizar un producto concreto, pasa su URL pública:
 
 ```bash
 python -m scraper_core.runtime --product-url "https://www.jumbo.cl/ruta-del-producto"
 ```
 
-También se puede ejecutar Scrapy directamente y exportar a un archivo:
+El runtime captura los items en un feed JSONL temporal y retorna los objetos en `result["items"]`. Para persistirlos mediante la API se debe usar el worker y el flujo disparado desde la API descrito arriba.
 
-```bash
-scrapy crawl jumbo_rsc \
-	-a product_url="https://www.jumbo.cl/ruta-del-producto" \
-	-O producto.jsonl
-```
+Cada producto conserva los campos básicos (`producto`, `precio`, `categoria`, `imagen`) y puede incluir `ean_gtin`, `sku`, `precio_normal`, `precio_oferta`, `marca`, `formato_crudo`, `mecanica_promocion`, `en_stock` y `url_producto`. Los campos no publicados por el supermercado origen quedan como `null`.
 
-El modo puntual solicita solo la URL recibida y no continúa con la paginación
-de categorías. La URL se limita a `jumbo.cl` y `www.jumbo.cl`. El runtime
-captura los items en un feed JSONL temporal y retorna los objetos en
-`result["items"]`. Para persistirlos mediante la API se debe usar el worker y
-el flujo disparado desde la API descrito arriba.
+## Política de resiliencia
 
-La configuración del scheduler puede construirse con los valores que más
-adelante enviará la API:
+Todos los spiders del proyecto comparten una política responsable configurada globalmente en `settings.py` para no bloquear los sitios de origen ni sobrepasar los recursos del servidor:
 
-```python
-from scraper_core.freshness import RefreshScheduler
+- 1 request simultáneo por dominio (`CONCURRENT_REQUESTS_PER_DOMAIN = 1`)
+- Delay mínimo de 2s entre peticiones (`DOWNLOAD_DELAY = 2`)
+- Throttling automático habilitado (`AUTOTHROTTLE_ENABLED = True`)
+- Retries limitados solo para errores temporales (`429`, `500`, `503`, `504`)
+- Backoff progresivo para evitar rebotes de carga
+- Fin explícito cuando la página ya no tiene más resultados (respuestas HTTP 404 de paginación)
+- Advertencias explícitas en logs para respuestas vacías o formatos inesperados
 
-scheduler = RefreshScheduler.from_config({
-	"enabled": True,
-	"catalog_interval_seconds": 21600,
-	"product_ttl_seconds": 1800,
-})
-```
+Esto mantiene una extracción cuidadosa, estable y compatible con un entorno Docker y hardware con recursos reducidos (servidor Pentium).
 
-La API será responsable de persistir productos, precios y `last_updated_at`.
-El scraper no crea un JSON local para reemplazar esa persistencia.
+## Estado de Integración
 
-Cada producto conserva los campos básicos (`producto`, `precio`, `categoria`,
-`imagen`) y puede incluir `ean_gtin`, `sku`, `precio_normal`, `precio_oferta`,
-`marca`, `formato_crudo`, `mecanica_promocion`, `en_stock` y `url_producto`.
-Los campos no publicados por Jumbo quedan como `null`.
+El microservicio de scraping se encuentra completamente integrado con la arquitectura general del sistema:
 
-## Política de resiliencia del scraper
+1. **Redis Broker**: Escucha solicitudes enviadas por el API Gateway a través de la cola `scraper:jobs`.
+2. **API Gateway (Go)**: Recibe lotes de productos scrapeados vía HTTP (`POST /api/v1/scraper/productos`) e ingesta la información en la base de datos PostgreSQL.
+3. **Persistencia (PostgreSQL)**: Se almacena en el esquema `scraper.*` en las tablas `productos_crudos` y `capturas_precios`.
 
-El scraper de Jumbo aplica una política responsable para no bloquear al sitio ni
-sobrepasar los límites del servidor:
-
-- 1 request simultáneo por dominio
-- delay mínimo de 2s entre peticiones
-- throttling automático habilitado
-- retries limitados solo para errores temporales
-- backoff progresivo para evitar rebotes de carga
-- fin explícito cuando la página ya no tiene más resultados
-- warnings para respuestas vacías o formatos inesperados
-
-Esto mantiene una extracción cuidadosa, estable y compatible con un entorno
-Docker y hardware con recursos reducidos.
-
-La respuesta con `Accept: text/x-component` (RSC) es un detalle interno de
-Next.js, no una API pública estable. Por eso el spider usa HTML por defecto y
-la extracción está aislada: si Jumbo cambia su formato, registra una
-advertencia en vez de generar datos silenciosamente incorrectos.
-
-## Integraciones futuras
-
-Cuando la API y la infraestructura estén listas, las URLs de Redis y de la
-Base de Datos podrán pasarse mediante variables de entorno. El scraper podrá
-leerlas, por ejemplo, así:
-
-```python
-import os
-
-db_url = os.getenv("DB_URL")
-redis_url = os.getenv("REDIS_URL")
-```
