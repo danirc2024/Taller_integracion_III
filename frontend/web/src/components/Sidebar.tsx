@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 import {
  ChevronDown,
@@ -30,6 +30,7 @@ type SideBarProps = {
  availableMarkets: UiSupermarket[]
  onSelectCategory: (category: string) => void
  onSelectMarket: (id: string | null) => void
+ activeCategory: string
 }
 
 const featured = [
@@ -99,14 +100,11 @@ export function SideBar({
  availableMarkets,
  onSelectCategory,
  onSelectMarket,
+ activeCategory,
 }: SideBarProps) {
  const [openDept, setOpenDept] = useState<string | null>(null)
  const navigate = useNavigate()
-
- const handleLinkClick = () => {
- navigate('/dashboard')
- onClose()
- }
+ const { pathname } = useLocation()
 
  const handleCategoryClick = (category: string, closeSidebar = true) => {
  onSelectCategory(category)
@@ -169,189 +167,202 @@ export function SideBar({
             <ul className="flex flex-col gap-1">
               <li>
                 <Link
-                  to="/dashboard"
+                  to="/"
                   onClick={onClose}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-primary-foreground bg-primary transition-colors shadow-[4px_4px_0px_var(--color-border)] border-2 border-border hover:bg-primary/90"
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
                 >
                   <Home className="h-4.5 w-4.5" aria-hidden="true" />
-                  Inicio
+                  Página principal
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/dashboard"
+                  onClick={() => {
+                    onSelectCategory("")
+                    onClose()
+                  }}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold transition-colors ${pathname === '/dashboard' ? 'text-primary-foreground bg-primary shadow-[4px_4px_0px_var(--color-border)] border-2 border-border hover:bg-primary/90' : 'text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+                >
+                  <Store className="h-4.5 w-4.5" aria-hidden="true" />
+                  Catálogo
                 </Link>
               </li>
             </ul>
           </nav>
 
           {/* DESTACADOS */}
- <nav aria-label="Destacados">
- <p className="px-2 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
- Destacados
- </p>
- <ul className="flex flex-col gap-1">
- {featured.map((c) => (
- <li key={c.id}>
- <button
- type="button"
- onClick={handleLinkClick}
- className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
- >
- <c.icon
- className="h-4.5 w-4.5 text-muted-foreground"
- aria-hidden="true"
- />
- {c.label}
- </button>
- </li>
- ))}
- </ul>
- </nav>
+          <nav aria-label="Destacados">
+            <p className="px-2 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Destacados
+            </p>
+            <ul className="flex flex-col gap-1">
+              {featured.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => handleCategoryClick(activeCategory === c.id ? "" : c.id)}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${activeCategory === c.id ? 'bg-accent text-accent-foreground font-bold' : 'text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+                  >
+                    <c.icon
+                      className={`h-4.5 w-4.5 ${activeCategory === c.id ? 'text-foreground' : 'text-muted-foreground'}`}
+                      aria-hidden="true"
+                    />
+                    {c.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
- {/* HERRAMIENTAS IA */}
- <nav aria-label="Asistente IA">
- <p className="px-2 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
- Herramientas IA
- </p>
- <ul className="flex flex-col gap-1">
- <li>
- <Link
- to="/chat"
- onClick={onClose}
- className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 transition-colors"
- >
- <Bot className="h-4.5 w-4.5"aria-hidden="true"/>
- Chat Inteligente
- </Link>
- </li>
- <li>
- <Link
- to="/history"
- onClick={onClose}
- className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
- >
- <Map className="h-4.5 w-4.5 text-muted-foreground"aria-hidden="true"/>
- Listas y Rutas
- </Link>
- </li>
- <li>
- <Link
- to="/colaborador"
- onClick={onClose}
- className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
- >
- <Users className="h-4.5 w-4.5 text-muted-foreground"aria-hidden="true"/>
- Misiones
- </Link>
- </li>
- </ul>
- </nav>
+          {/* SUPERMERCADOS */}
+          <div>
+            <p className="px-2 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Supermercados
+            </p>
+            <ul className="flex flex-col gap-1">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onSelectMarket(null)}
+                  aria-pressed={activeMarket === null}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    activeMarket === null
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-foreground hover:bg-accent hover:text-accent-foreground'
+                  }`}
+                >
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-muted">
+                    <Store
+                      className="h-3.5 w-3.5 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                  </span>
+                  Todos
+                </button>
+              </li>
+              {availableMarkets.map((s) => (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelectMarket(s.id)}
+                    aria-pressed={activeMarket === s.id}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      activeMarket === s.id
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-foreground hover:bg-accent hover:text-accent-foreground'
+                    }`}
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-md bg-background ring-1 ring-border">
+                      <img
+                        src={s.logo || '/placeholder.svg'}
+                        alt=""
+                        width={20}
+                        height={20}
+                        className="h-5 w-5 object-contain"
+                      />
+                    </span>
+                    {s.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
 
- {/* DEPARTAMENTOS Y CATEGORÍAS */}
- <nav aria-label="Departamentos y categorías">
- <p className="px-2 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
- Departamentos y categorías
- </p>
- <ul className="flex flex-col gap-0.5">
- {departments.map((dept) => {
- const expanded = openDept === dept.id
- return (
- <li key={dept.id}>
- <button
- type="button"
- onClick={() => {
- setOpenDept((prev) => (prev === dept.id ? null : dept.id))
- handleCategoryClick(dept.label, false)
- }}
- aria-expanded={expanded}
- className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
- >
- <ChevronDown
- className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
- expanded ? 'rotate-0' : '-rotate-90'
- }`}
- aria-hidden="true"
- />
- <span className="text-pretty leading-snug">
- {dept.label}
- </span>
- </button>
- <div
- className={`grid transition-all duration-200 ease-out ${
- expanded
- ? 'grid-rows-[1fr] opacity-100'
- : 'grid-rows-[0fr] opacity-0'
- }`}
- >
- <ul className="ml-6 overflow-hidden border-l border-border pl-3">
- {dept.items.map((item) => (
- <li key={item}>
- <button
- type="button"
- onClick={() => handleCategoryClick(item)}
- className="flex w-full items-center rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
- >
- {item}
- </button>
- </li>
- ))}
- </ul>
- </div>
- </li>
- )
- })}
- </ul>
- </nav>
+          {/* DEPARTAMENTOS Y CATEGORÍAS */}
+          <nav aria-label="Departamentos y categorías">
+            <p className="px-2 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Departamentos y categorías
+            </p>
+            <ul className="flex flex-col gap-0.5">
+              {departments.map((dept) => {
+                const expanded = openDept === dept.id
+                return (
+                  <li key={dept.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpenDept((prev) => (prev === dept.id ? null : dept.id))
+                        handleCategoryClick(dept.label, false)
+                      }}
+                      aria-expanded={expanded}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    >
+                      <ChevronDown
+                        className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                          expanded ? 'rotate-0' : '-rotate-90'
+                        }`}
+                        aria-hidden="true"
+                      />
+                      <span className="text-pretty leading-snug">
+                        {dept.label}
+                      </span>
+                    </button>
+                    <div
+                      className={`grid transition-all duration-200 ease-out ${
+                        expanded
+                          ? 'grid-rows-[1fr] opacity-100'
+                          : 'grid-rows-[0fr] opacity-0'
+                      }`}
+                    >
+                      <ul className="ml-6 overflow-hidden border-l border-border pl-3">
+                        {dept.items.map((item) => (
+                          <li key={item}>
+                            <button
+                              type="button"
+                              onClick={() => handleCategoryClick(activeCategory === item ? "" : item, false)}
+                              className={`flex w-full items-center rounded-md px-3 py-2 text-sm transition-colors ${activeCategory === item ? 'bg-accent text-primary font-bold' : 'text-muted-foreground hover:bg-accent hover:text-primary'}`}
+                            >
+                              {item}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
 
- {/* SUPERMERCADOS */}
- <div>
- <p className="px-2 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
- Supermercados
- </p>
- <ul className="flex flex-col gap-1">
- <li>
- <button
- type="button"
- onClick={() => onSelectMarket(null)}
- aria-pressed={activeMarket === null}
- className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
- activeMarket === null
- ? 'bg-primary/10 text-primary'
- : 'text-foreground hover:bg-accent hover:text-accent-foreground'
- }`}
- >
- <span className="flex h-6 w-6 items-center justify-center rounded-md bg-muted">
- <Store
- className="h-3.5 w-3.5 text-muted-foreground"
- aria-hidden="true"
- />
- </span>
- Todos
- </button>
- </li>
- {availableMarkets.map((s) => (
- <li key={s.id}>
- <button
- type="button"
- onClick={() => onSelectMarket(s.id)}
- aria-pressed={activeMarket === s.id}
- className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
- activeMarket === s.id
- ? 'bg-primary/10 text-primary'
- : 'text-foreground hover:bg-accent hover:text-accent-foreground'
- }`}
- >
- <span className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-md bg-background ring-1 ring-border">
- <img
- src={s.logo || '/placeholder.svg'}
- alt=""
- width={20}
- height={20}
- className="h-5 w-5 object-contain"
- />
- </span>
- {s.name}
- </button>
- </li>
- ))}
- </ul>
- </div>
+          {/* HERRAMIENTAS IA */}
+          <nav aria-label="Asistente IA">
+            <p className="px-2 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Herramientas IA
+            </p>
+            <ul className="flex flex-col gap-1">
+              <li>
+                <Link
+                  to="/chat"
+                  onClick={onClose}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold transition-colors ${pathname.startsWith('/chat') ? 'text-primary-foreground bg-primary shadow-[4px_4px_0px_var(--color-border)] border-2 border-border hover:bg-primary/90' : 'text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+                >
+                  <Bot className="h-4.5 w-4.5" aria-hidden="true"/>
+                  Chat Inteligente
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/history"
+                  onClick={onClose}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold transition-colors ${pathname.startsWith('/history') ? 'text-primary-foreground bg-primary shadow-[4px_4px_0px_var(--color-border)] border-2 border-border hover:bg-primary/90' : 'text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+                >
+                  <Map className="h-4.5 w-4.5" aria-hidden="true"/>
+                  Listas y Rutas
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/colaborador"
+                  onClick={onClose}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold transition-colors ${pathname.startsWith('/colaborador') ? 'text-primary-foreground bg-primary shadow-[4px_4px_0px_var(--color-border)] border-2 border-border hover:bg-primary/90' : 'text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+                >
+                  <Users className="h-4.5 w-4.5" aria-hidden="true"/>
+                  Misiones
+                </Link>
+              </li>
+            </ul>
+          </nav>
  </div>
 
  <div className="border-t border-border px-4 py-4 space-y-3">

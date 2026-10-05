@@ -11,7 +11,7 @@ import { LandingFooter } from "@/components/landing/LandingFooter";
 export default function Home() {
   return (
     <div 
-      className="min-h-screen w-full overflow-x-hidden bg-background text-foreground"
+      className="min-h-screen w-full overflow-x-clip bg-background text-foreground"
       style={{
         backgroundImage: "repeating-linear-gradient(90deg, oklch(0.618 0.078 65.5 / 0.025) 0 2px, transparent 2px 8px), repeating-linear-gradient(0deg, oklch(0.618 0.078 65.5 / 0.02) 0 2px, transparent 2px 8px)"
       }}
@@ -20,8 +20,8 @@ export default function Home() {
       <LandingHero />
       <LandingTrustStrip />
       <LandingHowItWorks />
-      <LandingFeatures />
       <LandingSavings />
+      <LandingFeatures />
       <LandingStores />
       <LandingCTA />
       <LandingFooter />

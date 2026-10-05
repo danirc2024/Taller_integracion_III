@@ -38,7 +38,7 @@ export function ProductCard({ product, marketName, marketLogo, onAdd }: ProductC
       to={ROUTES.PRODUCTO_DETALLE(product.id)}
       className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div className="relative aspect-square bg-secondary/30 flex items-center justify-center overflow-hidden">
+      <div className="relative aspect-square bg-white flex items-center justify-center overflow-hidden">
         {pct > 0 && (
           <span className="absolute top-2 left-2 z-10 rounded bg-discount px-1.5 py-0.5 text-[10px] font-bold text-discount-foreground shadow-sm">
             -{pct}%

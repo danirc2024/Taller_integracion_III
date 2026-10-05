@@ -10,7 +10,6 @@ import { useCatalog } from '@/hooks/useCatalog'
 export default function Page() {
   const { query, activeMarket, category } = useLayoutContext()
   const { addToCart } = useCart()
-  
   const catalog = useCatalog(query, category, activeMarket)
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {

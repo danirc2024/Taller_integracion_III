@@ -9,9 +9,10 @@ type TopNavProps = {
     query: string
     onQueryChange: (value: string) => void
     onMenuClick: () => void
+    onResetFilters: () => void
 }
 
-export function TopNav({ query, onQueryChange, onMenuClick }: TopNavProps) {
+export function TopNav({ query, onQueryChange, onMenuClick, onResetFilters }: TopNavProps) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [localQuery, setLocalQuery] = useState(query || '');
     const navigate = useNavigate();
@@ -47,6 +48,7 @@ export function TopNav({ query, onQueryChange, onMenuClick }: TopNavProps) {
                     to="/dashboard"
                     aria-label="Ir al inicio"
                     className="flex items-center gap-2 shrink-0"
+                    onClick={onResetFilters}
                 >
                     <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
                         <ShoppingBasket className="h-5 w-5" aria-hidden="true" />
@@ -73,7 +75,7 @@ export function TopNav({ query, onQueryChange, onMenuClick }: TopNavProps) {
                         type="search"
                         value={localQuery}
                         onChange={(e) => setLocalQuery(e.target.value)}
-                        placeholder="Busca leche, café, aceite…"
+                        placeholder="Buscar productos"
                         autoComplete="off"
                         className="h-11 w-full rounded-full border border-input bg-background pl-10 md:pl-12 pr-12 md:pr-28 text-sm md:text-base outline-none transition-shadow placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     />
