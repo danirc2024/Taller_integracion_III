@@ -58,8 +58,27 @@ docker compose exec web_scraper_alimentos scrapy crawl jumbo_rsc -O /tmp/jumbo.j
 
 ## Mapa auto-generado: Scraper (Scrapy)
 
-**18 archivos .py** detectados
+**24 archivos .py** detectados
 
+
+### `research/test_acuenta.py`
+
+- **class AcuentaExtractionTest(unittest.TestCase)**
+  - `_response(body, url)`
+  - `test_extracts_product_card()`
+  - `test_merges_visible_offer_into_rsc_product()`
+  - `test_page_url_removes_internal_rsc_token()`
+  - `test_max_pages_argument_sets_per_category_limit()`
+  - `test_extracts_multiunit_promotion()`
+  - `test_does_not_cross_rsc_script_boundaries()`
+  - `test_uses_product_fields_after_sku_not_previous_category_fields()`
+  - `test_resolves_rsc_ean_reference()`
+  - `test_resolves_rsc_special_price_reference_chain()`
+  - `test_does_not_use_multiunit_rsc_price_as_unit_offer()`
+  - `test_resolves_rsc_image_reference()`
+  - `test_uses_exact_image_variant_published_for_sku()`
+  - `test_encodes_image_proxy_brackets()`
+  - `test_rejects_untrusted_urls()`
 
 ### `research/test_api_pipeline.py`
 
@@ -73,6 +92,15 @@ docker compose exec web_scraper_alimentos scrapy crawl jumbo_rsc -O /tmp/jumbo.j
   - `test_pipeline_flushes_batches()`
 - **class FakeClient**
   - `ingest_batch(products, supermarket, work_id)`
+
+### `research/test_cugat.py`
+
+- **class CugatExtractionTest(unittest.TestCase)**
+  - `_response(body, url)`
+  - `test_extracts_woocommerce_card_fields()`
+  - `test_page_url_and_category_preserve_cugat_path()`
+  - `test_extracts_product_json_ld()`
+  - `test_rejects_untrusted_urls()`
 
 ### `research/test_jumbo.py`
 
@@ -116,6 +144,17 @@ docker compose exec web_scraper_alimentos scrapy crawl jumbo_rsc -O /tmp/jumbo.j
   - `test_scrapy_settings_use_ethic_rate_limit()`
   - `test_scrapy_retry_policy_handles_transient_errors()`
   - `test_404_page_stops_pagination_cleanly()`
+
+### `research/test_lider.py`
+
+- **class LiderExtractionTest(unittest.TestCase)**
+  - `_response(body, url)`
+  - `test_extracts_regular_and_offer_prices_from_product_cards()`
+  - `test_prefers_all_hydrated_items_over_partial_product_cards()`
+  - `test_accepts_super_lider_category_and_product_routes()`
+  - `test_page_url_preserves_category_and_other_query_parameters()`
+  - `test_page_limit_argument_is_configurable()`
+  - `test_only_accepts_allowed_catalog_and_product_routes()`
 
 ### `research/test_normalization.py`
 
@@ -220,6 +259,60 @@ docker compose exec web_scraper_alimentos scrapy crawl jumbo_rsc -O /tmp/jumbo.j
 ### `scraper_core/settings.py`
 
 
+### `scraper_core/spiders/acuenta.py`
+
+- **class AcuentaRscSpider(scrapy.Spider)**
+  - `__init__()`
+  - `from_crawler(cls, crawler)`
+  - `start_requests()`
+  - `parse(response)`
+  - `handle_error(failure)`
+  - `_extract_products(response)`
+  - `_merge_visible_prices(response, products)`
+  - `_extract_rsc_promotion_prices(text)`
+  - `_extract_rsc_products(response)`
+  - `_resolve_image_reference(text, window)`
+  - `_image_from_rsc(text, sku)`
+  - `_image_from_sku(sku)`
+  - `_canonical_image_url(image_url)`
+  - `_name_matches_slug(name, slug)`
+  - `_name_from_slug(slug)`
+  - `_prices_from_text(text)`
+  - `_brand_from_text(text)`
+  - `_format_from_text(text)`
+  - `_sku_from_url(product_url)`
+  - `_to_scraped_item(product, category, response_url)`
+  - `_category_from_url(category_url)`
+  - `_page_number(url)`
+  - `_page_url(category_url, page)`
+  - `_read_category_urls(cls)`
+  - `_append_category_url(url)`
+  - `_validate_category_url(url)`
+
+### `scraper_core/spiders/cugat.py`
+
+- **class CugatRscSpider(scrapy.Spider)**
+  - `__init__()`
+  - `from_crawler(cls, crawler)`
+  - `start_requests()`
+  - `parse(response)`
+  - `parse_product(response)`
+  - `parse_product_detail(response, catalog_product, category, category_page_url)`
+  - `handle_detail_error(failure)`
+  - `handle_error(failure)`
+  - `_extract_products(response)`
+  - `_price_from(card, selector)`
+  - `_extract_detail_product(response)`
+  - `_walk_json(value)`
+  - `_stock_value(availability)`
+  - `_to_scraped_item(product, category, response_url)`
+  - `_category_from_url(category_url)`
+  - `_page_url(category_url, page)`
+  - `_read_category_urls(cls)`
+  - `_append_category_url(url)`
+  - `_validate_category_url(url)`
+  - `_validate_product_url(url)`
+
 ### `scraper_core/spiders/jumbo.py`
 
 - **class JumboRscSpider(scrapy.Spider)**
@@ -244,6 +337,28 @@ docker compose exec web_scraper_alimentos scrapy crawl jumbo_rsc -O /tmp/jumbo.j
   - `_normal_price(entry)`
   - `_stock_value(availability)`
   - `_walk_json(value)`
+
+### `scraper_core/spiders/lider.py`
+
+- **class LiderRscSpider(scrapy.Spider)**
+  - `__init__()`
+  - `from_crawler(cls, crawler)`
+  - `start_requests()`
+  - `parse(response)`
+  - `handle_error(failure)`
+  - `_extract_products(response)`
+  - `_extract_next_data_products(response)`
+  - `_extract_card_products(response)`
+  - `_price_from(selector, price_selector)`
+  - `_format_from_text(name)`
+  - `_to_scraped_item(product, category, response_url)`
+  - `_category_from_url(category_url)`
+  - `_page_number(url)`
+  - `_page_url(category_url, page)`
+  - `_read_category_urls(cls)`
+  - `_append_category_url(url)`
+  - `_validate_category_url(url)`
+  - `_validate_product_url(url)`
 
 ### `scraper_core/spiders/santa_isabel.py`
 
