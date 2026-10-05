@@ -75,7 +75,7 @@ src/
 
 ## Mapa auto-generado: Frontend (React + TypeScript)
 
-**70 archivos activos** (excluidos kebab-case obsoletos)
+**76 archivos activos** (excluidos kebab-case obsoletos)
 
 
 ### `core/routes.ts`
@@ -92,15 +92,46 @@ src/
 - Exports: useAuth
 - Imports locales: ../contexts/AuthContext
 
+### `hooks/useCatalog.ts`
+
+- Exports: useCatalog
+- Imports locales: @/lib/constants, @/lib/products-api, @/types
+
+### `hooks/useChatbot.ts`
+
+- Exports: useChatbot
+- Tipos: Message, MessageType
+- Imports locales: @/hooks/useAuth
+
+### `hooks/useGoogleAuth.ts`
+
+- Exports: useGoogleAuth
+- Imports locales: ./useAuth
+
+### `hooks/useRouteOptimization.ts`
+
+- Exports: useRouteOptimization
+- Tipos: OptimizedStore
+- Imports locales: @/data/mock
+
 ### `layouts/useActiveTab.ts`
 
 - Exports: useActiveTab
 - Tipos: ActiveTab
 
+### `lib/constants.ts`
+
+- Exports: HOME, supermarketById, supermarkets
+- Imports locales: ../types
+
 ### `lib/data.ts`
 
 - Exports: HOME, discountPct, formatPrice, products, supermarketById, supermarkets
 - Tipos: Product, Supermarket
+
+### `lib/formatters.ts`
+
+- Exports: calculateDiscountPct, calculateSavings, formatPrice
 
 ### `lib/logger.ts`
 
@@ -110,7 +141,7 @@ src/
 
 - Exports: toUiProduct
 - Tipos: ApiPriceHistory, ApiProduct, ApiProductDetail, ProductPage
-- Imports locales: @/data/mock, @/types
+- Imports locales: ./constants, @/types
 
 ### `lib/utils.ts`
 
@@ -135,7 +166,7 @@ src/
 ### `components/CartSidebar.tsx`
 
 - Exports: CartSidebar
-- Imports locales: @/components/ui/button, @/contexts/CartContext, @/data/mock
+- Imports locales: @/components/ui/button, @/contexts/CartContext, @/lib/formatters
 
 ### `components/ErrorBoundary.tsx`
 
@@ -150,7 +181,7 @@ src/
 
 - Exports: ProductCard
 - Tipos: ProductCardProps
-- Imports locales: @/components/ui/button, @/core/routes, @/data/mock, @/types
+- Imports locales: @/components/ui/button, @/core/routes, @/lib/formatters, @/lib/utils, @/types
 
 ### `components/ProductCarousel.tsx`
 
@@ -166,7 +197,7 @@ src/
 
 - Exports: SideBar
 - Tipos: SideBarProps
-- Imports locales: @/components/ui/button, @/data/mock
+- Imports locales: @/components/ui/button, @/data/mock, @/types
 
 ### `components/TopNav.tsx`
 
@@ -196,7 +227,7 @@ src/
 ### `components/auth/SocialButtons.tsx`
 
 - Exports: SocialButtons
-- Imports locales: @/components/ui/button
+- Imports locales: @/hooks/useGoogleAuth
 
 ### `components/chatbot/OutOfStockAlert.tsx`
 
@@ -207,8 +238,8 @@ src/
 ### `components/chatbot/RichRecipeCard.tsx`
 
 - Exports: RichRecipeCard
-- Tipos: RichRecipeCardProps
-- Imports locales: @/data/mock, @/lib/utils
+- Tipos: RecipeItem, RichRecipeCardProps
+- Imports locales: @/lib/formatters, @/lib/utils
 
 ### `components/chatbot/TypingIndicator.tsx`
 
@@ -347,23 +378,22 @@ src/
 
 - Exports: MainLayout, useLayoutContext
 - Tipos: LayoutContextType
-- Imports locales: @/components/BottomNav, @/components/CartSidebar, @/components/Sidebar, @/components/TopNav
+- Imports locales: @/components/BottomNav, @/components/CartSidebar, @/components/Sidebar, @/components/TopNav, @/contexts/CartContext, @/lib/products-api, @/types
 
 ### `pages/Chatbot.tsx`
 
 - Exports: Chatbot
-- Tipos: Message
-- Imports locales: @/components/chatbot/OutOfStockAlert, @/components/chatbot/RichRecipeCard, @/components/chatbot/TypingIndicator, @/contexts/ToastContext, @/data/mock, @/hooks/useAuth, @/lib/utils
+- Imports locales: @/components/chatbot/OutOfStockAlert, @/components/chatbot/RichRecipeCard, @/components/chatbot/TypingIndicator, @/contexts/ToastContext, @/hooks/useChatbot, @/lib/utils
 
 ### `pages/Crowdsourcing.tsx`
 
 - Exports: Crowdsourcing
-- Imports locales: @/components/Footer, @/components/ui/SuccessCard, @/contexts/ToastContext, @/data/mock, @/lib/utils
+- Imports locales: @/components/Footer, @/components/ui/SuccessCard, @/contexts/ToastContext, @/hooks/useAuth, @/lib/formatters, @/lib/utils
 
 ### `pages/Dashboard.tsx`
 
 - Exports: Page
-- Imports locales: @/components/Footer, @/components/ProductCard, @/components/ui/ProductSkeleton, @/contexts/CartContext, @/data/mock, @/layouts/MainLayout, @/lib/products-api, @/types
+- Imports locales: @/components/Footer, @/components/ProductCard, @/components/ui/ProductSkeleton, @/contexts/CartContext, @/hooks/useCatalog, @/layouts/MainLayout, @/types
 
 ### `pages/History.tsx`
 
@@ -393,23 +423,23 @@ src/
 ### `pages/Planes.tsx`
 
 - Exports: Planes
-- Imports locales: @/data/mock, @/pages/mocks/MockShell
+- Imports locales: @/hooks/useAuth, @/pages/mocks/MockShell
 
 ### `pages/ProductDetail.tsx`
 
 - Exports: ProductDetail
-- Imports locales: @/components/Footer, @/components/ProductCarousel, @/components/ui/button, @/contexts/CartContext, @/data/mock, @/lib/products-api, @/types
+- Imports locales: @/components/Footer, @/components/ProductCarousel, @/components/ui/button, @/contexts/CartContext, @/lib/formatters, @/lib/products-api, @/types
 
 ### `pages/Profile.tsx`
 
 - Exports: Profile
-- Imports locales: @/data/mock, @/lib/utils, @/pages/mocks/MockShell
+- Imports locales: @/hooks/useAuth, @/lib/utils, @/pages/mocks/MockShell
 
 ### `pages/RouteViewer.tsx`
 
 - Exports: RouteViewer
 - Tipos: as
-- Imports locales: @/components/ui/skeleton, @/data/mock, @/lib/utils
+- Imports locales: @/components/ui/skeleton, @/hooks/useRouteOptimization, @/lib/utils
 
 ### `pages/mocks/MockShell.tsx`
 

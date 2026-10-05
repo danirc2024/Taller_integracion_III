@@ -79,6 +79,7 @@ tests/test_prototipo_ruta_ficticia.py    → Test del prototipo
 ### `app/main.py`
 
 - `root()`
+- `health_check()`
 
 ### `tests/test_prototipo_ruta_ficticia.py`
 

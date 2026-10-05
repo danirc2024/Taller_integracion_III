@@ -78,7 +78,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 ## Mapa auto-generado: API Gateway (Go + Gin)
 
-**28 archivos .go** detectados
+**33 archivos .go** detectados
 
 
 ### `cmd/seed_productos/main.go` (package main)
@@ -88,11 +88,15 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 ### `domain/producto.go` (package domain)
 
-- Structs: FiltroProductosDTO, ProductoDTO, MetadatosPaginacionDTO, PaginaProductosDTO, HistorialPrecioDTO, ProductoDetalleDTO
+- Structs: FiltroProductosDTO, ProductoDTO, ProductoAdminDTO, MetadatosPaginacionDTO, PaginaProductosDTO, PaginaProductosAdminDTO, HistorialPrecioDTO, ProductoDetalleDTO
 
 ### `domain/scraper.go` (package domain)
 
 - Structs: IniciarTrabajoDTO, TrabajoScraperDTO, FinalizarTrabajoDTO, ProductoScrapeadoDTO, IngestaLoteDTO, IngestaResultadoDTO
+
+### `domain/usuario.go` (package domain)
+
+- Structs: ActualizarPerfilDTO, PerfilUsuarioDTO
 
 ### `handlers/auth_handler.go` (package handlers)
 
@@ -101,6 +105,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - `(AuthHandler).RegistrarUsuario(c *gin.Context)`
 - `(AuthHandler).LoginUsuario(c *gin.Context)`
 - `(AuthHandler).PerfilUsuario(c *gin.Context)`
+- `(AuthHandler).ActualizarPerfil(c *gin.Context)`
 - `(AuthHandler).GoogleLoginUsuario(c *gin.Context)`
 
 ### `handlers/producto_handler.go` (package handlers)
@@ -108,6 +113,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - Structs: ProductoHandler
 - `NewProductoHandler(service services.ProductoService) *ProductoHandler`
 - `(ProductoHandler).ObtenerProductos(c *gin.Context)`
+- `(ProductoHandler).ObtenerProductosAdmin(c *gin.Context)`
 - `(ProductoHandler).BuscarProductos(c *gin.Context)`
 - `(ProductoHandler).ObtenerDetalleProducto(c *gin.Context)`
 
@@ -133,6 +139,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - `initRedis()`
 - `setupRouter() *gin.Engine`
 - `RootHandler(c *gin.Context)`
+- `HealthHandler(c *gin.Context)`
 - `main()`
 
 ### `middleware/error_handler.go` (package middleware)
@@ -152,11 +159,16 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - `RateLimiterIP(rdb *redis.Client, prefijo string, maxIntentos int64, ventana time.Duration) gin.HandlerFunc`
 - `RateLimitLogin(rdb *redis.Client) gin.HandlerFunc`
 
+### `middleware/rbac.go` (package middleware)
+
+- `RequireRole(rolesPermitidos ...string) gin.HandlerFunc`
+
 ### `repositories/producto_repository.go` (package repositories)
 
 - Structs: gormProductoRepository
 - `NewProductoRepository(db *gorm.DB) ProductoRepository`
 - `(gormProductoRepository).Listar(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoDTO, int64, error)`
+- `(gormProductoRepository).ListarParaAdmin(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoAdminDTO, int64, error)`
 - `(gormProductoRepository).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
 
 ### `repositories/scraper_repository.go` (package repositories)
@@ -175,7 +187,13 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - Structs: gormUsuarioRepository
 - `NewUsuarioRepository(db *gorm.DB) UsuarioRepository`
 - `(gormUsuarioRepository).FindByEmail(ctx context.Context, email string) (*infrastructure.Usuario, error)`
+- `(gormUsuarioRepository).FindByID(ctx context.Context, id string) (*infrastructure.Usuario, error)`
 - `(gormUsuarioRepository).Create(ctx context.Context, usuario *infrastructure.Usuario) error`
+- `(gormUsuarioRepository).Actualizar(ctx context.Context, id string, datos map[string]interface{}) error`
+
+### `routes/admin_routes.go` (package routes)
+
+- `RegistrarRutasAdmin(rg *gin.RouterGroup, db *gorm.DB)`
 
 ### `routes/auth_routes.go` (package routes)
 
@@ -194,16 +212,19 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - Structs: RegistroDTO, UsuarioCreadoDTO, authService
 - `NewAuthService(usuarioRepo repositories.UsuarioRepository) AuthService`
 - `validarComplejidadPassword(password string) error`
+- `validarEmail(email string) bool`
 - `(authService).Registrar(ctx context.Context, input RegistroDTO) (*UsuarioCreadoDTO, error)`
 - `(authService).Login(correo, password string) (*infrastructure.Usuario, error)`
 - `(authService).LoginWithContext(ctx context.Context, correo, password string) (*infrastructure.Usuario, error)`
 - `(authService).GoogleLogin(ctx context.Context, tokenGoogle string) (*infrastructure.Usuario, error)`
+- `(authService).ActualizarPerfil(ctx context.Context, userID string, input domain.ActualizarPerfilDTO) (*domain.PerfilUsuarioDTO, error)`
 
 ### `services/producto_service.go` (package services)
 
 - Structs: productoService
 - `NewProductoService(repo repositories.ProductoRepository) ProductoService`
 - `(productoService).ObtenerCatalogo(ctx context.Context, filtro domain.FiltroProductosDTO) (*domain.PaginaProductosDTO, error)`
+- `(productoService).ObtenerCatalogoAdmin(ctx context.Context, filtro domain.FiltroProductosDTO) (*domain.PaginaProductosAdminDTO, error)`
 - `(productoService).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
 
 ### `services/scraper_service.go` (package services)
@@ -216,21 +237,30 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - `(scraperService).IngestarProductos(ctx context.Context, trabajoIDStr *string, input domain.IngestaLoteDTO) (*domain.IngestaResultadoDTO, error)`
 - `(scraperService).mapearTrabajoDTO(t *infrastructure.TrabajoScraper, cadenaNombre string) *domain.TrabajoScraperDTO`
 
+### `tests/auth_handler_test.go` (package tests)
+
+- `TestAuthHandler_RegistrarUsuario_AutoLogin(t *testing.T)`
+- `TestAuthHandler_ActualizarPerfil(t *testing.T)`
+
 ### `tests/auth_service_test.go` (package tests)
 
 - Structs: mockUsuarioRepository
 - `newMockUsuarioRepository() *mockUsuarioRepository`
 - `(mockUsuarioRepository).FindByEmail(ctx context.Context, email string) (*infrastructure.Usuario, error)`
+- `(mockUsuarioRepository).FindByID(ctx context.Context, id string) (*infrastructure.Usuario, error)`
 - `(mockUsuarioRepository).Create(ctx context.Context, usuario *infrastructure.Usuario) error`
+- `(mockUsuarioRepository).Actualizar(ctx context.Context, id string, datos map[string]interface{}) error`
 - `TestAuthService_PasswordComplexity(t *testing.T)`
 - `TestAuthService_RegistroExitoso(t *testing.T)`
 - `TestAuthService_Login(t *testing.T)`
+- `TestAuthService_ActualizarPerfil(t *testing.T)`
 
 ### `tests/jwt_test.go` (package tests)
 
 - `TestJWT_GenerarYValidarToken(t *testing.T)`
 - `TestJWT_TokenInvalido(t *testing.T)`
 - `TestMiddleware_RequireAuth(t *testing.T)`
+- `init()`
 
 ### `tests/middleware_test.go` (package tests)
 
@@ -246,16 +276,23 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - `TestProductoHandler_ObtenerProductos(t *testing.T)`
 - `TestProductoHandler_BuscarProductos(t *testing.T)`
 - `TestProductoHandler_ObtenerDetalleProducto(t *testing.T)`
+- `TestProductoHandler_ObtenerProductosAdmin(t *testing.T)`
 
 ### `tests/producto_service_test.go` (package tests)
 
 - Structs: mockProductoRepository
 - `(mockProductoRepository).Listar(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoDTO, int64, error)`
+- `(mockProductoRepository).ListarParaAdmin(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoAdminDTO, int64, error)`
 - `(mockProductoRepository).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
 - `TestProductoService_ValoresPorDefecto(t *testing.T)`
 - `TestProductoService_SanitizacionYLimites(t *testing.T)`
 - `TestProductoService_Busqueda_Minimo3Caracteres(t *testing.T)`
 - `TestProductoService_ObtenerPorID(t *testing.T)`
+- `TestProductoService_ObtenerCatalogoAdmin(t *testing.T)`
+
+### `tests/rbac_test.go` (package tests)
+
+- `TestRequireRole(t *testing.T)`
 
 ### `tests/scraper_test.go` (package tests)
 
@@ -316,6 +353,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 ### `app/main.py`
 
 - Imports internos: app, app.ia_definiciones, app.productos, app.proveedores.fallback_proveedor, app.proveedores.gemini_proveedor, app.proveedores.groq_proveedor, app.routers.chat, app.routers.productos, app.utils
+- `health_check()`
 
 ### `app/productos.py`
 
@@ -411,6 +449,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 ### `app/main.py`
 
 - `root()`
+- `health_check()`
 
 ### `tests/test_prototipo_ruta_ficticia.py`
 
@@ -419,8 +458,27 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 ## Mapa auto-generado: Scraper (Scrapy)
 
-**18 archivos .py** detectados
+**24 archivos .py** detectados
 
+
+### `research/test_acuenta.py`
+
+- **class AcuentaExtractionTest(unittest.TestCase)**
+  - `_response(body, url)`
+  - `test_extracts_product_card()`
+  - `test_merges_visible_offer_into_rsc_product()`
+  - `test_page_url_removes_internal_rsc_token()`
+  - `test_max_pages_argument_sets_per_category_limit()`
+  - `test_extracts_multiunit_promotion()`
+  - `test_does_not_cross_rsc_script_boundaries()`
+  - `test_uses_product_fields_after_sku_not_previous_category_fields()`
+  - `test_resolves_rsc_ean_reference()`
+  - `test_resolves_rsc_special_price_reference_chain()`
+  - `test_does_not_use_multiunit_rsc_price_as_unit_offer()`
+  - `test_resolves_rsc_image_reference()`
+  - `test_uses_exact_image_variant_published_for_sku()`
+  - `test_encodes_image_proxy_brackets()`
+  - `test_rejects_untrusted_urls()`
 
 ### `research/test_api_pipeline.py`
 
@@ -434,6 +492,15 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
   - `test_pipeline_flushes_batches()`
 - **class FakeClient**
   - `ingest_batch(products, supermarket, work_id)`
+
+### `research/test_cugat.py`
+
+- **class CugatExtractionTest(unittest.TestCase)**
+  - `_response(body, url)`
+  - `test_extracts_woocommerce_card_fields()`
+  - `test_page_url_and_category_preserve_cugat_path()`
+  - `test_extracts_product_json_ld()`
+  - `test_rejects_untrusted_urls()`
 
 ### `research/test_jumbo.py`
 
@@ -477,6 +544,17 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
   - `test_scrapy_settings_use_ethic_rate_limit()`
   - `test_scrapy_retry_policy_handles_transient_errors()`
   - `test_404_page_stops_pagination_cleanly()`
+
+### `research/test_lider.py`
+
+- **class LiderExtractionTest(unittest.TestCase)**
+  - `_response(body, url)`
+  - `test_extracts_regular_and_offer_prices_from_product_cards()`
+  - `test_prefers_all_hydrated_items_over_partial_product_cards()`
+  - `test_accepts_super_lider_category_and_product_routes()`
+  - `test_page_url_preserves_category_and_other_query_parameters()`
+  - `test_page_limit_argument_is_configurable()`
+  - `test_only_accepts_allowed_catalog_and_product_routes()`
 
 ### `research/test_normalization.py`
 
@@ -581,6 +659,60 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 ### `scraper_core/settings.py`
 
 
+### `scraper_core/spiders/acuenta.py`
+
+- **class AcuentaRscSpider(scrapy.Spider)**
+  - `__init__()`
+  - `from_crawler(cls, crawler)`
+  - `start_requests()`
+  - `parse(response)`
+  - `handle_error(failure)`
+  - `_extract_products(response)`
+  - `_merge_visible_prices(response, products)`
+  - `_extract_rsc_promotion_prices(text)`
+  - `_extract_rsc_products(response)`
+  - `_resolve_image_reference(text, window)`
+  - `_image_from_rsc(text, sku)`
+  - `_image_from_sku(sku)`
+  - `_canonical_image_url(image_url)`
+  - `_name_matches_slug(name, slug)`
+  - `_name_from_slug(slug)`
+  - `_prices_from_text(text)`
+  - `_brand_from_text(text)`
+  - `_format_from_text(text)`
+  - `_sku_from_url(product_url)`
+  - `_to_scraped_item(product, category, response_url)`
+  - `_category_from_url(category_url)`
+  - `_page_number(url)`
+  - `_page_url(category_url, page)`
+  - `_read_category_urls(cls)`
+  - `_append_category_url(url)`
+  - `_validate_category_url(url)`
+
+### `scraper_core/spiders/cugat.py`
+
+- **class CugatRscSpider(scrapy.Spider)**
+  - `__init__()`
+  - `from_crawler(cls, crawler)`
+  - `start_requests()`
+  - `parse(response)`
+  - `parse_product(response)`
+  - `parse_product_detail(response, catalog_product, category, category_page_url)`
+  - `handle_detail_error(failure)`
+  - `handle_error(failure)`
+  - `_extract_products(response)`
+  - `_price_from(card, selector)`
+  - `_extract_detail_product(response)`
+  - `_walk_json(value)`
+  - `_stock_value(availability)`
+  - `_to_scraped_item(product, category, response_url)`
+  - `_category_from_url(category_url)`
+  - `_page_url(category_url, page)`
+  - `_read_category_urls(cls)`
+  - `_append_category_url(url)`
+  - `_validate_category_url(url)`
+  - `_validate_product_url(url)`
+
 ### `scraper_core/spiders/jumbo.py`
 
 - **class JumboRscSpider(scrapy.Spider)**
@@ -606,6 +738,28 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
   - `_stock_value(availability)`
   - `_walk_json(value)`
 
+### `scraper_core/spiders/lider.py`
+
+- **class LiderRscSpider(scrapy.Spider)**
+  - `__init__()`
+  - `from_crawler(cls, crawler)`
+  - `start_requests()`
+  - `parse(response)`
+  - `handle_error(failure)`
+  - `_extract_products(response)`
+  - `_extract_next_data_products(response)`
+  - `_extract_card_products(response)`
+  - `_price_from(selector, price_selector)`
+  - `_format_from_text(name)`
+  - `_to_scraped_item(product, category, response_url)`
+  - `_category_from_url(category_url)`
+  - `_page_number(url)`
+  - `_page_url(category_url, page)`
+  - `_read_category_urls(cls)`
+  - `_append_category_url(url)`
+  - `_validate_category_url(url)`
+  - `_validate_product_url(url)`
+
 ### `scraper_core/spiders/santa_isabel.py`
 
 - **class SantaIsabelRscSpider(scrapy.Spider)**
@@ -630,7 +784,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 ## Mapa auto-generado: Frontend (React + TypeScript)
 
-**70 archivos activos** (excluidos kebab-case obsoletos)
+**76 archivos activos** (excluidos kebab-case obsoletos)
 
 
 ### `core/routes.ts`
@@ -647,15 +801,46 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - Exports: useAuth
 - Imports locales: ../contexts/AuthContext
 
+### `hooks/useCatalog.ts`
+
+- Exports: useCatalog
+- Imports locales: @/lib/constants, @/lib/products-api, @/types
+
+### `hooks/useChatbot.ts`
+
+- Exports: useChatbot
+- Tipos: Message, MessageType
+- Imports locales: @/hooks/useAuth
+
+### `hooks/useGoogleAuth.ts`
+
+- Exports: useGoogleAuth
+- Imports locales: ./useAuth
+
+### `hooks/useRouteOptimization.ts`
+
+- Exports: useRouteOptimization
+- Tipos: OptimizedStore
+- Imports locales: @/data/mock
+
 ### `layouts/useActiveTab.ts`
 
 - Exports: useActiveTab
 - Tipos: ActiveTab
 
+### `lib/constants.ts`
+
+- Exports: HOME, supermarketById, supermarkets
+- Imports locales: ../types
+
 ### `lib/data.ts`
 
 - Exports: HOME, discountPct, formatPrice, products, supermarketById, supermarkets
 - Tipos: Product, Supermarket
+
+### `lib/formatters.ts`
+
+- Exports: calculateDiscountPct, calculateSavings, formatPrice
 
 ### `lib/logger.ts`
 
@@ -665,7 +850,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 - Exports: toUiProduct
 - Tipos: ApiPriceHistory, ApiProduct, ApiProductDetail, ProductPage
-- Imports locales: @/data/mock, @/types
+- Imports locales: ./constants, @/types
 
 ### `lib/utils.ts`
 
@@ -690,7 +875,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 ### `components/CartSidebar.tsx`
 
 - Exports: CartSidebar
-- Imports locales: @/components/ui/button, @/contexts/CartContext, @/data/mock
+- Imports locales: @/components/ui/button, @/contexts/CartContext, @/lib/formatters
 
 ### `components/ErrorBoundary.tsx`
 
@@ -705,7 +890,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 - Exports: ProductCard
 - Tipos: ProductCardProps
-- Imports locales: @/components/ui/button, @/core/routes, @/data/mock, @/types
+- Imports locales: @/components/ui/button, @/core/routes, @/lib/formatters, @/lib/utils, @/types
 
 ### `components/ProductCarousel.tsx`
 
@@ -721,7 +906,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 - Exports: SideBar
 - Tipos: SideBarProps
-- Imports locales: @/components/ui/button, @/data/mock
+- Imports locales: @/components/ui/button, @/data/mock, @/types
 
 ### `components/TopNav.tsx`
 
@@ -751,7 +936,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 ### `components/auth/SocialButtons.tsx`
 
 - Exports: SocialButtons
-- Imports locales: @/components/ui/button
+- Imports locales: @/hooks/useGoogleAuth
 
 ### `components/chatbot/OutOfStockAlert.tsx`
 
@@ -762,8 +947,8 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 ### `components/chatbot/RichRecipeCard.tsx`
 
 - Exports: RichRecipeCard
-- Tipos: RichRecipeCardProps
-- Imports locales: @/data/mock, @/lib/utils
+- Tipos: RecipeItem, RichRecipeCardProps
+- Imports locales: @/lib/formatters, @/lib/utils
 
 ### `components/chatbot/TypingIndicator.tsx`
 
@@ -902,23 +1087,22 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 - Exports: MainLayout, useLayoutContext
 - Tipos: LayoutContextType
-- Imports locales: @/components/BottomNav, @/components/CartSidebar, @/components/Sidebar, @/components/TopNav
+- Imports locales: @/components/BottomNav, @/components/CartSidebar, @/components/Sidebar, @/components/TopNav, @/contexts/CartContext, @/lib/products-api, @/types
 
 ### `pages/Chatbot.tsx`
 
 - Exports: Chatbot
-- Tipos: Message
-- Imports locales: @/components/chatbot/OutOfStockAlert, @/components/chatbot/RichRecipeCard, @/components/chatbot/TypingIndicator, @/contexts/ToastContext, @/data/mock, @/hooks/useAuth, @/lib/utils
+- Imports locales: @/components/chatbot/OutOfStockAlert, @/components/chatbot/RichRecipeCard, @/components/chatbot/TypingIndicator, @/contexts/ToastContext, @/hooks/useChatbot, @/lib/utils
 
 ### `pages/Crowdsourcing.tsx`
 
 - Exports: Crowdsourcing
-- Imports locales: @/components/Footer, @/components/ui/SuccessCard, @/contexts/ToastContext, @/data/mock, @/lib/utils
+- Imports locales: @/components/Footer, @/components/ui/SuccessCard, @/contexts/ToastContext, @/hooks/useAuth, @/lib/formatters, @/lib/utils
 
 ### `pages/Dashboard.tsx`
 
 - Exports: Page
-- Imports locales: @/components/Footer, @/components/ProductCard, @/components/ui/ProductSkeleton, @/contexts/CartContext, @/data/mock, @/layouts/MainLayout, @/lib/products-api, @/types
+- Imports locales: @/components/Footer, @/components/ProductCard, @/components/ui/ProductSkeleton, @/contexts/CartContext, @/hooks/useCatalog, @/layouts/MainLayout, @/types
 
 ### `pages/History.tsx`
 
@@ -948,23 +1132,23 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 ### `pages/Planes.tsx`
 
 - Exports: Planes
-- Imports locales: @/data/mock, @/pages/mocks/MockShell
+- Imports locales: @/hooks/useAuth, @/pages/mocks/MockShell
 
 ### `pages/ProductDetail.tsx`
 
 - Exports: ProductDetail
-- Imports locales: @/components/Footer, @/components/ProductCarousel, @/components/ui/button, @/contexts/CartContext, @/data/mock, @/lib/products-api, @/types
+- Imports locales: @/components/Footer, @/components/ProductCarousel, @/components/ui/button, @/contexts/CartContext, @/lib/formatters, @/lib/products-api, @/types
 
 ### `pages/Profile.tsx`
 
 - Exports: Profile
-- Imports locales: @/data/mock, @/lib/utils, @/pages/mocks/MockShell
+- Imports locales: @/hooks/useAuth, @/lib/utils, @/pages/mocks/MockShell
 
 ### `pages/RouteViewer.tsx`
 
 - Exports: RouteViewer
 - Tipos: as
-- Imports locales: @/components/ui/skeleton, @/data/mock, @/lib/utils
+- Imports locales: @/components/ui/skeleton, @/hooks/useRouteOptimization, @/lib/utils
 
 ### `pages/mocks/MockShell.tsx`
 

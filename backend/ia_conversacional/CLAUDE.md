@@ -97,6 +97,7 @@ app/proveedores/fallback_proveedor.py ──→ proveedores/base
 ### `app/main.py`
 
 - Imports internos: app, app.ia_definiciones, app.productos, app.proveedores.fallback_proveedor, app.proveedores.gemini_proveedor, app.proveedores.groq_proveedor, app.routers.chat, app.routers.productos, app.utils
+- `health_check()`
 
 ### `app/productos.py`
 

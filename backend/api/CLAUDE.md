@@ -60,7 +60,7 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 
 ## Mapa auto-generado: API Gateway (Go + Gin)
 
-**28 archivos .go** detectados
+**33 archivos .go** detectados
 
 
 ### `cmd/seed_productos/main.go` (package main)
@@ -70,11 +70,15 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 
 ### `domain/producto.go` (package domain)
 
-- Structs: FiltroProductosDTO, ProductoDTO, MetadatosPaginacionDTO, PaginaProductosDTO, HistorialPrecioDTO, ProductoDetalleDTO
+- Structs: FiltroProductosDTO, ProductoDTO, ProductoAdminDTO, MetadatosPaginacionDTO, PaginaProductosDTO, PaginaProductosAdminDTO, HistorialPrecioDTO, ProductoDetalleDTO
 
 ### `domain/scraper.go` (package domain)
 
 - Structs: IniciarTrabajoDTO, TrabajoScraperDTO, FinalizarTrabajoDTO, ProductoScrapeadoDTO, IngestaLoteDTO, IngestaResultadoDTO
+
+### `domain/usuario.go` (package domain)
+
+- Structs: ActualizarPerfilDTO, PerfilUsuarioDTO
 
 ### `handlers/auth_handler.go` (package handlers)
 
@@ -83,6 +87,7 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 - `(AuthHandler).RegistrarUsuario(c *gin.Context)`
 - `(AuthHandler).LoginUsuario(c *gin.Context)`
 - `(AuthHandler).PerfilUsuario(c *gin.Context)`
+- `(AuthHandler).ActualizarPerfil(c *gin.Context)`
 - `(AuthHandler).GoogleLoginUsuario(c *gin.Context)`
 
 ### `handlers/producto_handler.go` (package handlers)
@@ -90,6 +95,7 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 - Structs: ProductoHandler
 - `NewProductoHandler(service services.ProductoService) *ProductoHandler`
 - `(ProductoHandler).ObtenerProductos(c *gin.Context)`
+- `(ProductoHandler).ObtenerProductosAdmin(c *gin.Context)`
 - `(ProductoHandler).BuscarProductos(c *gin.Context)`
 - `(ProductoHandler).ObtenerDetalleProducto(c *gin.Context)`
 
@@ -115,6 +121,7 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 - `initRedis()`
 - `setupRouter() *gin.Engine`
 - `RootHandler(c *gin.Context)`
+- `HealthHandler(c *gin.Context)`
 - `main()`
 
 ### `middleware/error_handler.go` (package middleware)
@@ -134,11 +141,16 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 - `RateLimiterIP(rdb *redis.Client, prefijo string, maxIntentos int64, ventana time.Duration) gin.HandlerFunc`
 - `RateLimitLogin(rdb *redis.Client) gin.HandlerFunc`
 
+### `middleware/rbac.go` (package middleware)
+
+- `RequireRole(rolesPermitidos ...string) gin.HandlerFunc`
+
 ### `repositories/producto_repository.go` (package repositories)
 
 - Structs: gormProductoRepository
 - `NewProductoRepository(db *gorm.DB) ProductoRepository`
 - `(gormProductoRepository).Listar(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoDTO, int64, error)`
+- `(gormProductoRepository).ListarParaAdmin(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoAdminDTO, int64, error)`
 - `(gormProductoRepository).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
 
 ### `repositories/scraper_repository.go` (package repositories)
@@ -157,7 +169,13 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 - Structs: gormUsuarioRepository
 - `NewUsuarioRepository(db *gorm.DB) UsuarioRepository`
 - `(gormUsuarioRepository).FindByEmail(ctx context.Context, email string) (*infrastructure.Usuario, error)`
+- `(gormUsuarioRepository).FindByID(ctx context.Context, id string) (*infrastructure.Usuario, error)`
 - `(gormUsuarioRepository).Create(ctx context.Context, usuario *infrastructure.Usuario) error`
+- `(gormUsuarioRepository).Actualizar(ctx context.Context, id string, datos map[string]interface{}) error`
+
+### `routes/admin_routes.go` (package routes)
+
+- `RegistrarRutasAdmin(rg *gin.RouterGroup, db *gorm.DB)`
 
 ### `routes/auth_routes.go` (package routes)
 
@@ -176,16 +194,19 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 - Structs: RegistroDTO, UsuarioCreadoDTO, authService
 - `NewAuthService(usuarioRepo repositories.UsuarioRepository) AuthService`
 - `validarComplejidadPassword(password string) error`
+- `validarEmail(email string) bool`
 - `(authService).Registrar(ctx context.Context, input RegistroDTO) (*UsuarioCreadoDTO, error)`
 - `(authService).Login(correo, password string) (*infrastructure.Usuario, error)`
 - `(authService).LoginWithContext(ctx context.Context, correo, password string) (*infrastructure.Usuario, error)`
 - `(authService).GoogleLogin(ctx context.Context, tokenGoogle string) (*infrastructure.Usuario, error)`
+- `(authService).ActualizarPerfil(ctx context.Context, userID string, input domain.ActualizarPerfilDTO) (*domain.PerfilUsuarioDTO, error)`
 
 ### `services/producto_service.go` (package services)
 
 - Structs: productoService
 - `NewProductoService(repo repositories.ProductoRepository) ProductoService`
 - `(productoService).ObtenerCatalogo(ctx context.Context, filtro domain.FiltroProductosDTO) (*domain.PaginaProductosDTO, error)`
+- `(productoService).ObtenerCatalogoAdmin(ctx context.Context, filtro domain.FiltroProductosDTO) (*domain.PaginaProductosAdminDTO, error)`
 - `(productoService).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
 
 ### `services/scraper_service.go` (package services)
@@ -198,21 +219,30 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 - `(scraperService).IngestarProductos(ctx context.Context, trabajoIDStr *string, input domain.IngestaLoteDTO) (*domain.IngestaResultadoDTO, error)`
 - `(scraperService).mapearTrabajoDTO(t *infrastructure.TrabajoScraper, cadenaNombre string) *domain.TrabajoScraperDTO`
 
+### `tests/auth_handler_test.go` (package tests)
+
+- `TestAuthHandler_RegistrarUsuario_AutoLogin(t *testing.T)`
+- `TestAuthHandler_ActualizarPerfil(t *testing.T)`
+
 ### `tests/auth_service_test.go` (package tests)
 
 - Structs: mockUsuarioRepository
 - `newMockUsuarioRepository() *mockUsuarioRepository`
 - `(mockUsuarioRepository).FindByEmail(ctx context.Context, email string) (*infrastructure.Usuario, error)`
+- `(mockUsuarioRepository).FindByID(ctx context.Context, id string) (*infrastructure.Usuario, error)`
 - `(mockUsuarioRepository).Create(ctx context.Context, usuario *infrastructure.Usuario) error`
+- `(mockUsuarioRepository).Actualizar(ctx context.Context, id string, datos map[string]interface{}) error`
 - `TestAuthService_PasswordComplexity(t *testing.T)`
 - `TestAuthService_RegistroExitoso(t *testing.T)`
 - `TestAuthService_Login(t *testing.T)`
+- `TestAuthService_ActualizarPerfil(t *testing.T)`
 
 ### `tests/jwt_test.go` (package tests)
 
 - `TestJWT_GenerarYValidarToken(t *testing.T)`
 - `TestJWT_TokenInvalido(t *testing.T)`
 - `TestMiddleware_RequireAuth(t *testing.T)`
+- `init()`
 
 ### `tests/middleware_test.go` (package tests)
 
@@ -228,16 +258,23 @@ ListaCompra, ArticuloListaCompra, EjecucionOptimizacion, ParadaOptimizacion, Det
 - `TestProductoHandler_ObtenerProductos(t *testing.T)`
 - `TestProductoHandler_BuscarProductos(t *testing.T)`
 - `TestProductoHandler_ObtenerDetalleProducto(t *testing.T)`
+- `TestProductoHandler_ObtenerProductosAdmin(t *testing.T)`
 
 ### `tests/producto_service_test.go` (package tests)
 
 - Structs: mockProductoRepository
 - `(mockProductoRepository).Listar(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoDTO, int64, error)`
+- `(mockProductoRepository).ListarParaAdmin(ctx context.Context, filtro domain.FiltroProductosDTO) ([]domain.ProductoAdminDTO, int64, error)`
 - `(mockProductoRepository).ObtenerPorID(ctx context.Context, id string) (*domain.ProductoDetalleDTO, error)`
 - `TestProductoService_ValoresPorDefecto(t *testing.T)`
 - `TestProductoService_SanitizacionYLimites(t *testing.T)`
 - `TestProductoService_Busqueda_Minimo3Caracteres(t *testing.T)`
 - `TestProductoService_ObtenerPorID(t *testing.T)`
+- `TestProductoService_ObtenerCatalogoAdmin(t *testing.T)`
+
+### `tests/rbac_test.go` (package tests)
+
+- `TestRequireRole(t *testing.T)`
 
 ### `tests/scraper_test.go` (package tests)
 
