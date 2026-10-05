@@ -138,7 +138,11 @@ func handleScrapeStart(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			{6, "cugat_rsc", "Cugat"},
 		}
 
-		trabajosCreados := 0
+		var trabajosExitosos []struct {
+			id     string
+			nombre string
+		}
+
 		for _, c := range cadenas {
 			createPayload := map[string]interface{}{
 				"cadena_id": c.id,
@@ -158,7 +162,7 @@ func handleScrapeStart(s *discordgo.Session, i *discordgo.InteractionCreate) {
 				startBytes, _ := json.Marshal(startPayload)
 				respStart, errStart := http.Post(fmt.Sprintf("%s/%s/ejecutar", getApiURL(), trabajoID), "application/json", bytes.NewBuffer(startBytes))
 				if errStart == nil && respStart.StatusCode == http.StatusAccepted {
-					trabajosCreados++
+					trabajosExitosos = append(trabajosExitosos, struct{ id string; nombre string }{id: trabajoID, nombre: c.nombre})
 					go monitorJobAndNotify(s, i.ChannelID, trabajoID, c.nombre, userID)
 				}
 				if respStart != nil { respStart.Body.Close() }
@@ -167,8 +171,30 @@ func handleScrapeStart(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			}
 		}
 
+		msgContent := fmt.Sprintf("🚀 **¡Scraping Masivo Iniciado!**\nSe han encolado `%d` trabajos de scraping en Redis. Puedes revisar el estado individual con los botones de abajo:\n", len(trabajosExitosos))
+		var buttons []discordgo.MessageComponent
+
+		for _, t := range trabajosExitosos {
+			msgContent += fmt.Sprintf("• **%s**: `%s`\n", t.nombre, t.id)
+			buttons = append(buttons, discordgo.Button{
+				Label:    "Refresh " + t.nombre,
+				Style:    discordgo.SecondaryButton,
+				CustomID: "refresh_" + t.id,
+				Emoji: &discordgo.ComponentEmoji{
+					Name: "🔄",
+				},
+			})
+		}
+
+		// Discord permite hasta 5 componentes (botones) por ActionRow. Como tenemos 5, calza perfecto en 1 fila.
+		// Si hubieran más, habría que dividir el array de botones en múltiples ActionRows.
 		s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-			Content: fmt.Sprintf("🚀 **¡Scraping Masivo Iniciado!**\nSe han encolado `%d` trabajos de scraping en Redis. Te notificaré uno por uno a medida que vayan terminando.", trabajosCreados),
+			Content: msgContent,
+			Components: []discordgo.MessageComponent{
+				discordgo.ActionsRow{
+					Components: buttons,
+				},
+			},
 		})
 		return
 	}
