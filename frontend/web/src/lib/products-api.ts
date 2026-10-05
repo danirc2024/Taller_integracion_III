@@ -1,4 +1,4 @@
-import { supermarkets } from '@/data/mock'
+import { supermarkets } from './constants'
 import type { UiProduct as Product } from '@/types'
 
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
@@ -60,11 +60,11 @@ async function request<T>(path: string): Promise<T> {
 }
 
 export async function getProducts(params = '') {
-  const page = await request<ProductPage>(`/api/v1/productos${params}`)
+  const page = await request<ProductPage>(`/productos${params}`)
   return { products: page.data.map(toUiProduct), total: page.total_registros }
 }
 
 export async function getProductDetail(id: string) {
-  const product = await request<ApiProductDetail>(`/api/v1/productos/${encodeURIComponent(id)}`)
+  const product = await request<ApiProductDetail>(`/productos/${encodeURIComponent(id)}`)
   return { product: toUiProduct(product), history: product.historial }
 }

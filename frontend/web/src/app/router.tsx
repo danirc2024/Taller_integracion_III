@@ -1,4 +1,5 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ROUTES, MOCK_ROUTES } from '@/core/routes';
 
 // Layouts
@@ -114,13 +115,17 @@ const router = createBrowserRouter([
 ]);
 
 export default function AppRouter() {
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'your_google_client_id_here';
+
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <CartProvider>
-          <RouterProvider router={router} />
-        </CartProvider>
-      </ToastProvider>
-    </AuthProvider>
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <AuthProvider>
+        <ToastProvider>
+          <CartProvider>
+            <RouterProvider router={router} />
+          </CartProvider>
+        </ToastProvider>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }

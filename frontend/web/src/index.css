@@ -1,108 +1,148 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
-
 :root {
-  --wood: #5D4037;
-  /*#4E342E*/
-  --wood-dark: #4E342E;
-  --wood-light: #795548;
-  --wood-pale: #EFE6DD;
-  --amber: #D4A373;
-  --olive: #7A8B5A;
-  --bg: #FAF6F0;
-  --surface: #FFFFFF;
-  --text: #3E2723;
-  --text-muted: #8D6E63;
-  --border-color: #E8DDD0;
-  --ai: #8E6C8A;
+  /* =========================================
+     1. PALETA BASE (Anchor: Olive Green)
+     ========================================= */
+  --brand-primary: #5E7250;
+  /* Verde sugerido por el ayudante - Fino y natural */
+  --brand-primary-dark: #4A5A3F;
 
-  --background: var(--bg);
-  --foreground: var(--text);
-  --card: var(--surface);
-  --card-foreground: var(--text);
-  --popover: var(--surface);
-  --popover-foreground: var(--text);
-  --primary: var(--wood);
+  --earth-light: #EBE5DB;
+  /* Tonos madera/tierra para acentos suaves */
+  --earth-hover: #DFD7CA;
+  --amber: #D4A373;
+  /* Para destellos, ofertas o "glow" */
+
+  --bg-warm: #FDFBF7;
+  /* Blanco roto/crema para el fondo */
+  --surface-white: #FFFFFF;
+
+  --text-main: #2A3324;
+  /* Verde muy oscuro para legibilidad (en vez de negro) */
+  --text-muted: #545E4C;
+  /* Ajustado para cumplir WCAG AA > 4.5:1 */
+  --border-color: #E2DBD2;
+
+  --semantic-destructive: #B93826;
+  /* Terracota en lugar de rojo chillón */
+  --ai-purple: #8E6C8A;
+
+  /* =========================================
+     2. MAPEO SHADCN UI
+     ========================================= */
+  --background: var(--bg-warm);
+  --foreground: var(--text-main);
+
+  --card: var(--surface-white);
+  --card-foreground: var(--text-main);
+
+  --popover: var(--surface-white);
+  --popover-foreground: var(--text-main);
+
+  --primary: var(--brand-primary);
   --primary-foreground: #FFFFFF;
-  --secondary: var(--wood-pale);
-  --secondary-foreground: var(--wood-dark);
-  --muted: var(--wood-pale);
+
+  --secondary: var(--earth-light);
+  --secondary-foreground: var(--brand-primary-dark);
+
+  --muted: var(--earth-light);
   --muted-foreground: var(--text-muted);
-  --accent: var(--wood-pale);
-  --accent-foreground: var(--text);
-  --destructive: #EF4444;
+
+  --accent: var(--earth-hover);
+  --accent-foreground: var(--text-main);
+
+  --destructive: var(--semantic-destructive);
   --destructive-foreground: #FFFFFF;
+
   --border: var(--border-color);
   --input: var(--border-color);
-  --ring: var(--wood);
+  --ring: var(--brand-primary);
 
-  --chart-1: var(--wood);
+  /* Gráficos / Charts */
+  --chart-1: var(--brand-primary);
   --chart-2: var(--amber);
-  --chart-3: var(--olive);
-  --chart-4: var(--wood-light);
-  --chart-5: var(--ai);
+  --chart-3: var(--brand-primary-dark);
+  --chart-4: var(--earth-light);
+  --chart-5: var(--ai-purple);
 
-  --sidebar: var(--bg);
-  --sidebar-foreground: var(--text);
-  --sidebar-primary: var(--wood);
+  /* Sidebar */
+  --sidebar: var(--bg-warm);
+  --sidebar-foreground: var(--text-main);
+  --sidebar-primary: var(--brand-primary);
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: var(--wood-pale);
-  --sidebar-accent-foreground: var(--text);
+  --sidebar-accent: var(--earth-hover);
+  --sidebar-accent-foreground: var(--text-main);
   --sidebar-border: var(--border-color);
-  --sidebar-ring: var(--wood);
+  --sidebar-ring: var(--brand-primary);
 
+  /* =========================================
+     3. TIPOGRAFÍA Y ESPACIADO
+     ========================================= */
   --font-sans: "Inter", sans-serif;
   --font-serif: "Fraunces", serif;
   --font-mono: "JetBrains Mono", monospace;
 
   --radius: 14px;
-  --shadow-x: 0px;
-  --shadow-y: 8px;
-  --shadow-blur: 24px;
-  --shadow-spread: 0px;
-  --shadow-opacity: 0.1;
-  --shadow-color: rgba(93, 64, 55, 1);
-
-  --shadow-2xs: 0 1px 2px rgba(93, 64, 55, .05);
-  --shadow-xs: 0 1px 3px rgba(93, 64, 55, .05);
-  --shadow-sm: 0 2px 8px rgba(93, 64, 55, .06);
-  --shadow: 0 4px 12px rgba(93, 64, 55, .08);
-  --shadow-md: 0 8px 24px rgba(93, 64, 55, .10);
-  --shadow-lg: 0 20px 48px rgba(93, 64, 55, .16);
-  --shadow-xl: 0 24px 64px rgba(93, 64, 55, .20);
-  --shadow-2xl: 0 32px 80px rgba(93, 64, 55, .25);
-
   --tracking-normal: 0;
   --spacing: 0.25rem;
 
-  /* App custom variables */
-  --discount: var(--olive);
+  /* =========================================
+     4. SOMBRAS (Tono cálido unificado)
+     ========================================= */
+  --shadow-2xs: 0 1px 2px rgba(42, 51, 36, .05);
+  --shadow-xs: 0 1px 3px rgba(42, 51, 36, .05);
+  --shadow-sm: 0 2px 8px rgba(42, 51, 36, .06);
+  --shadow: 0 4px 12px rgba(42, 51, 36, .08);
+  --shadow-md: 0 8px 24px rgba(42, 51, 36, .10);
+  --shadow-lg: 0 20px 48px rgba(42, 51, 36, .16);
+  --shadow-xl: 0 24px 64px rgba(42, 51, 36, .20);
+  --shadow-2xl: 0 32px 80px rgba(42, 51, 36, .25);
+
+  /* =========================================
+     5. VARIABLES CUSTOM APP
+     ========================================= */
+  --discount: var(--amber);
   --discount-foreground: #FFFFFF;
-  --brand: var(--wood);
-  --brand-dark: var(--wood-dark);
-  --brand-dark-2: var(--text);
+  --brand: var(--brand-primary);
+  --brand-dark: var(--brand-primary-dark);
+  --brand-dark-2: var(--text-main);
   --brand-glow: var(--amber);
   --is-dark: 0;
+
+  /* Landing Page Colors */
+  --landing-olive: #5E7250;
+  --landing-olive-soft: #F2EFE9;
+  --landing-amber: #D4A373;
+  --landing-amber-soft: #F4E8DB;
+  --landing-terracotta: #B93826;
+  --landing-terracotta-soft: #F5E8E6;
+  --landing-sky: #6B94A4;
+  --landing-sky-soft: #E8F0F3;
+  --landing-malva: #8E6C8A;
+  --landing-malva-soft: #EBE3EA;
+
   --panel-bg: var(--brand);
   --panel-wash-opacity: 1;
   --panel-dark-wash-opacity: 0;
   --panel-orb-opacity: 0.2;
-  --panel-card-border: rgba(93, 64, 55, 0.1);
-  --panel-muted: rgba(93, 64, 55, 0.6);
-  --panel-accent: var(--wood);
+  --panel-card-border: rgba(42, 51, 36, 0.1);
+  --panel-muted: rgba(42, 51, 36, 0.6);
+  --panel-accent: var(--brand-primary);
 }
-
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -113,14 +153,17 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -174,6 +217,9 @@
   }
 }
 
+/* Nota: Se han retirado los !important fijos de utilidades text-* 
+   para permitir que Tailwind escale naturalmente dentro de los componentes. */
+
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -206,21 +252,15 @@
   }
 }
 
-:root {
-  /* Landing page pastel colors */
-  --landing-olive: #5E7250;
-  --landing-olive-soft: oklch(0.92 0.07 130);
-  --landing-amber: oklch(0.82 0.06 75);
-  --landing-amber-soft: oklch(0.95 0.05 75);
-  --landing-terracotta: oklch(0.78 0.08 40);
-  --landing-terracotta-soft: oklch(0.95 0.07 40);
-  --landing-malva: oklch(0.72 0.05 320);
-  --landing-malva-soft: oklch(0.94 0.06 320);
-  --landing-sky: oklch(0.80 0.05 220);
-  --landing-sky-soft: oklch(0.94 0.05 220);
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
 }
-input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
 
-
-button, [role="button"], input[type="button"], input[type="submit"], input[type="reset"] { cursor: pointer; }
-
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  cursor: pointer;
+}
