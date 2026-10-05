@@ -10,6 +10,7 @@ export const ROUTES = {
   RUTA: '/route',
   HISTORIAL: '/history',
   PLANES: '/planes',
+  TERMINOS: '/terminos',
 } as const;
 
 export const MOCK_ROUTES: Record<string, 'Sprint 2' | 'Sprint 3'> = {

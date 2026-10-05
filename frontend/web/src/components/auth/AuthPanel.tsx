@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useNavigate, useLocation } from "react-router-dom"
-import { ArrowRight, Eye, EyeOff, Leaf, Lock, Mail, Loader2 } from "lucide-react"
+import { useNavigate, useLocation, Link } from "react-router-dom"
+import { ArrowRight, Eye, EyeOff, Leaf, Lock, Mail, Loader2, ShoppingBasket } from "lucide-react"
 import { useToast } from "@/contexts/ToastContext"
 import { useAuth } from "@/hooks/useAuth"
 
@@ -23,25 +23,27 @@ export function AuthPanel() {
   const location = useLocation()
   const initialTab = location.state?.tab === "signup" ? "signup" : "login"
   const [tab, setTab] = useState(initialTab)
-  
+
   const [loginEmail, setLoginEmail] = useState("")
   const [loginPassword, setLoginPassword] = useState("")
-  
+
   const [signupEmail, setSignupEmail] = useState("")
   const [signupPassword, setSignupPassword] = useState("")
-  
+
   const [showLoginPw, setShowLoginPw] = useState(false)
   const [showSignupPw, setShowSignupPw] = useState(false)
+  const [acceptTerms, setAcceptTerms] = useState(false)
+  const [acceptAge, setAcceptAge] = useState(false)
   const { login, register, logout, isLoading, error: authError } = useAuth()
-  
-  const [errors, setErrors] = useState<{ loginEmail?: string; loginPassword?: string; signupEmail?: string; signupPassword?: string }>({})
+
+  const [errors, setErrors] = useState<{ loginEmail?: string; loginPassword?: string; signupEmail?: string; signupPassword?: string; terms?: string; age?: string }>({})
 
   const navigate = useNavigate()
   const { toast } = useToast()
 
   const handleLogin = async (e?: React.FormEvent) => {
     e?.preventDefault()
-    
+
     const newErrors: typeof errors = {}
     if (!loginEmail.includes("@")) {
       newErrors.loginEmail = "Ingresa un correo electrónico válido"
@@ -49,16 +51,16 @@ export function AuthPanel() {
     if (!loginPassword) {
       newErrors.loginPassword = "Contraseña requerida"
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
     }
-    
+
     setErrors({})
-    
+
     const exito = await login({ correo: loginEmail, password: loginPassword })
-    
+
     if (exito) {
       toast("Inicio de sesión exitoso", "success")
       navigate("/dashboard")
@@ -67,7 +69,7 @@ export function AuthPanel() {
 
   const handleSignup = async (e?: React.FormEvent) => {
     e?.preventDefault()
-    
+
     const newErrors: typeof errors = {}
     if (!signupEmail.includes("@")) {
       newErrors.signupEmail = "Ingresa un correo electrónico válido"
@@ -75,22 +77,30 @@ export function AuthPanel() {
     if (signupPassword.length < 8) {
       newErrors.signupPassword = "Usa al menos 8 caracteres para mayor seguridad"
     }
+    if (!acceptTerms) {
+      newErrors.terms = "Debes aceptar los Términos y Condiciones"
+    }
+    if (!acceptAge) {
+      newErrors.age = "Debes confirmar que eres mayor de edad"
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
     }
-    
+
     setErrors({})
-    
-    const nombreTemporal = `Usuario ${Math.floor(Math.random() * 10000)}`
-    
+
+    // Generamos un sufijo a partir del correo para evitar IDs aleatorios si es posible
+    const prefijoCorreo = signupEmail.split('@')[0];
+    const nombreTemporal = `Usuario ${prefijoCorreo}`;
+
     const exito = await register({
       correo: signupEmail,
       password: signupPassword,
       nombre_completo: nombreTemporal
     })
-    
+
     if (exito) {
       toast("Cuenta creada con éxito. Revisa tu correo.", "success")
       navigate("/onboarding")
@@ -109,12 +119,14 @@ export function AuthPanel() {
       <div className="relative z-10 w-full max-w-md">
         {/* Mobile brand */}
         <div className="mb-8 flex items-center justify-center gap-2.5 lg:hidden">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-primary/10">
-            <Leaf className="size-5 text-primary" />
-          </span>
-          <span className="font-display text-lg font-bold tracking-tight text-foreground">
-            RutaAhorro
-          </span>
+          <Link to="/" className="flex items-center gap-2.5">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+              <ShoppingBasket className="size-5" />
+            </span>
+            <span className="font-display text-lg font-bold tracking-tight text-foreground">
+              Ruta<span className="text-primary">Ahorro</span>
+            </span>
+          </Link>
         </div>
 
         <div className="rounded-xl border-4 border-border bg-background p-6 shadow-[8px_8px_0px_var(--color-border)] sm:p-8">
@@ -142,10 +154,10 @@ export function AuthPanel() {
               <form className="flex flex-col gap-5" onSubmit={handleLogin}>
                 {authError && tab === "login" && (
                   <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive font-semibold border-2 border-destructive flex items-center gap-2">
-                    <Lock className="size-4" /> {authError}
+                    <Lock className="size-4 shrink-0" /> {authError}
                   </div>
                 )}
-                
+
                 <FieldGroup>
                   <Field data-invalid={!!errors.loginEmail}>
                     <FieldLabel htmlFor="login-email">Correo electrónico</FieldLabel>
@@ -158,10 +170,12 @@ export function AuthPanel() {
                         onChange={(e) => setLoginEmail(e.target.value)}
                         placeholder="tu@correo.com"
                         autoComplete="email"
-                        className="h-11 rounded-xl pl-10 data-[invalid=true]:border-destructive"
+                        className={`h-11 rounded-xl pl-10 ${errors.loginEmail ? 'border-destructive border-2' : ''}`}
                       />
                     </div>
-                    {errors.loginEmail && <FieldError errors={[{ message: errors.loginEmail }]} />}
+                    <div className="hidden sm:block">
+                      {errors.loginEmail && <FieldError errors={[{ message: errors.loginEmail }]} />}
+                    </div>
                   </Field>
 
                   <Field data-invalid={!!errors.loginPassword}>
@@ -183,7 +197,7 @@ export function AuthPanel() {
                         onChange={(e) => setLoginPassword(e.target.value)}
                         placeholder="••••••••"
                         autoComplete="current-password"
-                        className="h-11 rounded-xl pr-10 pl-10 data-[invalid=true]:border-destructive"
+                        className={`h-11 rounded-xl pr-10 pl-10 ${errors.loginPassword ? 'border-destructive border-2' : ''}`}
                       />
                       <button
                         type="button"
@@ -198,7 +212,9 @@ export function AuthPanel() {
                         )}
                       </button>
                     </div>
-                    {errors.loginPassword && <FieldError errors={[{ message: errors.loginPassword }]} />}
+                    <div className="hidden sm:block">
+                      {errors.loginPassword && <FieldError errors={[{ message: errors.loginPassword }]} />}
+                    </div>
                   </Field>
                 </FieldGroup>
 
@@ -210,10 +226,10 @@ export function AuthPanel() {
 
               <FieldSeparator className="my-6">O continuar con</FieldSeparator>
               <SocialButtons onClick={handleLogin} />
-              
+
               <div className="mt-6 flex justify-center">
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-transparent"
                   onClick={() => { logout(); navigate('/dashboard'); }}
                 >
@@ -236,10 +252,10 @@ export function AuthPanel() {
               <form className="flex flex-col gap-5" onSubmit={handleSignup}>
                 {authError && tab === "signup" && (
                   <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive font-semibold border-2 border-destructive flex items-center gap-2">
-                    <Lock className="size-4" /> {authError}
+                    <Lock className="size-4 shrink-0" /> {authError}
                   </div>
                 )}
-                
+
                 <FieldGroup>
                   <Field data-invalid={!!errors.signupEmail}>
                     <FieldLabel htmlFor="signup-email">Correo electrónico</FieldLabel>
@@ -252,10 +268,12 @@ export function AuthPanel() {
                         onChange={(e) => setSignupEmail(e.target.value)}
                         placeholder="tu@correo.com"
                         autoComplete="email"
-                        className="h-11 rounded-xl pl-10 data-[invalid=true]:border-destructive"
+                        className={`h-11 rounded-xl pl-10 ${errors.signupEmail ? 'border-destructive border-2' : ''}`}
                       />
                     </div>
-                    {errors.signupEmail && <FieldError errors={[{ message: errors.signupEmail }]} />}
+                    <div className="hidden sm:block">
+                      {errors.signupEmail && <FieldError errors={[{ message: errors.signupEmail }]} />}
+                    </div>
                   </Field>
 
                   <Field data-invalid={!!errors.signupPassword}>
@@ -269,7 +287,7 @@ export function AuthPanel() {
                         autoComplete="new-password"
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
-                        className="h-11 rounded-xl pr-10 pl-10 data-[invalid=true]:border-destructive"
+                        className={`h-11 rounded-xl pr-10 pl-10 ${errors.signupPassword ? 'border-destructive border-2' : ''}`}
                       />
                       <button
                         type="button"
@@ -284,12 +302,55 @@ export function AuthPanel() {
                         )}
                       </button>
                     </div>
-                    {errors.signupPassword && <FieldError errors={[{ message: errors.signupPassword }]} />}
+                    <div className="hidden sm:block">
+                      {errors.signupPassword && <FieldError errors={[{ message: errors.signupPassword }]} />}
+                    </div>
                     <div className="mt-1">
                       <PasswordStrength password={signupPassword} />
                     </div>
                   </Field>
                 </FieldGroup>
+
+                <div className="flex flex-col gap-3 mt-2 mb-2">
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        id="terms"
+                        checked={acceptTerms}
+                        onChange={(e) => setAcceptTerms(e.target.checked)}
+                        className={`mt-1 h-4 w-4 rounded bg-background focus:ring-primary focus:ring-offset-2 shrink-0 cursor-pointer ${errors.terms ? 'border-destructive border-2 text-destructive' : 'border-border text-primary'}`}
+                      />
+                      <label htmlFor="terms" className={`text-sm leading-snug cursor-pointer select-none ${errors.terms ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                        He leído y acepto los{" "}
+                        <Link to="/terminos" target="_blank" className="text-primary font-medium underline-offset-4 hover:underline">
+                          Términos y Condiciones
+                        </Link>
+                      </label>
+                    </div>
+                    <div className="hidden sm:block">
+                      {errors.terms && <span className="text-xs text-destructive font-medium pl-6">{errors.terms}</span>}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        id="age"
+                        checked={acceptAge}
+                        onChange={(e) => setAcceptAge(e.target.checked)}
+                        className={`mt-1 h-4 w-4 rounded bg-background focus:ring-primary focus:ring-offset-2 shrink-0 cursor-pointer ${errors.age ? 'border-destructive border-2 text-destructive' : 'border-border text-primary'}`}
+                      />
+                      <label htmlFor="age" className={`text-sm leading-snug cursor-pointer select-none ${errors.age ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                        Confirmo que soy mayor de 18 años y tengo capacidad legal para aceptar estos términos
+                      </label>
+                    </div>
+                    <div className="hidden sm:block">
+                      {errors.age && <span className="text-xs text-destructive font-medium pl-6">{errors.age}</span>}
+                    </div>
+                  </div>
+                </div>
 
                 <Button type="submit" disabled={isLoading} className="h-11 w-full rounded-xl text-sm font-semibold hover:brightness-110 transition-all">
                   {isLoading ? "Creando cuenta..." : "Registrarse"}
@@ -299,18 +360,6 @@ export function AuthPanel() {
 
               <FieldSeparator className="my-6">O continuar con</FieldSeparator>
               <SocialButtons onClick={handleSignup} />
-
-              <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground text-balance">
-                Al crear una cuenta aceptas nuestros{" "}
-                <a href="#" className="text-primary underline-offset-4 hover:underline">
-                  Términos
-                </a>{" "}
-                y la{" "}
-                <a href="#" className="text-primary underline-offset-4 hover:underline">
-                  Política de Privacidad
-                </a>
-                .
-              </p>
             </TabsContent>
           </Tabs>
         </div>
