@@ -24,7 +24,7 @@ spec:
         - name: VITE_IA_URL
           value: "https://api-vmatus.dev.censei.cl/api/v1" # IA usa el mismo API Gateway en el cluster
         - name: VITE_GOOGLE_CLIENT_ID
-          value: "AQUI_VA_EL_CLIENT_ID_DE_GOOGLE"
+          value: "832261851860-a1pu1rj9hejrref2tjq15h4hh8rr4snr.apps.googleusercontent.com"
         ports:
         - containerPort: 3000
         resources:
