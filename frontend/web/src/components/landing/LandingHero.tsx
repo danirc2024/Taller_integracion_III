@@ -6,10 +6,7 @@ import landingData from "@/data/landing.json";
 export function LandingHero() {
   return (
     <section className="relative py-20 overflow-hidden">
-      {/* Deco orbs pastel */}
-      <div className="absolute rounded-full blur-[60px] opacity-40 pointer-events-none z-0 w-[280px] h-[280px] bg-[var(--landing-amber)] -top-[60px] -right-[40px]" />
-      <div className="absolute rounded-full blur-[60px] opacity-30 pointer-events-none z-0 w-[320px] h-[320px] bg-[var(--landing-olive)] -bottom-[80px] -left-[80px]" />
-      <div className="absolute rounded-full blur-[60px] opacity-25 pointer-events-none z-0 w-[200px] h-[200px] bg-[var(--landing-terracotta)] top-[40%] right-[20%]" />
+      {/* Deco orbs pastel eliminadas a petición del usuario */}
 
       <div className="max-w-[1440px] mx-auto px-4 md:px-6 grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-[3rem] md:gap-[4rem] items-center relative z-10">
         {/* Columna izquierda */}
@@ -44,7 +41,7 @@ export function LandingHero() {
           <div className="absolute z-10 px-4 py-3 bg-[var(--landing-amber-soft)] border-2 border-[var(--landing-amber)] rounded-[var(--radius)] shadow-[4px_4px_0_var(--border)] flex items-center gap-2 text-[0.78125rem] font-bold text-foreground -top-[10px] -left-[30px] animate-[float-y_4s_ease-in-out_infinite] hidden md:flex">
             <Car size={16} /> Viaje: 2.1 km · 6 min
           </div>
-          <div className="absolute z-10 px-4 py-3 bg-[var(--landing-olive-soft)] border-2 border-[var(--landing-olive)] rounded-[var(--radius)] shadow-[4px_4px_0_var(--border)] flex items-center gap-2 text-[0.78125rem] font-bold text-foreground bottom-[40px] -right-[24px] animate-[float-y_5s_ease-in-out_infinite_reverse] hidden md:flex">
+          <div className="absolute z-10 px-4 py-3 bg-[var(--landing-olive-soft)] border-2 border-[var(--landing-olive)] rounded-[var(--radius)] shadow-[4px_4px_0_var(--border)] flex items-center gap-2 text-[0.78125rem] font-bold text-foreground bottom-[110px] -right-[28px] animate-[float-y_5s_ease-in-out_infinite_reverse] hidden md:flex">
             <PiggyBank size={16} /> Ahorro neto: $6.140
           </div>
 

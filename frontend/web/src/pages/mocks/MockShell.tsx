@@ -7,7 +7,7 @@ interface MockShellProps {
 
 export default function MockShell({ sprint, children }: MockShellProps) {
   return (
-    <div className="relative h-full flex flex-col">
+    <div className="relative flex-1 flex flex-col">
       <div
         role="status"
         aria-live="polite"
