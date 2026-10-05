@@ -18,6 +18,13 @@ spec:
       - image: ghcr.io/danirc2024/taller_integracion_iii-frontend:develop
         imagePullPolicy: Always
         name: frontend
+        env:
+        - name: VITE_API_URL
+          value: "https://api-vmatus.dev.censei.cl/api/v1"
+        - name: VITE_IA_URL
+          value: "https://api-vmatus.dev.censei.cl/api/v1" # IA usa el mismo API Gateway en el cluster
+        - name: VITE_GOOGLE_CLIENT_ID
+          value: "AQUI_VA_EL_CLIENT_ID_DE_GOOGLE"
         ports:
         - containerPort: 3000
         resources:
