@@ -18,6 +18,7 @@ import Login from '@/pages/Login';
 import Onboarding from '@/pages/Onboarding';
 import Profile from '@/pages/Profile';
 import NotFound from '@/pages/NotFound';
+import Terms from '@/pages/Terms';
 
 // Sprint 2+ — componentes ya construidos, envueltos como mock
 import Chatbot from '@/pages/Chatbot';
@@ -103,6 +104,7 @@ const router = createBrowserRouter([
   // ───────────────────────────────────────────────────────────
   { path: ROUTES.HOME, element: <Home />, errorElement: <ErrorBoundary /> },
   { path: ROUTES.LOGIN, element: <Login /> },
+  { path: ROUTES.TERMINOS, element: <Terms /> },
   { 
     element: <ProtectedRoute />, 
     children: [

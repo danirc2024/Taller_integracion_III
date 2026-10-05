@@ -1,4 +1,4 @@
-import { Leaf, Route, ShoppingBag, TrendingDown } from "lucide-react"
+import { ShoppingBasket, Route, ShoppingBag, TrendingDown } from "lucide-react"
 import { Link } from "react-router-dom"
 
 export function AuthVisual() {
@@ -7,8 +7,8 @@ export function AuthVisual() {
 
       {/* Brand */}
       <Link to="/" className="relative z-10 flex w-fit items-center gap-2.5 p-10 hover:opacity-80 transition-opacity">
-        <span className="flex size-10 items-center justify-center rounded-xl border-2 border-primary-foreground">
-          <Leaf className="size-5" />
+        <span className="flex size-10 items-center justify-center rounded-xl bg-primary-foreground text-primary border-2 border-primary-foreground">
+          <ShoppingBasket className="size-5" />
         </span>
         <span className="font-display text-lg font-bold tracking-tight">
           RutaAhorro
