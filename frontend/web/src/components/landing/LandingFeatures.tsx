@@ -1,15 +1,15 @@
-import { Filter, Zap, Smartphone, ArrowDownRight, Share2, Calculator } from "lucide-react";
+import { Filter, Car, Bot, ShieldCheck, House, Gauge } from "lucide-react";
 import landingData from "@/data/landing.json";
 
 export function LandingFeatures() {
   const getIcon = (i: number) => {
     switch(i) {
-      case 0: return <Filter size={24} />;
-      case 1: return <Zap size={24} />;
-      case 2: return <Smartphone size={24} />;
-      case 3: return <ArrowDownRight size={24} />;
-      case 4: return <Share2 size={24} />;
-      case 5: return <Calculator size={24} />;
+      case 0: return <Filter size={24} aria-hidden="true" />;   // Comparación real
+      case 1: return <Car size={24} aria-hidden="true" />;      // Costo de traslado
+      case 2: return <Bot size={24} aria-hidden="true" />;      // Asistente IA
+      case 3: return <ShieldCheck size={24} aria-hidden="true" />; // Privacidad
+      case 4: return <House size={24} aria-hidden="true" />;    // Adaptado al hogar
+      case 5: return <Gauge size={24} aria-hidden="true" />;    // Rápido y liviano
       default: return null;
     }
   };
@@ -19,7 +19,7 @@ export function LandingFeatures() {
       <div className="max-w-[1440px] mx-auto px-4 md:px-6">
         <div className="max-w-[680px] mx-auto mb-[3.5rem] text-center">
           <span className="inline-block text-[0.6875rem] font-bold tracking-[0.18em] uppercase text-brand-dark px-[0.85rem] py-[0.35rem] bg-[var(--landing-amber-soft)] border-2 border-[var(--landing-amber)] rounded-full mb-[1rem]">Características</span>
-          <h2 className="font-['Fredoka'] text-[1.75rem] md:text-[clamp(1.75rem,3.2vw,2.4rem)] font-bold text-foreground mb-[0.875rem] leading-[1.15]">Todo lo que necesitas para ahorrar</h2>
+          <h2 className="font-['Fraunces'] text-[1.75rem] md:text-[clamp(1.75rem,3.2vw,2.4rem)] font-bold text-foreground mb-[0.875rem] leading-[1.15]">Todo lo que necesitas para ahorrar</h2>
           <p className="text-muted-foreground text-[1rem] leading-[1.6]">
             Diseñado para que gastes menos tiempo planificando y menos dinero
             comprando.
@@ -41,7 +41,7 @@ export function LandingFeatures() {
                 <div className={`w-[56px] h-[56px] rounded-[calc(var(--radius)-2px)] flex items-center justify-center text-[1.5rem] mb-[1.125rem] border-2 border-border shadow-[3px_3px_0_var(--color-border)] text-foreground ${bgClass}`}>
                   {getIcon(index)}
                 </div>
-                <h3 className="font-['Fredoka'] text-[1.0625rem] font-bold text-foreground mb-[0.5rem]">{f.title}</h3>
+                <h3 className="font-['Fraunces'] text-[1.0625rem] font-bold text-foreground mb-[0.5rem]">{f.title}</h3>
                 <p className="text-[0.875rem] text-muted-foreground leading-[1.6]">{f.desc}</p>
               </div>
             );

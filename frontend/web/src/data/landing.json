@@ -29,7 +29,7 @@
       "Compra en el más cercano: $49.600, pero con menos variedad.",
       "Con RutaAhorro (2 paradas óptimas): $45.780 todo incluido."
     ],
-    "weeklySaving": "$6.140"
+    "weeklySaving": "$9.560"
   },
   "stores": [
     { "name": "Líder", "desc": "Express & Supermercados" },
@@ -45,7 +45,7 @@
   "metrics": [
     { "num": "6+", "lines": ["Cadenas de", "supermercados integradas"] },
     { "num": "3.200+", "lines": ["Productos comparados", "en tiempo real"] },
-    { "num": "$6.140", "lines": ["Ahorro neto promedio", "por compra semanal"] },
+    { "num": "$9.560", "lines": ["Ahorro neto promedio", "por compra semanal"] },
     { "num": "2 min", "lines": ["Lo que tardas", "en decidir tu compra"] }
   ]
 }

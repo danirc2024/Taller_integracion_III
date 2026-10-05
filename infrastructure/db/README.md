@@ -1,0 +1,67 @@
+# Base de Datos — Esquemas y Migraciones
+
+Este directorio contiene las definiciones DDL del esquema PostgreSQL (PostGIS) estructurado en 3 esquemas principales (`api`, `scraper`, `rutas`), los datos de seed iniciales y las scripts de migración.
+
+---
+
+## 📁 Estructura de Archivos
+
+| Archivo | Descripción | Cuándo usar |
+|---|---|---|
+| [`init.sql`](file:///home/chelo/Documentos/GitHub/Taller_integracion_III/infrastructure/db/init.sql) | Script completo de inicialización con esquemas y datos seed de prueba (Jumbo, Lider, Santa Isabel, A Cuenta, Cugat). | Se ejecuta automáticamente al construir la BD desde cero (`docker-compose up`). |
+| [`01_schema_api.sql`](file:///home/chelo/Documentos/GitHub/Taller_integracion_III/infrastructure/db/01_schema_api.sql) | Esquema `api.*` (usuarios, catálogo maestro normalizado, recetas, misiones). | Referencia DDL / auto-init. |
+| [`02_schema_scraper.sql`](file:///home/chelo/Documentos/GitHub/Taller_integracion_III/infrastructure/db/02_schema_scraper.sql) | Esquema `scraper.*` (cadenas, sucursales, trabajos, productos crudos, capturas de precios). | Referencia DDL / auto-init. |
+| [`03_schema_rutas.sql`](file:///home/chelo/Documentos/GitHub/Taller_integracion_III/infrastructure/db/03_schema_rutas.sql) | Esquema `rutas.*` (listas de compras, optimizaciones y paradas). | Referencia DDL / auto-init. |
+| [`03_indices_optimizacion.sql`](file:///home/chelo/Documentos/GitHub/Taller_integracion_III/infrastructure/db/03_indices_optimizacion.sql) | Índices adicionales de rendimiento para consultas frecuentes. | Referencia DDL / auto-init. |
+| [`04_migracion_nuevas_cadenas.sql`](file:///home/chelo/Documentos/GitHub/Taller_integracion_III/infrastructure/db/04_migracion_nuevas_cadenas.sql) | **Script de migración**: Agrega A Cuenta y Cugat a bases de datos en producción o activas. | **Ejecución manual en bases de datos existentes** (ej. clúster Kubernetes UCT). |
+
+---
+
+## 🚀 Guía de Migración para BD Existente (Clúster UCT)
+
+Si la base de datos en el clúster ya fue desplegada previamente y no contiene las cadenas **A Cuenta** y **Cugat**, debes aplicar el script `04_migracion_nuevas_cadenas.sql`.
+
+### 🛡️ Características de la Migración
+- **Idempotente**: Puede ejecutarse múltiples veces de forma segura sin duplicar registros (`ON CONFLICT`).
+- **Atómica**: Ejecutada dentro de un bloque `BEGIN ... COMMIT`. Si ocurre un error, se realiza rollback automático.
+- **Ajuste de Secuencias**: Actualiza las secuencias de `id` para evitar colisiones con la auto-creación de cadenas desde la API Go.
+
+---
+
+## 🛠️ Instrucciones de Ejecución
+
+### Opción A: Desde Pod/Contenedor de PostgreSQL (Kubernetes u Orden de Consola)
+
+```bash
+psql -U $DB_USER -d $DB_NAME -f infrastructure/db/04_migracion_nuevas_cadenas.sql
+```
+
+### Opción B: Mediante `kubectl exec` hacia el Pod del Clúster UCT
+
+```bash
+kubectl exec -i -n <namespace> <pod-postgres> -- psql -U <usuario> -d <bd> < infrastructure/db/04_migracion_nuevas_cadenas.sql
+```
+
+### Opción C: Usando Docker Compose en local/servidor
+
+```bash
+docker exec -i bd_supermercados psql -U postgres -d bd_supermercados < infrastructure/db/04_migracion_nuevas_cadenas.sql
+```
+
+---
+
+## 🔍 Verificación Post-Migración
+
+El script emite automáticamente un listado de confirmación al terminar. También puedes verificar ejecutando:
+
+```sql
+SELECT id, nombre, url_sitio_web, esta_activa FROM scraper.cadenas_supermercado ORDER BY id;
+```
+
+**Resultado esperado:**
+- ID 1: Jumbo
+- ID 2: Lider
+- ID 3: Unimarc
+- ID 4: Santa Isabel
+- ID 5: A Cuenta
+- ID 6: Cugat
