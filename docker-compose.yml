@@ -7,13 +7,13 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     ports:
-    - 5432:5432
+      - 5432:5432
     volumes:
-    - pgdata:/var/lib/postgresql/data
-    - ./infrastructure/db:/docker-entrypoint-initdb.d
+      - pgdata:/var/lib/postgresql/data
+      - ./infrastructure/db:/docker-entrypoint-initdb.d
     restart: unless-stopped
     networks:
-    - microservices_net
+      - microservices_net
     deploy:
       resources:
         limits:
@@ -25,29 +25,30 @@ services:
       dockerfile: Dockerfile
       # [!] EQUIPO BACKEND: Descomentar estas lineas para usar Hot-Reload (Air) en local
       # target: builder
-    # command:
-    # - air
+      # command:
+      # - air
     container_name: go_service_api
     ports:
-    - 8080:8080
+      - 8080:8080
     environment:
-    - PORT=8080
-    - DB_HOST=db
-    - DB_PORT=5432
-    - DB_USER=${DB_USER}
-    - DB_PASSWORD=${DB_PASSWORD}
-    - DB_NAME=${DB_NAME}
-    - DB_URL=postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
-    - REDIS_URL=redis://redis:6379/0
+      - PORT=8080
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_URL=postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
+      - REDIS_URL=redis://redis:6379/0
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     depends_on:
-    - db
-    # [!] EQUIPO BACKEND: Descomentar los volumenes para desarrollo local
-    # volumes:
-    # - ./backend/api:/app
-    # - /app/tmp
+      - db
+      # [!] EQUIPO BACKEND: Descomentar los volumenes para desarrollo local
+      # volumes:
+      # - ./backend/api:/app
+      # - /app/tmp
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1" ]
       interval: 60s
       timeout: 5s
       retries: 3
@@ -69,15 +70,16 @@ services:
       target: production
     container_name: frontend_web
     ports:
-    - 3000:3000
+      - 3000:3000
     environment:
-    - VITE_API_URL=http://localhost:8080
+      - VITE_API_URL=/api/v1
+      - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     volumes:
-    - ./frontend/web:/app
-    - /app/node_modules
+      - ./frontend/web:/app
+      - /app/node_modules
     restart: unless-stopped
     networks:
-    - microservices_net
+      - microservices_net
     deploy:
       resources:
         limits:
@@ -87,10 +89,10 @@ services:
     image: redis:7-alpine
     container_name: redis_broker
     ports:
-    - 6379:6379
+      - 6379:6379
     restart: unless-stopped
     networks:
-    - microservices_net
+      - microservices_net
     deploy:
       resources:
         limits:
@@ -102,13 +104,13 @@ services:
       dockerfile: Dockerfile
     container_name: discord_scrum_bot
     environment:
-    - PORT=8081
-    - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-missing}
-    - DISCORD_CHANNEL_ID=${DISCORD_CHANNEL_ID:-missing}
-    - DISCORD_PUSH_CHANNEL_ID=${DISCORD_PUSH_CHANNEL_ID:-}
-    - SCRAPER_API_BASE_URL=http://go_service_api:8080/api/v1/scraper/trabajos
+      - PORT=8081
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-missing}
+      - DISCORD_CHANNEL_ID=${DISCORD_CHANNEL_ID:-missing}
+      - DISCORD_PUSH_CHANNEL_ID=${DISCORD_PUSH_CHANNEL_ID:-}
+      - SCRAPER_API_BASE_URL=http://go_service_api:8080/api/v1/scraper/trabajos
     ports:
-    - 8081:8081
+      - 8081:8081
     deploy:
       resources:
         limits:
@@ -116,27 +118,27 @@ services:
           memory: 200M
     restart: unless-stopped
     networks:
-    - microservices_net
+      - microservices_net
   scraper_worker:
     build:
       context: ./backend/scraper
       dockerfile: Dockerfile
     container_name: python_scraper_worker
     command:
-    - python
-    - -m
-    - scraper_core.worker
+      - python
+      - -m
+      - scraper_core.worker
     environment:
-    - REDIS_URL=redis://redis:6379/0
-    - SCRAPER_API_URL=http://go_service:8080/api/v1/scraper/productos
+      - REDIS_URL=redis://redis:6379/0
+      - SCRAPER_API_URL=http://go_service:8080/api/v1/scraper/productos
     depends_on:
-    - redis
-    - go_service
+      - redis
+      - go_service
     volumes:
-    - ./backend/scraper:/app
+      - ./backend/scraper:/app
     restart: unless-stopped
     networks:
-    - microservices_net
+      - microservices_net
     deploy:
       resources:
         limits:

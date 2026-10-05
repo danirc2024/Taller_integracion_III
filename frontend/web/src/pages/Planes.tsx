@@ -1,8 +1,13 @@
 import { Zap, CheckCircle2, Shield, Rocket } from 'lucide-react';
-import { mockUser } from '@/data/mock';
 import MockShell from '@/pages/mocks/MockShell';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Planes() {
+  const { user } = useAuth();
+  
+  // Asumimos "Usuario" básico si es guest o no tiene plan
+  const userPlan = user?.plan || 'Usuario';
+
   return (
     <MockShell sprint="Sprint 2">
       <div className="flex flex-col h-full bg-background font-sans text-foreground overflow-y-auto">
@@ -38,10 +43,10 @@ export default function Planes() {
             ))}
           </ul>
           <button
-            disabled={mockUser.plan === 'Usuario'}
+            disabled={userPlan === 'Usuario'}
             className="w-full py-3.5 rounded-xl border-2 border-primary text-primary font-bold transition-colors disabled:opacity-50 disabled:bg-primary/5 disabled:cursor-not-allowed hover:bg-primary/10"
           >
-            {mockUser.plan === 'Usuario' ? 'Tu plan actual' : 'Cambiar a Básico'}
+            {userPlan === 'Usuario' ? 'Tu plan actual' : 'Cambiar a Básico'}
           </button>
         </div>
 
@@ -75,10 +80,10 @@ export default function Planes() {
             ))}
           </ul>
           <button
-            disabled={mockUser.plan === 'Plus'}
+            disabled={userPlan === 'Plus'}
             className="w-full py-3.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-extrabold shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {mockUser.plan === 'Plus' ? 'Suscripción Activa' : 'Mejorar a Plus'}
+            {userPlan === 'Plus' ? 'Suscripción Activa' : 'Mejorar a Plus'}
           </button>
         </div>
 

@@ -18,5 +18,11 @@ export default defineConfig({
     watch: {
       usePolling: true,
     },
+    proxy: {
+      '/api': {
+        target: 'http://go_service:8080',
+        changeOrigin: true,
+      },
+    },
   },
 })

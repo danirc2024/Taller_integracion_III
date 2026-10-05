@@ -133,7 +133,9 @@ INSERT INTO scraper.cadenas_supermercado (id, nombre, url_sitio_web, url_logo, e
 (1, 'Jumbo', 'https://www.jumbo.cl', '/logos/verdemart.png', true),
 (2, 'Lider', 'https://www.lider.cl', '/logos/superahorro.png', true),
 (3, 'Unimarc', 'https://www.unimarc.cl', '/logos/mercadia.png', true),
-(4, 'Santa Isabel', 'https://www.santaisabel.cl', '/logos/colmadoplus.png', true)
+(4, 'Santa Isabel', 'https://www.santaisabel.cl', '/logos/colmadoplus.png', true),
+(5, 'A Cuenta', 'https://www.acuenta.cl', '/logos/acuenta.png', true),
+(6, 'Cugat', 'https://cugat.cl', '/logos/cugat.png', true)
 ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('scraper.cadenas_supermercado_id_seq', (SELECT MAX(id) FROM scraper.cadenas_supermercado));
@@ -143,7 +145,9 @@ INSERT INTO scraper.sucursales_supermercado (id, cadena_id, codigo_sucursal, nom
 (1, 1, 'JUMBO-LOS-PABLOS', 'Jumbo Los Pablos', 'Av. Los Pablos 01860', 'Temuco', 'Temuco', -38.74100000, -72.60000000, '08:30:00', '21:00:00', true),
 (2, 2, 'LIDER-PRIETO-NORTE', 'Lider Prieto Norte', 'Av. Caupolicán 0450', 'Temuco', 'Temuco', -38.73500000, -72.59000000, '08:00:00', '21:30:00', true),
 (3, 3, 'UNIMARC-ALEMANIA', 'Unimarc Av. Alemania', 'Av. Alemania 0655', 'Temuco', 'Temuco', -38.74500000, -72.61000000, '08:30:00', '21:00:00', true),
-(4, 4, 'SANTA-ISABEL-SAN-MARTIN', 'Santa Isabel San Martín', 'San Martín 0890', 'Temuco', 'Temuco', -38.73000000, -72.60500000, '08:30:00', '21:00:00', true)
+(4, 4, 'SANTA-ISABEL-SAN-MARTIN', 'Santa Isabel San Martín', 'San Martín 0890', 'Temuco', 'Temuco', -38.73000000, -72.60500000, '08:30:00', '21:00:00', true),
+(5, 5, 'ACUENTA-CENTRAL', 'A Cuenta Online', 'Casa Matriz / Online', 'Temuco', 'Temuco', -38.73590000, -72.59040000, NULL, NULL, true),
+(6, 6, 'CUGAT-CENTRAL', 'Cugat Online', 'Casa Matriz / Online', 'Temuco', 'Temuco', -38.73590000, -72.59040000, NULL, NULL, true)
 ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('scraper.sucursales_supermercado_id_seq', (SELECT MAX(id) FROM scraper.sucursales_supermercado));

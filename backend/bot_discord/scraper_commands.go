@@ -32,25 +32,41 @@ func sendScraperMenu(s *discordgo.Session, channelID string) {
 						Label:    "Jumbo",
 						Style:    discordgo.SuccessButton,
 						CustomID: "scrape_1_jumbo_rsc",
-						Emoji: &discordgo.ComponentEmoji{
-							Name: "🛒",
-						},
+						Emoji: &discordgo.ComponentEmoji{Name: "🐘"},
 					},
 					discordgo.Button{
 						Label:    "Lider",
 						Style:    discordgo.PrimaryButton,
 						CustomID: "scrape_2_lider_rsc",
-						Emoji: &discordgo.ComponentEmoji{
-							Name: "💳",
-						},
+						Emoji: &discordgo.ComponentEmoji{Name: "🛒"},
 					},
 					discordgo.Button{
 						Label:    "Santa Isabel",
 						Style:    discordgo.DangerButton,
 						CustomID: "scrape_4_santa_isabel_rsc",
-						Emoji: &discordgo.ComponentEmoji{
-							Name: "🛍️",
-						},
+						Emoji: &discordgo.ComponentEmoji{Name: "🛍️"},
+					},
+				},
+			},
+			discordgo.ActionsRow{
+				Components: []discordgo.MessageComponent{
+					discordgo.Button{
+						Label:    "A Cuenta",
+						Style:    discordgo.SuccessButton,
+						CustomID: "scrape_5_acuenta_rsc",
+						Emoji: &discordgo.ComponentEmoji{Name: "📉"},
+					},
+					discordgo.Button{
+						Label:    "Cugat",
+						Style:    discordgo.SecondaryButton,
+						CustomID: "scrape_6_cugat_rsc",
+						Emoji: &discordgo.ComponentEmoji{Name: "🏪"},
+					},
+					discordgo.Button{
+						Label:    "Todos a la vez",
+						Style:    discordgo.PrimaryButton,
+						CustomID: "scrape_0_todos",
+						Emoji: &discordgo.ComponentEmoji{Name: "🚀"},
 					},
 				},
 			},
@@ -104,11 +120,86 @@ func handleScrapeStart(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	case 1: nombre = "Jumbo"
 	case 2: nombre = "Lider"
 	case 4: nombre = "Santa Isabel"
+	case 5: nombre = "A Cuenta"
+	case 6: nombre = "Cugat"
+	case 0: nombre = "Todos los Supermercados"
 	}
 
 	userID := i.Member.User.ID
 
-	// 1. Crear el Trabajo
+
+	// Si eligió "Todos", disparamos cada scraper individualmente
+	if cadenaID == 0 {
+		cadenas := []struct{ id int; spider string; nombre string }{
+			{1, "jumbo_rsc", "Jumbo"},
+			{2, "lider_rsc", "Lider"},
+			{4, "santa_isabel_rsc", "Santa Isabel"},
+			{5, "acuenta_rsc", "A Cuenta"},
+			{6, "cugat_rsc", "Cugat"},
+		}
+
+		var trabajosExitosos []struct {
+			id     string
+			nombre string
+		}
+
+		for _, c := range cadenas {
+			createPayload := map[string]interface{}{
+				"cadena_id": c.id,
+				"disparado_por_usuario_id": userID,
+			}
+			createBytes, _ := json.Marshal(createPayload)
+			resp, err := http.Post(getApiURL(), "application/json", bytes.NewBuffer(createBytes))
+			if err != nil { continue }
+			
+			if resp.StatusCode == http.StatusCreated {
+				var createResp map[string]interface{}
+				json.NewDecoder(resp.Body).Decode(&createResp)
+				trabajoID := createResp["id"].(string)
+				resp.Body.Close()
+
+				startPayload := map[string]interface{}{ "spider": c.spider }
+				startBytes, _ := json.Marshal(startPayload)
+				respStart, errStart := http.Post(fmt.Sprintf("%s/%s/ejecutar", getApiURL(), trabajoID), "application/json", bytes.NewBuffer(startBytes))
+				if errStart == nil && respStart.StatusCode == http.StatusAccepted {
+					trabajosExitosos = append(trabajosExitosos, struct{ id string; nombre string }{id: trabajoID, nombre: c.nombre})
+					go monitorJobAndNotify(s, i.ChannelID, trabajoID, c.nombre, userID)
+				}
+				if respStart != nil { respStart.Body.Close() }
+			} else {
+				resp.Body.Close()
+			}
+		}
+
+		msgContent := fmt.Sprintf("🚀 **¡Scraping Masivo Iniciado!**\nSe han encolado `%d` trabajos de scraping en Redis. Puedes revisar el estado individual con los botones de abajo:\n", len(trabajosExitosos))
+		var buttons []discordgo.MessageComponent
+
+		for _, t := range trabajosExitosos {
+			msgContent += fmt.Sprintf("• **%s**: `%s`\n", t.nombre, t.id)
+			buttons = append(buttons, discordgo.Button{
+				Label:    "Refresh " + t.nombre,
+				Style:    discordgo.SecondaryButton,
+				CustomID: "refresh_" + t.id,
+				Emoji: &discordgo.ComponentEmoji{
+					Name: "🔄",
+				},
+			})
+		}
+
+		// Discord permite hasta 5 componentes (botones) por ActionRow. Como tenemos 5, calza perfecto en 1 fila.
+		// Si hubieran más, habría que dividir el array de botones en múltiples ActionRows.
+		s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+			Content: msgContent,
+			Components: []discordgo.MessageComponent{
+				discordgo.ActionsRow{
+					Components: buttons,
+				},
+			},
+		})
+		return
+	}
+
+	// 1. Crear el Trabajo Normal (Individual)
 	createPayload := map[string]interface{}{
 		"cadena_id": cadenaID,
 		"disparado_por_usuario_id": userID,

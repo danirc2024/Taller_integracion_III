@@ -11,6 +11,7 @@ interface AuthContextType {
   error: string | null;
   login: (payload: LoginPayload) => Promise<boolean>;
   register: (payload: RegisterPayload) => Promise<boolean>;
+  googleLogin: (idToken: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -39,17 +40,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_URL}/api/v1/auth/login`, {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        credentials: 'omit', // pendiente: requiere CORS con origen explícito en el backend
+        credentials: 'include',
       });
       const result = await response.json();
       if (!response.ok) {
         throw new Error(result.error || result.mensaje || 'Error al iniciar sesión');
       }
-      // El backend devuelve los datos del usuario. El JWT viaja en cookie HttpOnly.
       const userData: Usuario = result.usuario ?? result;
       setUser(userData);
       return true;
@@ -65,10 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_URL}/api/v1/auth/register`, {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        credentials: 'include',
       });
       const result = await response.json();
       if (!response.ok) {
@@ -83,20 +84,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const googleLogin = async (idToken: string): Promise<boolean> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_URL}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_token: idToken }),
+        credentials: 'include',
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || result.mensaje || 'Error en Google Login');
+      }
+      const userData: Usuario = result.usuario ?? result;
+      setUser(userData);
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'Error de red en Google Login.');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     setUser(null);
-    // Add logic to clear backend cookie if there was an endpoint for it
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isGuest: !user?.id,  // es guest si no hay un usuario cargado con ID válido
+        isGuest: !user?.id,
         isLoading,
         error,
         login,
         register,
+        googleLogin,
         logout,
       }}
     >

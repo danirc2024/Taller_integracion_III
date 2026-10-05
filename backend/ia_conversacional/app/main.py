@@ -82,4 +82,4 @@ def health_check():
 # --------------------------------------------------------------------------
 
 app.include_router(crear_router_productos(repositorio_productos))
-app.include_router(crear_router_chat(repositorio_productos, proveedor_groq, proveedor_gemini, proveedor_fallback))
+app.include_router(crear_router_chat(repositorio_productos, proveedor_groq, proveedor_gemini))
