@@ -11,7 +11,8 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-load_dotenv(BASE_DIR / ".env")
+PROJECT_ROOT = BASE_DIR.parent.parent
+load_dotenv(PROJECT_ROOT / ".env")
 
 PRODUCTOS_PATH = BASE_DIR / "productos.json"
 

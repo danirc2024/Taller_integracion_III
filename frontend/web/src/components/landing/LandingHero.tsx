@@ -6,11 +6,7 @@ import landingData from "@/data/landing.json";
 export function LandingHero() {
   return (
     <section className="relative py-20 overflow-hidden">
-      {/* Deco orbs pastel */}
-      <div className="absolute rounded-full blur-[60px] opacity-40 pointer-events-none z-0 w-[280px] h-[280px] bg-[var(--landing-amber)] -top-[60px] -right-[40px]" />
-      {/* Fix #23: cambiar olive (verde grisáceo que parecía suciedad) por amber (durazno) */}
-      <div className="absolute rounded-full blur-[60px] opacity-25 pointer-events-none z-0 w-[320px] h-[320px] bg-[var(--landing-amber)] -bottom-[80px] -left-[80px]" />
-      <div className="absolute rounded-full blur-[60px] opacity-25 pointer-events-none z-0 w-[200px] h-[200px] bg-[var(--landing-terracotta)] top-[40%] right-[20%]" />
+      {/* Deco orbs pastel eliminadas a petición del usuario */}
 
       <div className="max-w-[1440px] mx-auto px-4 md:px-6 grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-[3rem] md:gap-[4rem] items-center relative z-10">
         {/* Columna izquierda */}
