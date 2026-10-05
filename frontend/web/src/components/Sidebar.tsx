@@ -4,39 +4,40 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import {
- ChevronDown,
- Flame,
- Heart,
- MapPin,
- Percent,
- Store,
- Tag,
- X,
- Bot,
- Map,
- Users,
- Home,
- Zap
+    ChevronDown,
+    Flame,
+    Heart,
+    MapPin,
+    Percent,
+    Store,
+    Tag,
+    X,
+    Bot,
+    Map,
+    Users,
+    Home,
+    Zap,
+    ChefHat
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
-import { mockUser } from '@/data/mock'
 import type { UiSupermarket } from '@/types'
 
 type SideBarProps = {
- open: boolean
- onClose: () => void
- activeMarket: string | null
- availableMarkets: UiSupermarket[]
- onSelectCategory: (category: string) => void
- onSelectMarket: (id: string | null) => void
+    open: boolean
+    onClose: () => void
+    activeMarket: string | null
+    availableMarkets: UiSupermarket[]
+    onSelectCategory: (category: string) => void
+    onSelectMarket: (id: string | null) => void
+    userPlan?: 'Usuario' | 'Plus'
+    activeCity?: string
 }
 
 const featured = [
  { id: 'ofertas', label: 'Mejores ofertas', icon: Flame },
  { id: 'descuentos', label: 'Mayor descuento', icon: Percent },
  { id: 'marcas', label: 'Marcas blancas', icon: Tag },
- { id: 'favoritos', label: 'Mis favoritos', icon: Heart },
 ]
 
 const departments: { id: string; label: string; items: string[] }[] = [
@@ -99,6 +100,8 @@ export function SideBar({
  availableMarkets,
  onSelectCategory,
  onSelectMarket,
+ userPlan,
+ activeCity
 }: SideBarProps) {
  const [openDept, setOpenDept] = useState<string | null>(null)
  const navigate = useNavigate()
@@ -170,11 +173,11 @@ export function SideBar({
               <li>
                 <Link
                   to="/dashboard"
-                  onClick={onClose}
+                  onClick={() => { onSelectCategory(""); onClose(); }}
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-primary-foreground bg-primary transition-colors shadow-[4px_4px_0px_var(--color-border)] border-2 border-border hover:bg-primary/90"
                 >
                   <Home className="h-4.5 w-4.5" aria-hidden="true" />
-                  Inicio
+                  Inicio (Ver todo)
                 </Link>
               </li>
             </ul>
@@ -214,9 +217,9 @@ export function SideBar({
  <Link
  to="/chat"
  onClick={onClose}
- className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 transition-colors"
+ className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
  >
- <Bot className="h-4.5 w-4.5"aria-hidden="true"/>
+ <Bot className="h-4.5 w-4.5 text-muted-foreground"aria-hidden="true"/>
  Chat Inteligente
  </Link>
  </li>
@@ -228,6 +231,16 @@ export function SideBar({
  >
  <Map className="h-4.5 w-4.5 text-muted-foreground"aria-hidden="true"/>
  Listas y Rutas
+ </Link>
+ </li>
+ <li>
+ <Link
+ to="/recetas"
+ onClick={onClose}
+ className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+ >
+ <ChefHat className="h-4.5 w-4.5 text-muted-foreground"aria-hidden="true"/>
+ Recetas IA
  </Link>
  </li>
  <li>
@@ -257,7 +270,6 @@ export function SideBar({
  type="button"
  onClick={() => {
  setOpenDept((prev) => (prev === dept.id ? null : dept.id))
- handleCategoryClick(dept.label, false)
  }}
  aria-expanded={expanded}
  className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
@@ -280,6 +292,15 @@ export function SideBar({
  }`}
  >
  <ul className="ml-6 overflow-hidden border-l border-border pl-3">
+ <li>
+  <button
+  type="button"
+  onClick={() => handleCategoryClick(dept.label)}
+  className="flex w-full items-center rounded-md px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent hover:text-primary"
+  >
+  Ver todo en {dept.label.split(',')[0]}
+  </button>
+ </li>
  {dept.items.map((item) => (
  <li key={item}>
  <button
@@ -362,13 +383,13 @@ export function SideBar({
  className="flex items-center justify-between rounded-xl border-2 border-border bg-card p-3 shadow-sm transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0px_var(--color-border)] group"
  >
  <div className="flex items-center gap-3">
- <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${mockUser.plan === 'Plus' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-muted text-muted-foreground'}`}>
+ <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${userPlan === 'Plus' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-muted text-muted-foreground'}`}>
  <Zap className="h-4 w-4" aria-hidden="true" />
  </div>
  <div className="flex flex-col text-left">
  <span className="text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground">Tu Plan</span>
- <span className={`text-sm font-bold ${mockUser.plan === 'Plus' ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}`}>
- {mockUser.plan === 'Plus' ? 'Suscripción Plus' : 'Plan Básico'}
+ <span className={`text-sm font-bold ${userPlan === 'Plus' ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}`}>
+ {userPlan === 'Plus' ? 'Suscripción Plus' : 'Plan Básico'}
  </span>
  </div>
  </div>
@@ -380,7 +401,7 @@ export function SideBar({
  <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm text-muted-foreground">
  <MapPin className="h-4 w-4 text-primary"aria-hidden="true"/>
  Comparando en{' '}
- <span className="font-medium text-foreground">Temuco</span>
+ <span className="font-medium text-foreground">{activeCity || 'Tu Ciudad'}</span>
  </div>
  </div>
  </aside>

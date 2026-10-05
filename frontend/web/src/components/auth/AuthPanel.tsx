@@ -23,17 +23,17 @@ export function AuthPanel() {
   const location = useLocation()
   const initialTab = location.state?.tab === "signup" ? "signup" : "login"
   const [tab, setTab] = useState(initialTab)
-  
+
   const [loginEmail, setLoginEmail] = useState("")
   const [loginPassword, setLoginPassword] = useState("")
-  
+
   const [signupEmail, setSignupEmail] = useState("")
   const [signupPassword, setSignupPassword] = useState("")
-  
+
   const [showLoginPw, setShowLoginPw] = useState(false)
   const [showSignupPw, setShowSignupPw] = useState(false)
   const { login, register, logout, isLoading, error: authError } = useAuth()
-  
+
   const [errors, setErrors] = useState<{ loginEmail?: string; loginPassword?: string; signupEmail?: string; signupPassword?: string }>({})
 
   const navigate = useNavigate()
@@ -41,7 +41,7 @@ export function AuthPanel() {
 
   const handleLogin = async (e?: React.FormEvent) => {
     e?.preventDefault()
-    
+
     const newErrors: typeof errors = {}
     if (!loginEmail.includes("@")) {
       newErrors.loginEmail = "Ingresa un correo electrónico válido"
@@ -49,16 +49,16 @@ export function AuthPanel() {
     if (!loginPassword) {
       newErrors.loginPassword = "Contraseña requerida"
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
     }
-    
+
     setErrors({})
-    
+
     const exito = await login({ correo: loginEmail, password: loginPassword })
-    
+
     if (exito) {
       toast("Inicio de sesión exitoso", "success")
       navigate("/dashboard")
@@ -67,7 +67,7 @@ export function AuthPanel() {
 
   const handleSignup = async (e?: React.FormEvent) => {
     e?.preventDefault()
-    
+
     const newErrors: typeof errors = {}
     if (!signupEmail.includes("@")) {
       newErrors.signupEmail = "Ingresa un correo electrónico válido"
@@ -80,17 +80,19 @@ export function AuthPanel() {
       setErrors(newErrors)
       return
     }
-    
+
     setErrors({})
-    
-    const nombreTemporal = `Usuario ${Math.floor(Math.random() * 10000)}`
-    
+
+    // Generamos un sufijo a partir del correo para evitar IDs aleatorios si es posible
+    const prefijoCorreo = signupEmail.split('@')[0];
+    const nombreTemporal = `Usuario ${prefijoCorreo}`;
+
     const exito = await register({
       correo: signupEmail,
       password: signupPassword,
       nombre_completo: nombreTemporal
     })
-    
+
     if (exito) {
       toast("Cuenta creada con éxito. Revisa tu correo.", "success")
       navigate("/onboarding")
@@ -145,7 +147,7 @@ export function AuthPanel() {
                     <Lock className="size-4" /> {authError}
                   </div>
                 )}
-                
+
                 <FieldGroup>
                   <Field data-invalid={!!errors.loginEmail}>
                     <FieldLabel htmlFor="login-email">Correo electrónico</FieldLabel>
@@ -210,10 +212,10 @@ export function AuthPanel() {
 
               <FieldSeparator className="my-6">O continuar con</FieldSeparator>
               <SocialButtons onClick={handleLogin} />
-              
+
               <div className="mt-6 flex justify-center">
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-transparent"
                   onClick={() => { logout(); navigate('/dashboard'); }}
                 >
@@ -239,7 +241,7 @@ export function AuthPanel() {
                     <Lock className="size-4" /> {authError}
                   </div>
                 )}
-                
+
                 <FieldGroup>
                   <Field data-invalid={!!errors.signupEmail}>
                     <FieldLabel htmlFor="signup-email">Correo electrónico</FieldLabel>
