@@ -784,7 +784,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 ## Mapa auto-generado: Frontend (React + TypeScript)
 
-**76 archivos activos** (excluidos kebab-case obsoletos)
+**77 archivos activos** (excluidos kebab-case obsoletos)
 
 
 ### `core/routes.ts`
@@ -864,7 +864,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 ### `app/router.tsx`
 
 - Exports: AppRouter
-- Imports locales: @/components/ErrorBoundary, @/components/auth/ProtectedRoute, @/contexts/AuthContext, @/contexts/CartContext, @/contexts/ToastContext, @/core/routes, @/layouts/MainLayout, @/pages/Chatbot, @/pages/Crowdsourcing, @/pages/Dashboard, @/pages/History, @/pages/Home, @/pages/Login, @/pages/NotFound, @/pages/Onboarding, @/pages/Planes, @/pages/ProductDetail, @/pages/Profile, @/pages/RouteViewer, @/pages/mocks/MockShell
+- Imports locales: @/components/ErrorBoundary, @/components/auth/ProtectedRoute, @/contexts/AuthContext, @/contexts/CartContext, @/contexts/ToastContext, @/core/routes, @/layouts/MainLayout, @/pages/Chatbot, @/pages/Crowdsourcing, @/pages/Dashboard, @/pages/History, @/pages/Home, @/pages/Login, @/pages/NotFound, @/pages/Onboarding, @/pages/Planes, @/pages/ProductDetail, @/pages/Profile, @/pages/RouteViewer, @/pages/Terms, @/pages/mocks/MockShell
 
 ### `components/BottomNav.tsx`
 
@@ -906,7 +906,7 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 
 - Exports: SideBar
 - Tipos: SideBarProps
-- Imports locales: @/components/ui/button, @/data/mock, @/types
+- Imports locales: @/components/ui/button, @/types
 
 ### `components/TopNav.tsx`
 
@@ -1149,6 +1149,11 @@ Servicios de infraestructura: Kubernetes (UCT), PostgreSQL 15+PostGIS, Redis (br
 - Exports: RouteViewer
 - Tipos: as
 - Imports locales: @/components/ui/skeleton, @/hooks/useRouteOptimization, @/lib/utils
+
+### `pages/Terms.tsx`
+
+- Exports: Terms
+- Imports locales: @/components/ui/button
 
 ### `pages/mocks/MockShell.tsx`
 
