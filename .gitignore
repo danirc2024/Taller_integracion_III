@@ -49,6 +49,7 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+.obsidian/
 
 # ===============================
 # Archivos de compilación LaTeX
