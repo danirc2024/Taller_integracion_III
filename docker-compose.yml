@@ -12,6 +12,11 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./infrastructure/db:/docker-entrypoint-initdb.d
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - microservices_net
     deploy:
@@ -39,9 +44,13 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_URL=postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
       - REDIS_URL=redis://redis:6379/0
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - JWT_SECRET=${JWT_SECRET:?Define JWT_SECRET en el entorno local}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
       # [!] EQUIPO BACKEND: Descomentar los volumenes para desarrollo local
       # volumes:
       # - ./backend/api:/app
@@ -56,12 +65,46 @@ services:
     networks:
       microservices_net:
         aliases:
-          - api
+          - api-backend
     deploy:
       resources:
         limits:
           cpus: '0.3'
           memory: 500M
+  gateway:
+    build:
+      context: ./backend/gateway
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8082:8080"
+    environment:
+      BACKEND_URL: http://go_service:8080
+      GATEWAY_LISTEN_ADDR: :8080
+      GATEWAY_TRUSTED_PROXIES: ${GATEWAY_TRUSTED_PROXIES:-}
+    depends_on:
+      go_service:
+        condition: service_healthy
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/_gateway/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      microservices_net:
+        aliases:
+          - api
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
   frontend:
     build:
       context: ./frontend/web
@@ -73,10 +116,13 @@ services:
       - 3000:3000
     environment:
       - VITE_API_URL=/api/v1
-      - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
     volumes:
       - ./frontend/web:/app
       - /app/node_modules
+    depends_on:
+      gateway:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - microservices_net
@@ -91,6 +137,11 @@ services:
     ports:
       - 6379:6379
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - microservices_net
     deploy:
@@ -108,7 +159,10 @@ services:
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-missing}
       - DISCORD_CHANNEL_ID=${DISCORD_CHANNEL_ID:-missing}
       - DISCORD_PUSH_CHANNEL_ID=${DISCORD_PUSH_CHANNEL_ID:-}
-      - SCRAPER_API_BASE_URL=http://go_service_api:8080/api/v1/scraper/trabajos
+      - SCRAPER_API_BASE_URL=http://api:8080/api/v1/scraper/trabajos
+    depends_on:
+      gateway:
+        condition: service_healthy
     ports:
       - 8081:8081
     deploy:
@@ -130,10 +184,12 @@ services:
       - scraper_core.worker
     environment:
       - REDIS_URL=redis://redis:6379/0
-      - SCRAPER_API_URL=http://go_service:8080/api/v1/scraper/productos
+      - SCRAPER_API_URL=http://api:8080/api/v1/scraper/productos
     depends_on:
-      - redis
-      - go_service
+      redis:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
     volumes:
       - ./backend/scraper:/app
     restart: unless-stopped

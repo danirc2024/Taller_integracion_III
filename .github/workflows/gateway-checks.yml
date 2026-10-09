@@ -1,0 +1,78 @@
+name: Gateway checks
+
+on:
+  pull_request:
+    branches: [main, develop, develop-refactor]
+    paths:
+      - 'backend/gateway/**'
+      - 'backend/api/**'
+      - 'frontend/web/**'
+      - 'docker-compose*.yml'
+      - 'infrastructure/k8s/**'
+      - 'scripts/smoke_gateway_compose.sh'
+      - '.github/workflows/**'
+  push:
+    branches: [develop-refactor]
+    paths:
+      - 'backend/gateway/**'
+      - 'backend/api/**'
+      - 'frontend/web/**'
+      - 'docker-compose*.yml'
+      - 'infrastructure/k8s/**'
+      - 'scripts/smoke_gateway_compose.sh'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gateway:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache: false
+      - name: Gateway tests and build
+        working-directory: backend/gateway
+        run: |
+          go test -race ./...
+          go vet ./...
+          go build ./cmd/gateway
+      - name: Build runtime image
+        run: docker build -t sup265-gateway:local backend/gateway
+
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compose smoke and rollback
+        run: bash scripts/smoke_gateway_compose.sh
+
+  manifests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache: false
+      - name: Install schema validator
+        run: go install github.com/yannh/kubeconform/cmd/kubeconform@v0.7.0
+      - name: Validate Gateway Kubernetes manifests
+        run: |
+          kubeconform -strict -summary -kubernetes-version 1.32.0 \
+            infrastructure/k8s/gateway/ \
+            infrastructure/k8s/api/service.yaml \
+            infrastructure/k8s/api/backend-service.yaml

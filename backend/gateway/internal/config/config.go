@@ -19,6 +19,7 @@ type Config struct {
 	ReadHeaderTimeout     time.Duration
 	IdleTimeout           time.Duration
 	ShutdownTimeout       time.Duration
+	ReadinessTimeout      time.Duration
 	TrustedProxies        []netip.Prefix
 }
 
@@ -64,6 +65,7 @@ func Load(getenv func(string) string) (Config, error) {
 		{"GATEWAY_READ_HEADER_TIMEOUT", &c.ReadHeaderTimeout, 5 * time.Second},
 		{"GATEWAY_IDLE_TIMEOUT", &c.IdleTimeout, 60 * time.Second},
 		{"GATEWAY_SHUTDOWN_TIMEOUT", &c.ShutdownTimeout, 10 * time.Second},
+		{"GATEWAY_READINESS_TIMEOUT", &c.ReadinessTimeout, 2 * time.Second},
 	} {
 		*item.value = item.fallback
 		if value := getenv(item.name); value != "" {

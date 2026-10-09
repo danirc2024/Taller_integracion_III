@@ -40,6 +40,10 @@ func New(c config.Config, logger *slog.Logger) *Gateway {
 	writes.DisableKeepAlives = true
 	writes.Protocols = new(http.Protocols)
 	writes.Protocols.SetHTTP1(true)
+	readinessClient := &http.Client{
+		Transport:     reads,
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}
 
 	reverse := &httputil.ReverseProxy{
 		Transport: methodTransport{reads: reads, writes: writes},
@@ -115,6 +119,48 @@ func New(c config.Config, logger *slog.Logger) *Gateway {
 			response.WriteHeader(http.StatusOK)
 			if r.Method != http.MethodHead {
 				_, _ = io.WriteString(response, "{\"status\":\"ok\",\"service\":\"gateway\"}\n")
+			}
+			return
+		}
+		if r.URL.Path == "/_gateway/ready" {
+			if r.Method != http.MethodGet && r.Method != http.MethodHead {
+				response.Header().Set("Allow", "GET, HEAD")
+				response.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			ctx, cancel := context.WithTimeout(r.Context(), c.ReadinessTimeout)
+			defer cancel()
+			target := *c.Backend
+			target.Path, target.RawPath, target.RawQuery = "/api/v1/health", "", ""
+			probe, _ := http.NewRequestWithContext(ctx, http.MethodGet, target.String(), nil)
+			probe.Header.Set("X-Request-ID", id)
+			checks := map[string]string{"backend": "error", "database": "error", "redis": "error"}
+			res, err := readinessClient.Do(probe)
+			if err == nil {
+				defer res.Body.Close()
+				var health struct {
+					Status string            `json:"status"`
+					Checks map[string]string `json:"checks"`
+				}
+				if res.StatusCode == http.StatusOK && json.NewDecoder(io.LimitReader(res.Body, 64*1024)).Decode(&health) == nil && health.Status == "ok" {
+					checks["backend"] = "ok"
+					for _, dependency := range []string{"database", "redis"} {
+						if health.Checks[dependency] == "ok" {
+							checks[dependency] = "ok"
+						}
+					}
+				}
+			}
+			status, state := http.StatusOK, "ok"
+			for _, check := range checks {
+				if check != "ok" {
+					status, state = http.StatusServiceUnavailable, "not_ready"
+				}
+			}
+			response.Header().Set("Content-Type", "application/json; charset=utf-8")
+			response.WriteHeader(status)
+			if r.Method != http.MethodHead {
+				_ = json.NewEncoder(response).Encode(map[string]any{"status": state, "service": "gateway", "checks": checks})
 			}
 			return
 		}

@@ -1,0 +1,24 @@
+# Docker Compose >= 2.24.4. Return api:8080 to the existing backend.
+services:
+  go_service:
+    networks:
+      microservices_net:
+        aliases: !override [api-backend, api]
+  gateway:
+    networks:
+      microservices_net:
+        aliases: !override []
+  frontend:
+    depends_on: !override
+      go_service:
+        condition: service_healthy
+  bot_discord:
+    depends_on: !override
+      go_service:
+        condition: service_healthy
+  scraper_worker:
+    depends_on: !override
+      redis:
+        condition: service_healthy
+      go_service:
+        condition: service_healthy
