@@ -180,16 +180,15 @@ func forwardingIdentity(r *http.Request, trusted []netip.Prefix) (string, string
 		scheme = forwarded
 	}
 	chain := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
-	addresses := make([]netip.Addr, 0, len(chain))
-	for _, entry := range chain {
-		addr, err := netip.ParseAddr(strings.TrimSpace(entry))
+	// Walk only the trusted suffix. An untrusted client may prepend malformed
+	// values; parsing those first would discard the client IP appended by ingress.
+	for i := len(chain) - 1; i >= 0 && isTrusted(peer, trusted); i-- {
+		addr, err := netip.ParseAddr(strings.TrimSpace(chain[i]))
 		if err != nil {
-			return peer.String(), scheme
+			// Do not skip a malformed hop or trust any values to its left.
+			break
 		}
-		addresses = append(addresses, addr.Unmap())
-	}
-	for i := len(addresses) - 1; i >= 0 && isTrusted(peer, trusted); i-- {
-		peer = addresses[i]
+		peer = addr.Unmap()
 	}
 	return peer.String(), scheme
 }

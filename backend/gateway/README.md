@@ -60,7 +60,9 @@ conexiones internas no usan automáticamente el proxy de salida de la máquina.
 - Reconstruye los headers `X-Forwarded-*`. Sin proxies confiables configurados,
   usa la IP de la conexión y el protocolo real de entrada. Si el peer inmediato
   es confiable, recorre la cadena de IPs desde la derecha hasta el primer salto
-  no confiable, para que un cliente no pueda falsificar la primera IP.
+  no confiable, para que un cliente no pueda falsificar la primera IP. Se detiene
+  también ante un salto inválido, sin saltarlo ni inspeccionar su prefijo. Así,
+  `invalid_string, 203.0.113.5` conserva la IP real que anexó el proxy confiable.
 - Antes de colocarla detrás de Nginx/Ingress, configurar los CIDRs/IPs reales de
   ese proxy; no confiar en todas las redes. De lo contrario el rate limiter
   existente verá la IP del proxy en vez de la del cliente. El backend también

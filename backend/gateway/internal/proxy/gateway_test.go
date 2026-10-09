@@ -337,6 +337,42 @@ func TestTrustedProxyCannotSupplyForgedClientChain(t *testing.T) {
 	}
 }
 
+func TestTrustedProxyHandlesMalformedClientChain(t *testing.T) {
+	for _, tc := range []struct{ name, chain, expectedIP string }{
+		{"malformed_prefix", "invalid_string, 203.0.113.5", "203.0.113.5"},
+		{"empty_prefix", ", 203.0.113.5", "203.0.113.5"},
+		{"multiple_trusted_hops", "invalid_string, 203.0.113.5, 10.0.0.2", "203.0.113.5"},
+		{"mapped_addresses", "invalid_string, ::ffff:203.0.113.5, ::ffff:10.0.0.2", "203.0.113.5"},
+		{"malformed_boundary", "203.0.113.200, invalid_string, 10.0.0.2", "10.0.0.2"},
+		{"malformed_nearest_hop", "203.0.113.200, invalid_string", "127.0.0.1"},
+		{"missing_chain", "", "127.0.0.1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			observed := make(chan http.Header, 1)
+			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				observed <- r.Header.Clone()
+			}))
+			defer backend.Close()
+			gateway := gatewayFor(t, backend.URL, map[string]string{"GATEWAY_TRUSTED_PROXIES": "127.0.0.1,10.0.0.0/8"}, nil)
+			req, _ := http.NewRequest("GET", gateway.URL+"/", nil)
+			req.Header.Set("X-Forwarded-For", tc.chain)
+			req.Header.Set("X-Forwarded-Proto", "https")
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_ = bodyOf(t, res)
+			if res.StatusCode != http.StatusOK {
+				t.Fatalf("request failed: %d", res.StatusCode)
+			}
+			got := <-observed
+			if got.Get("X-Forwarded-For") != tc.expectedIP || got.Get("X-Forwarded-Proto") != "https" {
+				t.Fatalf("chain %q: expected client IP %s and HTTPS, received %v", tc.chain, tc.expectedIP, got)
+			}
+		})
+	}
+}
+
 func TestRequestIDAndLogsDoNotExposeCredentials(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))
