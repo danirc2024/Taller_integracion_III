@@ -107,6 +107,12 @@ La tarea en curso es SUP-267: Catálogo y precios como servicio independiente.
 Su rama `backend/refactor/sup-267-extraer-catalogo-vmatus` parte de `b2d1b5f`.
 La activación de rutas y despliegues corresponde a SUP-268. Consultar
 `GUIA_CATALOGO_INDEPENDIENTE.md` para alcance y brechas funcionales previas.
+El review de seguridad de PR #94 detectó dos deudas heredadas: CORS con reflexión
+de cualquier origen y exposición de errores internos. Se corrigen en Catálogo
+con `CORS_ALLOWED_ORIGINS`, mensajes públicos genéricos y logs correlacionados.
+Al activar SUP-268, configurar los orígenes exactos del frontend. La política
+CORS y los errores de las otras rutas de la API heredada requieren seguimiento
+propio; esta corrección no cambia el proceso de Identidad ni sus cookies.
 Los squashes ya incorporaron el contenido de las ramas anteriores; evitar
 reintroducir sus commits históricos al preparar la siguiente tarea.
 

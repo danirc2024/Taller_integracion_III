@@ -6,7 +6,7 @@ import (
 )
 
 func TestLoad(t *testing.T) {
-	for _, name := range []string{"DB_URL", "JWT_SECRET", "PORT", "DB_MAX_OPEN_CONNS", "DB_MAX_IDLE_CONNS", "DB_CONN_MAX_LIFETIME"} {
+	for _, name := range []string{"DB_URL", "JWT_SECRET", "PORT", "DB_MAX_OPEN_CONNS", "DB_MAX_IDLE_CONNS", "DB_CONN_MAX_LIFETIME", "CORS_ALLOWED_ORIGINS"} {
 		t.Setenv(name, "")
 	}
 	if _, err := Load(); err == nil {
@@ -32,5 +32,28 @@ func TestLoad(t *testing.T) {
 				t.Fatal("se aceptó una configuración inválida")
 			}
 		})
+	}
+}
+
+func TestCORSOriginsConfiguration(t *testing.T) {
+	t.Setenv("DB_URL", "postgres://test-only")
+	t.Setenv("JWT_SECRET", "test-only")
+	for _, origin := range []string{"*", "null", "https://*.example.com", "https://example.com/path", "https://user@example.com", "https://example.com?", "https://example.com#", "https://example.com,", "example.com", "ftp://example.com"} {
+		t.Run(origin, func(t *testing.T) {
+			t.Setenv("CORS_ALLOWED_ORIGINS", origin)
+			if _, err := Load(); err == nil {
+				t.Fatal("se aceptó un origen inválido")
+			}
+		})
+	}
+	t.Setenv("CORS_ALLOWED_ORIGINS", " https://frontend.example, http://localhost:5173 ")
+	cfg, err := Load()
+	if err != nil || len(cfg.CORSAllowedOrigins) != 2 || cfg.CORSAllowedOrigins[1] != "http://localhost:5173" {
+		t.Fatalf("lista explícita inválida: %v", err)
+	}
+	t.Setenv("CORS_ALLOWED_ORIGINS", "")
+	cfg, err = Load()
+	if err != nil || len(cfg.CORSAllowedOrigins) != 0 {
+		t.Fatal("CORS no queda cerrado por defecto")
 	}
 }

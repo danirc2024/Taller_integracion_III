@@ -17,6 +17,12 @@ El servicio lee variables de entorno; no carga `.env` automáticamente. La clave
 JWT debe coincidir con la utilizada por Identidad. La configuración de ejemplo
 usa el puerto 8083 para convivir con la API actual.
 
+`CORS_ALLOWED_ORIGINS` contiene orígenes HTTP(S) exactos separados por comas
+(sin rutas ni comodines). Configurar los orígenes del frontend para cada entorno;
+el ejemplo habilita sólo dos puertos locales. Si está vacío, las peticiones con
+`Origin` reciben 403; las peticiones sin `Origin` siguen disponibles y requieren
+JWT/rol en administración. CORS no reemplaza autenticación ni protección CSRF.
+
 ```bash
 go test -race ./...
 go vet ./...

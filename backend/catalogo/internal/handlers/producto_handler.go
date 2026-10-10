@@ -99,6 +99,7 @@ func (h *ProductoHandler) ObtenerProductos(c *gin.Context) {
 			})
 			return
 		}
+		middleware.LogInternalError(c, err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error interno al obtener los productos del catálogo",
 		})
@@ -184,7 +185,7 @@ func (h *ProductoHandler) ObtenerProductosAdmin(c *gin.Context) {
 	resultado, err := h.service.ObtenerCatalogoAdmin(c.Request.Context(), filtro)
 	if err != nil {
 		if errors.Is(err, services.ErrBusquedaCorta) {
-			middleware.ResponderError(c, http.StatusBadRequest, err.Error(), err)
+			middleware.ResponderError(c, http.StatusBadRequest, services.ErrBusquedaCorta.Error(), middleware.ErrorValidacion{Mensaje: services.ErrBusquedaCorta.Error()})
 			return
 		}
 		middleware.ResponderError(c, http.StatusInternalServerError, "Error interno al obtener los productos para administración", err)
@@ -238,6 +239,7 @@ func (h *ProductoHandler) BuscarProductos(c *gin.Context) {
 			})
 			return
 		}
+		middleware.LogInternalError(c, err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error interno al buscar productos",
 		})
@@ -268,6 +270,7 @@ func (h *ProductoHandler) ObtenerDetalleProducto(c *gin.Context) {
 			})
 			return
 		}
+		middleware.LogInternalError(c, err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error interno al obtener el detalle del producto",
 		})

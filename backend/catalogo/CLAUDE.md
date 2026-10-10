@@ -2,7 +2,7 @@
 
 ## Mapa auto-generado: Catálogo y precios (Go + Gin)
 
-**18 archivos .go** detectados
+**19 archivos .go** detectados
 
 
 ### `cmd/catalogo/main.go` (package main)
@@ -23,6 +23,7 @@
 ### `internal/config/config_test.go` (package config)
 
 - `TestLoad(t *testing.T)`
+- `TestCORSOriginsConfiguration(t *testing.T)`
 
 ### `internal/domain/producto.go` (package domain)
 
@@ -42,11 +43,13 @@
 
 ### `internal/middleware/error_handler.go` (package middleware)
 
-- Structs: RespuestaError
-- `ErrorHandler() gin.HandlerFunc`
+- Structs: RespuestaError, ErrorValidacion
+- `(ErrorValidacion).Error() string`
+- `ErrorHandler(logger *slog.Logger) gin.HandlerFunc`
 - `NotFoundHandler() gin.HandlerFunc`
 - `MethodNotAllowedHandler() gin.HandlerFunc`
 - `ResponderError(c *gin.Context, estado int, mensaje string, err error)`
+- `LogInternalError(c *gin.Context, err error)`
 
 ### `internal/middleware/jwt_auth.go` (package middleware)
 
@@ -66,8 +69,8 @@
 
 ### `internal/server/server.go` (package server)
 
-- `NewRouter(service services.ProductoService, secret string, ping func(context.Context) error, logger *slog.Logger) *gin.Engine`
-- `cors() gin.HandlerFunc`
+- `NewRouter(service services.ProductoService, secret string, ping func(context.Context) error, logger *slog.Logger, allowedOrigins []string) *gin.Engine`
+- `cors(allowedOrigins []string) gin.HandlerFunc`
 - `observe(logger *slog.Logger) gin.HandlerFunc`
 
 ### `internal/services/producto_service.go` (package services)
@@ -100,6 +103,12 @@
 - `TestProductoService_Busqueda_Minimo3Caracteres(t *testing.T)`
 - `TestProductoService_ObtenerPorID(t *testing.T)`
 - `TestProductoService_ObtenerCatalogoAdmin(t *testing.T)`
+
+### `internal/tests/security_test.go` (package tests)
+
+- `TestCatalogCORS(t *testing.T)`
+- `TestCatalogInternalErrorsArePrivate(t *testing.T)`
+- `TestOnlyControlledValidationDetailsArePublic(t *testing.T)`
 
 ### `internal/tests/server_test.go` (package tests)
 

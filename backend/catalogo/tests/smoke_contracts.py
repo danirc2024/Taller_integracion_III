@@ -49,6 +49,8 @@ def catalog(path, status=200, **kwargs):
 if args.database_down:
     catalog('/_catalogo/live')
     catalog('/_catalogo/ready', 503)
+    failure = catalog('/api/v1/productos', 500)
+    assert failure == {'error': 'Error interno al obtener los productos del catálogo'}
     print(json.dumps({'mode': 'database-down', 'passed': len(checks), 'failed': 0}))
     raise SystemExit(0)
 
@@ -68,9 +70,20 @@ def compare(path, status=200, method='GET', opener=None, headers=None):
     old = request(args.api_url, path, method=method, opener=opener, headers=headers)
     new = request(args.catalogo_url, path, method=method, opener=opener, headers=headers)
     assert old[0] == new[0] == status, 'Status differs for ' + path
-    assert old[2] == new[2], 'JSON differs for ' + path
-    for header in ('Content-Type', 'Access-Control-Allow-Origin', 'Access-Control-Allow-Credentials'):
-        assert old[1].get(header) == new[1].get(header), 'Header differs: ' + header
+    # Endurecimiento deliberado: no publicar diagnósticos JWT/rol en 401/403.
+    old_body = dict(old[2])
+    if status in (401, 403):
+        old_body.pop('detalle', None)
+        assert 'detalle' not in new[2], 'Authentication diagnostic exposed'
+    assert old_body == new[2], 'JSON differs for ' + path
+    assert old[1].get('Content-Type') == new[1].get('Content-Type'), 'Content-Type differs'
+    if not headers or 'Origin' not in headers:
+        assert 'Access-Control-Allow-Origin' not in new[1]
+        assert 'Access-Control-Allow-Credentials' not in new[1]
+    else:
+        assert new[1].get('Access-Control-Allow-Origin') == headers['Origin']
+        assert new[1].get('Access-Control-Allow-Credentials') == 'true'
+        assert 'Origin' in new[1].get('Vary', '')
     checks.append(method + ' ' + path + ': compatible')
     return new[2]
 
@@ -106,6 +119,20 @@ for base in (args.api_url, args.catalogo_url):
         assert response.headers['Access-Control-Allow-Origin'] == origin['Origin']
         assert response.headers['Access-Control-Allow-Credentials'] == 'true'
 checks.append('OPTIONS: CORS compatible')
+compare('/api/v1/productos', headers={'Origin': origin['Origin']})
+for rejected in ('https://evil.example', 'https://frontend.example.evil.test', 'null'):
+    req = urllib.request.Request(args.catalogo_url + '/api/v1/admin/productos',
+                                 method='OPTIONS', headers={'Origin': rejected, 'Access-Control-Request-Method': 'GET'})
+    try:
+        client().open(req, timeout=5)
+        raise AssertionError('Untrusted preflight accepted')
+    except urllib.error.HTTPError as error:
+        with error:
+            assert error.code == 403
+            assert error.headers.get('Access-Control-Allow-Origin') is None
+            assert error.headers.get('Access-Control-Allow-Credentials') is None
+            assert 'Origin' in error.headers.get('Vary', '')
+    checks.append('Rejected preflight: ' + rejected)
 
 for email, expected in (('registered.sup267@example.test', 403), ('admin.sup267@example.test', 200)):
     opener = client()
@@ -115,6 +142,13 @@ for email, expected in (('registered.sup267@example.test', 403), ('admin.sup267@
     compare('/api/v1/admin/productos', expected, opener=opener)
     compare('/api/v1/admin/productos/', expected, opener=opener)
     if expected == 200:
+        compare('/api/v1/admin/productos', opener=opener, headers={'Origin': origin['Origin']})
+        status, blocked_headers, blocked_body = request(args.catalogo_url, '/api/v1/admin/productos',
+            opener=opener, headers={'Origin': 'https://evil.example'})
+        assert status == 403 and blocked_body['mensaje'] == 'Origen no permitido.'
+        assert 'Access-Control-Allow-Origin' not in blocked_headers
+        assert 'Access-Control-Allow-Credentials' not in blocked_headers
+        checks.append('Untrusted origin rejected with real admin cookie')
         for path in (
             '/api/v1/admin/productos?sku=SUP267&en_stock=false&sort_by=sku',
             '/api/v1/admin/productos?en_stock=true&limit=5&sort_by=ultima_extraccion&order=desc',

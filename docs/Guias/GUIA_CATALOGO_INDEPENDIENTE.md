@@ -65,8 +65,36 @@ Catálogo no reemplazan ese contrato. Readiness consulta PostgreSQL con un lími
 de dos segundos; comprueba conectividad, no la integridad completa del esquema.
 
 Las rutas de autenticación, scraping, IA y rutas no existen en este servicio.
-Los errores 404/405, CORS, campos JSON y permisos administrativos conservan el
-comportamiento de los endpoints extraídos.
+Los errores 404/405, campos JSON de datos y permisos administrativos conservan el
+comportamiento de los endpoints extraídos. Hay diferencias deliberadas de
+seguridad en CORS y en las respuestas de error, descritas a continuación.
+
+## Endurecimiento del review de SUP-267
+
+La API heredada reflejaba cualquier `Origin` con credenciales y devolvía errores
+internos mediante `detalle`. El servicio nuevo corrige ambos comportamientos:
+
+- `CORS_ALLOWED_ORIGINS` define una lista de orígenes HTTP(S) exactos, separados
+  por comas, sin rutas, credenciales, `null` ni comodines. Sólo esos orígenes
+  reciben cabeceras CORS con credenciales; cualquier otro recibe 403, incluso
+  con una cookie administrativa válida. Se añade `Vary: Origin` para cachés.
+- Sin configuración se rechazan peticiones que incluyan `Origin`. Las peticiones
+  sin esa cabecera continúan funcionando, sin conceder permisos CORS. La lista
+  debe configurarse para el frontend de cada entorno al activar SUP-268.
+- Los preflights permitidos anuncian sólo GET/OPTIONS y las cabeceras
+  `Content-Type`, `Authorization` y `X-Request-ID`.
+- Los errores 500 y panics devuelven mensajes genéricos sin `detalle`. El
+  diagnóstico se registra con `slog`, ruta normalizada e ID de petición. Los
+  logs internos deben tener acceso restringido, pues contienen el diagnóstico.
+- `detalle` de `ResponderError` se reserva a validaciones 400 explícitamente
+  marcadas como `ErrorValidacion`, construidas con mensajes seguros. Los
+  errores inesperados del contexto se clasifican como 500; los 401/403 ya no
+  publican detalles de verificación de JWT o rol.
+
+Las pruebas conservan los contratos de datos y validaciones, y comprueban estas
+diferencias de seguridad explícitamente. CORS no sustituye autenticación ni
+protección CSRF. La configuración de cookies de Identidad y la política CORS de
+las otras rutas de la API heredada quedan fuera de esta corrección de Catálogo.
 
 ## Autenticación y datos
 
@@ -102,6 +130,7 @@ responsabilidad de SUP-271, sin cambiar usuarios de base de datos reales aquí.
 |---|---|
 | `DB_URL` | Obligatoria; PostgreSQL con el esquema existente |
 | `JWT_SECRET` | Obligatoria; misma clave que Identidad |
+| `CORS_ALLOWED_ORIGINS` | Vacía; rechaza peticiones con `Origin` hasta configurar una lista exacta |
 | `PORT` | `8080` |
 | `DB_MAX_OPEN_CONNS` | `10` por proceso |
 | `DB_MAX_IDLE_CONNS` | `5`, sin superar las conexiones abiertas |
@@ -118,7 +147,8 @@ cierre ordenado de hasta 15 s. No reintenta consultas automáticamente.
 Los logs JSON contienen servicio, ID de petición, método, ruta registrada,
 estado y duración. Se preserva un `X-Request-ID` válido recibido desde Gateway;
 se genera uno cuando falta o tiene formato/longitud inválidos. No se registran
-cookies, JWT ni cadenas de conexión en esos logs.
+cookies ni JWT en los logs de acceso. Los logs de errores internos conservan
+diagnósticos de infraestructura y requieren acceso restringido.
 
 La imagen runtime usa UID/GID 65532, sin privilegios, y el humo la ejecuta con
 filesystem de sólo lectura y capabilities retiradas. El target `test` ejecuta
@@ -188,17 +218,20 @@ migraciones SQL que revertir en SUP-267.
 
 ## Comprobaciones realizadas
 
-- 47 resultados Go aprobados, incluyendo subpruebas, con detector de carreras;
+- 80 resultados Go aprobados, incluyendo subpruebas, con detector de carreras;
   vet y compilación aprobados.
 - Imagen runtime propia construida y target Docker `test` aprobado; UID/GID
   `65532:65532` comprobado en la configuración de la imagen.
-- 34 comprobaciones de contratos y datos contra la API de referencia aprobadas.
-- 5 comprobaciones con API/Redis detenidos y 2 con PostgreSQL detenido aprobadas.
+- 40 comprobaciones de contratos, datos y restricciones CORS aprobadas, incluyendo
+  cookies administrativas emitidas por el login real y orígenes rechazados.
+- 5 comprobaciones con API/Redis detenidos y 3 con PostgreSQL detenido aprobadas;
+  estas últimas incluyen una respuesta 500 pública sin diagnóstico interno.
 - Usuario lector de Catálogo sin lectura de usuarios ni escritura de productos
   o capturas comprobado en la base de prueba.
-- Workflows validados con `actionlint`; DTO, consultas SQL, handlers, reglas de
-  negocio y sanitización conservados respecto de la implementación extraída.
+- Workflows validados con `actionlint`; DTO, consultas SQL, reglas de negocio y
+  sanitización conservados respecto de la implementación extraída. El review
+  añade restricciones CORS, errores internos genéricos y diagnósticos en logs.
 
 La validación se realizó en recursos locales aislados y las imágenes usadas
-corresponden al código comprobado. El nuevo workflow todavía no se ha ejecutado
-en GitHub, no se ha publicado la imagen y no se ha desplegado en el clúster.
+corresponden al código comprobado. Las ejecuciones de CI se consultan en PR #94;
+no se ha publicado manualmente la imagen ni desplegado en el clúster.

@@ -2,18 +2,21 @@ package config
 
 import (
 	"errors"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
 type Config struct {
-	ListenAddr      string
-	DatabaseURL     string
-	JWTSecret       string
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
+	ListenAddr         string
+	DatabaseURL        string
+	JWTSecret          string
+	CORSAllowedOrigins []string
+	MaxOpenConns       int
+	MaxIdleConns       int
+	ConnMaxLifetime    time.Duration
 }
 
 func Load() (Config, error) {
@@ -26,6 +29,17 @@ func Load() (Config, error) {
 	}
 	if c.JWTSecret == "" {
 		return Config{}, errors.New("JWT_SECRET es obligatorio para verificar permisos administrativos")
+	}
+	if raw := strings.TrimSpace(os.Getenv("CORS_ALLOWED_ORIGINS")); raw != "" {
+		for _, entry := range strings.Split(raw, ",") {
+			origin := strings.TrimSpace(entry)
+			u, err := url.Parse(origin)
+			if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" ||
+				u.User != nil || u.Path != "" || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || strings.ContainsAny(origin, "*?#\\ \t\r\n") {
+				return Config{}, errors.New("CORS_ALLOWED_ORIGINS debe contener orígenes HTTP(S) exactos, sin rutas ni comodines")
+			}
+			c.CORSAllowedOrigins = append(c.CORSAllowedOrigins, origin)
+		}
 	}
 	port := os.Getenv("PORT")
 	if port == "" {

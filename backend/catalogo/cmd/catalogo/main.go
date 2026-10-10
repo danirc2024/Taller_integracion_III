@@ -48,7 +48,7 @@ func run(log *slog.Logger) error {
 	// readiness impide aceptar tráfico hasta que la conexión funcione.
 	service := services.NewProductoService(repositories.NewProductoRepository(db))
 	httpServer := &http.Server{
-		Addr: cfg.ListenAddr, Handler: server.NewRouter(service, cfg.JWTSecret, sqlDB.PingContext, log),
+		Addr: cfg.ListenAddr, Handler: server.NewRouter(service, cfg.JWTSecret, sqlDB.PingContext, log, cfg.CORSAllowedOrigins),
 		ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 30 * time.Second,
 		WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second,
 	}

@@ -17,10 +17,10 @@ import (
 
 // NewRouter compone sólo las rutas de Catálogo. La verificación de JWT y rol
 // sucede en este servicio, incluso cuando se accede directamente sin Gateway.
-func NewRouter(service services.ProductoService, secret string, ping func(context.Context) error, logger *slog.Logger) *gin.Engine {
+func NewRouter(service services.ProductoService, secret string, ping func(context.Context) error, logger *slog.Logger, allowedOrigins []string) *gin.Engine {
 	r := gin.New()
 	_ = r.SetTrustedProxies(nil)
-	r.Use(observe(logger), middleware.ErrorHandler(), cors())
+	r.Use(observe(logger), middleware.ErrorHandler(logger), cors(allowedOrigins))
 	r.HandleMethodNotAllowed = true
 	r.NoRoute(middleware.NotFoundHandler())
 	r.NoMethod(middleware.MethodNotAllowedHandler())
@@ -51,16 +51,26 @@ func NewRouter(service services.ProductoService, secret string, ping func(contex
 	return r
 }
 
-func cors() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		origin := c.Request.Header.Get("Origin")
-		if origin == "" {
-			origin = "*"
+func cors(allowedOrigins []string) gin.HandlerFunc {
+	allowed := make(map[string]bool, len(allowedOrigins))
+	for _, origin := range allowedOrigins {
+		if origin != "" && origin != "*" && origin != "null" {
+			allowed[origin] = true
 		}
-		c.Header("Access-Control-Allow-Origin", origin)
-		c.Header("Access-Control-Allow-Credentials", "true")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Header("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+	}
+	return func(c *gin.Context) {
+		c.Writer.Header().Add("Vary", "Origin")
+		origin := c.Request.Header.Get("Origin")
+		if origin != "" {
+			if !allowed[origin] {
+				middleware.ResponderError(c, http.StatusForbidden, "Origen no permitido.", nil)
+				return
+			}
+			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Access-Control-Allow-Credentials", "true")
+			c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Request-ID")
+			c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
+		}
 		if c.Request.Method == http.MethodOptions {
 			c.AbortWithStatus(http.StatusNoContent)
 			return

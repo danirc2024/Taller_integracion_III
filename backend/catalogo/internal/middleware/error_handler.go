@@ -1,8 +1,9 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,27 +13,31 @@ import (
 type RespuestaError struct {
 	Estado  int    `json:"estado"`            // Código numérico del estado HTTP (400, 404, 500, etc.)
 	Mensaje string `json:"mensaje"`           // Mensaje descriptivo amigable para el cliente
-	Detalle string `json:"detalle,omitempty"` // Información técnica u origen del error
+	Detalle string `json:"detalle,omitempty"` // Sólo información aprobada para el cliente
 }
 
+// ErrorValidacion identifica mensajes de validación seguros para publicar.
+// Nunca debe construirse con errores de infraestructura ni datos sensibles.
+type ErrorValidacion struct{ Mensaje string }
+
+func (e ErrorValidacion) Error() string { return e.Mensaje }
+
 // ErrorHandler es el middleware global que intercepta panics no controlados y errores del contexto
-func ErrorHandler() gin.HandlerFunc {
+func ErrorHandler(logger *slog.Logger) gin.HandlerFunc {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return func(c *gin.Context) {
+		c.Set("catalogo_error_logger", logger)
 		defer func() {
 			if r := recover(); r != nil {
-				// Captura cualquier panic no controlado en el servidor
-				log.Printf("[PANIC RECOVERY] Excepción no controlada capturada: %v", r)
-
-				detalle := fmt.Sprintf("%v", r)
-
-				// Responder con estado HTTP 500 estandarizado
-				c.JSON(http.StatusInternalServerError, RespuestaError{
-					Estado:  http.StatusInternalServerError,
-					Mensaje: "Ocurrió un error interno en el servidor.",
-					Detalle: detalle,
-				})
-
-				// Detener la ejecución del pipeline de handlers
+				LogInternalError(c, fmt.Errorf("panic: %v", r))
+				if !c.Writer.Written() {
+					c.JSON(http.StatusInternalServerError, RespuestaError{
+						Estado:  http.StatusInternalServerError,
+						Mensaje: "Ocurrió un error interno en el servidor.",
+					})
+				}
 				c.Abort()
 			}
 		}()
@@ -41,14 +46,13 @@ func ErrorHandler() gin.HandlerFunc {
 
 		// Procesar errores acumulados en el contexto Gin si aún no se ha escrito la respuesta
 		if len(c.Errors) > 0 && !c.Writer.Written() {
-			err := c.Errors.Last()
-			log.Printf("[API ERROR] Error registrado en contexto: %v", err.Err)
-
-			c.JSON(http.StatusBadRequest, RespuestaError{
-				Estado:  http.StatusBadRequest,
-				Mensaje: "Solicitud inválida o error en el procesamiento.",
-				Detalle: err.Error(),
-			})
+			err := c.Errors.Last().Err
+			var validation ErrorValidacion
+			if errors.As(err, &validation) {
+				ResponderError(c, http.StatusBadRequest, "Solicitud inválida.", validation)
+			} else {
+				ResponderError(c, http.StatusInternalServerError, "Ocurrió un error interno en el servidor.", err)
+			}
 		}
 	}
 }
@@ -78,8 +82,13 @@ func MethodNotAllowedHandler() gin.HandlerFunc {
 // ResponderError es una función utilitaria exportada para emitir errores estandarizados desde cualquier handler
 func ResponderError(c *gin.Context, estado int, mensaje string, err error) {
 	detalle := ""
-	if err != nil {
-		detalle = err.Error()
+	var validation ErrorValidacion
+	if estado == http.StatusBadRequest && errors.As(err, &validation) {
+		detalle = validation.Mensaje
+	}
+	if estado >= http.StatusInternalServerError {
+		LogInternalError(c, err)
+		mensaje = "Ocurrió un error interno en el servidor."
 	}
 
 	c.JSON(estado, RespuestaError{
@@ -88,4 +97,19 @@ func ResponderError(c *gin.Context, estado int, mensaje string, err error) {
 		Detalle: detalle,
 	})
 	c.Abort()
+}
+
+// LogInternalError conserva el diagnóstico sólo en logs, junto a la correlación.
+func LogInternalError(c *gin.Context, err error) {
+	logger, ok := c.Get("catalogo_error_logger")
+	log, valid := logger.(*slog.Logger)
+	if !ok || !valid {
+		log = slog.Default()
+	}
+	path := c.FullPath()
+	if path == "" {
+		path = "unmatched"
+	}
+	log.ErrorContext(c.Request.Context(), "http_internal_error", "request_id", c.Writer.Header().Get("X-Request-ID"),
+		"method", c.Request.Method, "path", path, "error", err)
 }
