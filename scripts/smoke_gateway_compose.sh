@@ -22,6 +22,7 @@ cleanup() {
   compose down --volumes --remove-orphans >/dev/null 2>&1 || true
   docker network rm "$SUP265_NETWORK" >/dev/null 2>&1 || true
   rm -rf "$test_dir"
+  rm -f "$repo_root/.test-ca.crt"
 }
 
 finish() {
@@ -61,6 +62,13 @@ p.write_text('DB_USER=sup265\nDB_NAME=sup265\nDB_PASSWORD=' + secrets.token_hex(
              'GATEWAY_TRUSTED_PROXIES=' + sys.argv[2] + '\n')
 p.chmod(0o600)
 PY
+
+if [ -f /etc/ssl/certs/ca-certificates.crt ]; then
+  cp /etc/ssl/certs/ca-certificates.crt "$repo_root/.test-ca.crt"
+else
+  touch "$repo_root/.test-ca.crt"
+fi
+export SUP265_CA_BUNDLE="./.test-ca.crt"
 
 compose config --quiet
 if [[ "${SUP265_SKIP_BUILD:-0}" != 1 ]]; then
