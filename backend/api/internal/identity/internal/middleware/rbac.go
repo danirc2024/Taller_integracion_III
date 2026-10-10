@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	httperrors "github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,7 +15,7 @@ func RequireRole(rolesPermitidos ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		rolVal, exists := c.Get("rol")
 		if !exists {
-			ResponderError(
+			httperrors.ResponderError(
 				c,
 				http.StatusForbidden,
 				"Acceso denegado: rol de usuario no identificado en la sesión.",
@@ -25,7 +26,7 @@ func RequireRole(rolesPermitidos ...string) gin.HandlerFunc {
 
 		rolUsuario, ok := rolVal.(string)
 		if !ok || strings.TrimSpace(rolUsuario) == "" {
-			ResponderError(
+			httperrors.ResponderError(
 				c,
 				http.StatusForbidden,
 				"Acceso denegado: rol de usuario inválido.",
@@ -45,7 +46,7 @@ func RequireRole(rolesPermitidos ...string) gin.HandlerFunc {
 		}
 
 		if !autorizado {
-			ResponderError(
+			httperrors.ResponderError(
 				c,
 				http.StatusForbidden,
 				"Acceso denegado: permisos insuficientes para acceder a este recurso.",

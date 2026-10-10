@@ -102,6 +102,12 @@ direct = request(DIRECT, '/api/v1/auth/me', opener=opener)
 proxied = request(GATEWAY, '/api/v1/auth/me', opener=opener)
 assert direct[0] == proxied[0] == 200 and direct[2] == proxied[2]
 checks.append('GET profile: cookie accepted directly and through gateway')
+profile_update = {'nombre_completo': 'Fixture SUP266', 'telefono': '+56911112222', 'rol': 'admin'}
+direct = request(DIRECT, '/api/v1/auth/me', 'PUT', profile_update, opener)
+proxied = request(GATEWAY, '/api/v1/auth/me', 'PUT', profile_update, opener)
+assert direct[0] == proxied[0] == 200 and direct[2] == proxied[2], 'Profile update changed'
+assert proxied[2]['nombre_completo'] == 'Fixture SUP266' and proxied[2]['rol'] == 'registrado'
+checks.append('PUT profile: changes persisted and role escalation ignored')
 direct = request(DIRECT, '/api/v1/admin/productos', opener=opener)
 proxied = request(GATEWAY, '/api/v1/admin/productos', opener=opener)
 assert direct[0] == proxied[0] == 403 and direct[2] == proxied[2]
@@ -112,10 +118,18 @@ assert status == 201 and job['estado'] == 'en_progreso', 'Job creation failed'
 checks.append('POST job: 201 and expected state')
 job_path = '/api/v1/scraper/trabajos/' + job['id']
 compare(job_path, 200)
+status, _, rejected = request(GATEWAY, job_path + '/ejecutar', 'POST', {'spider': 'invalid_spider'})
+assert status == 400 and rejected == {'error': 'Spider no permitido'}, 'Invalid spider was accepted'
+checks.append('POST dispatch: invalid spider rejected')
+status, _, dispatched = request(GATEWAY, job_path + '/ejecutar', 'POST', {'spider': 'jumbo_rsc'})
+assert status == 202 and dispatched == {'trabajo_id': job['id'], 'estado': 'encolado', 'spider': 'jumbo_rsc'}, 'Redis dispatch changed'
+checks.append('POST dispatch: accepted by Redis with expected response')
 payload = {'sucursal_id': 1, 'supermercado': 'Jumbo', 'productos': [{'sku': 'SUP264-FIXTURE', 'producto': 'Leche Fixture SUP264', 'precio_normal': 1234, 'en_stock': True}]}
 status, _, ingested = request(GATEWAY, job_path + '/productos', 'POST', payload)
 assert status == 200 and ingested['precios_registrados'] == 1, 'Fixture ingestion failed'
 checks.append('POST fixture ingestion: one price recorded')
+ingested_job = compare(job_path, 200)
+assert ingested_job['elementos_extraidos'] == 1, 'Ingestion did not update the job counter'
 search = compare('/api/v1/productos/buscar?q=Fixture', 200)
 assert any(p['nombre'] == 'Leche Fixture SUP264' for p in search['data']), 'Ingested product not visible'
 status, _, finished = request(GATEWAY, job_path + '/finalizar', 'PUT', {'estado': 'completado', 'elementos_extraidos': 1})

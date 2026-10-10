@@ -1,14 +1,15 @@
 package tests
 
 import (
-	"os" 
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
-	"github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/utils"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/middleware"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/security"
+	httperrors "github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,7 +18,7 @@ func TestJWT_GenerarYValidarToken(t *testing.T) {
 	rol := "admin"
 	provider := "local"
 
-	tokenStr, err := utils.GenerarToken(usuarioID, rol, provider)
+	tokenStr, err := security.GenerarToken(usuarioID, rol, provider)
 	if err != nil {
 		t.Fatalf("Error inesperado al generar token: %v", err)
 	}
@@ -26,7 +27,7 @@ func TestJWT_GenerarYValidarToken(t *testing.T) {
 		t.Fatalf("El token generado no debería estar vacío")
 	}
 
-	token, err := utils.ValidarToken(tokenStr)
+	token, err := security.ValidarToken(tokenStr)
 	if err != nil {
 		t.Fatalf("Fallo en ValidarToken: %v", err)
 	}
@@ -35,9 +36,9 @@ func TestJWT_GenerarYValidarToken(t *testing.T) {
 		t.Errorf("El token validado debería ser válido")
 	}
 
-	claims, ok := token.Claims.(*utils.JWTClaims)
+	claims, ok := token.Claims.(*security.JWTClaims)
 	if !ok {
-		t.Fatalf("No se pudo convertir claims a *utils.JWTClaims")
+		t.Fatalf("No se pudo convertir claims a *security.JWTClaims")
 	}
 
 	if claims.UserID != usuarioID {
@@ -52,7 +53,7 @@ func TestJWT_GenerarYValidarToken(t *testing.T) {
 }
 
 func TestJWT_TokenInvalido(t *testing.T) {
-	_, err := utils.ValidarToken("token.falso.invalido")
+	_, err := security.ValidarToken("token.falso.invalido")
 	if err == nil {
 		t.Errorf("Se esperaba error al validar token falso, pero se aceptó")
 	}
@@ -60,7 +61,7 @@ func TestJWT_TokenInvalido(t *testing.T) {
 
 func TestMiddleware_RequireAuth(t *testing.T) {
 	r := gin.New()
-	r.Use(middleware.ErrorHandler())
+	r.Use(httperrors.ErrorHandler())
 
 	r.GET("/protegido", middleware.RequireAuth(), func(c *gin.Context) {
 		userID, _ := c.Get("user_id")
@@ -99,7 +100,7 @@ func TestMiddleware_RequireAuth(t *testing.T) {
 	})
 
 	t.Run("Cookie jwt valida exitosa", func(t *testing.T) {
-		tokenStr, err := utils.GenerarToken("usr-123", "colaborador", "google")
+		tokenStr, err := security.GenerarToken("usr-123", "colaborador", "google")
 		if err != nil {
 			t.Fatalf("Error generando token: %v", err)
 		}

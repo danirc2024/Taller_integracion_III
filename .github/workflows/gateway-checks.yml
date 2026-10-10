@@ -27,6 +27,24 @@ permissions:
   contents: read
 
 jobs:
+  api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+          cache: false
+      - name: API tests, module boundaries and build
+        working-directory: backend/api
+        run: |
+          go test -race ./...
+          go vet ./...
+          go build -o /tmp/sup266-api .
+
   gateway:
     runs-on: ubuntu-latest
     timeout-minutes: 15

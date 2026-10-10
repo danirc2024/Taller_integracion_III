@@ -5,32 +5,31 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/danirc2024/Taller_integracion_III/backend/api/domain"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/infrastructure"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/services"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/utils"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/domain"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/security"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/services"
 	"github.com/google/uuid"
 )
 
 // mockUsuarioRepository implementa UsuarioRepository en memoria para pruebas unitarias
 type mockUsuarioRepository struct {
-	usuarios map[string]*infrastructure.Usuario
+	usuarios map[string]*domain.Usuario
 }
 
 func newMockUsuarioRepository() *mockUsuarioRepository {
 	return &mockUsuarioRepository{
-		usuarios: make(map[string]*infrastructure.Usuario),
+		usuarios: make(map[string]*domain.Usuario),
 	}
 }
 
-func (m *mockUsuarioRepository) FindByEmail(ctx context.Context, email string) (*infrastructure.Usuario, error) {
+func (m *mockUsuarioRepository) FindByEmail(ctx context.Context, email string) (*domain.Usuario, error) {
 	if u, ok := m.usuarios[email]; ok {
 		return u, nil
 	}
 	return nil, nil
 }
 
-func (m *mockUsuarioRepository) FindByID(ctx context.Context, id string) (*infrastructure.Usuario, error) {
+func (m *mockUsuarioRepository) FindByID(ctx context.Context, id string) (*domain.Usuario, error) {
 	for _, u := range m.usuarios {
 		if u.ID.String() == id {
 			return u, nil
@@ -39,7 +38,7 @@ func (m *mockUsuarioRepository) FindByID(ctx context.Context, id string) (*infra
 	return nil, nil
 }
 
-func (m *mockUsuarioRepository) Create(ctx context.Context, usuario *infrastructure.Usuario) error {
+func (m *mockUsuarioRepository) Create(ctx context.Context, usuario *domain.Usuario) error {
 	if usuario.ID == uuid.Nil {
 		usuario.ID = uuid.New()
 	}
@@ -48,7 +47,7 @@ func (m *mockUsuarioRepository) Create(ctx context.Context, usuario *infrastruct
 }
 
 func (m *mockUsuarioRepository) Actualizar(ctx context.Context, id string, datos map[string]interface{}) error {
-	var target *infrastructure.Usuario
+	var target *domain.Usuario
 	for _, u := range m.usuarios {
 		if u.ID.String() == id {
 			target = u
@@ -145,7 +144,7 @@ func TestAuthService_RegistroExitoso(t *testing.T) {
 		t.Fatalf("Usuario no persistido en el repositorio")
 	}
 
-	if u.PasswordHash == nil || !utils.CheckPasswordHash("SuperClave2026#", *u.PasswordHash) {
+	if u.PasswordHash == nil || !security.CheckPasswordHash("SuperClave2026#", *u.PasswordHash) {
 		t.Errorf("El hash almacenado no coincide con la contraseña con bcrypt")
 	}
 
@@ -165,10 +164,10 @@ func TestAuthService_Login(t *testing.T) {
 	repo := newMockUsuarioRepository()
 	service := services.NewAuthService(repo)
 
-	hashPass, _ := utils.HashPassword("Password123#")
+	hashPass, _ := security.HashPassword("Password123#")
 
 	// 1. Usuario activo normal
-	userActivo := &infrastructure.Usuario{
+	userActivo := &domain.Usuario{
 		ID:             uuid.New(),
 		Correo:         "activo@uct.cl",
 		PasswordHash:   &hashPass,
@@ -178,7 +177,7 @@ func TestAuthService_Login(t *testing.T) {
 	repo.usuarios[userActivo.Correo] = userActivo
 
 	// 2. Usuario con PasswordHash nulo (Login social previo con Google)
-	userGoogle := &infrastructure.Usuario{
+	userGoogle := &domain.Usuario{
 		ID:             uuid.New(),
 		Correo:         "google@uct.cl",
 		PasswordHash:   nil,
@@ -188,7 +187,7 @@ func TestAuthService_Login(t *testing.T) {
 	repo.usuarios[userGoogle.Correo] = userGoogle
 
 	// 3. Usuario inactivo pendiente de verificación
-	userInactivo := &infrastructure.Usuario{
+	userInactivo := &domain.Usuario{
 		ID:             uuid.New(),
 		Correo:         "inactivo@uct.cl",
 		PasswordHash:   &hashPass,
@@ -240,9 +239,9 @@ func TestAuthService_ActualizarPerfil(t *testing.T) {
 	repo := newMockUsuarioRepository()
 	service := services.NewAuthService(repo)
 
-	hashPass, _ := utils.HashPassword("Password123#")
+	hashPass, _ := security.HashPassword("Password123#")
 	userID := uuid.New()
-	userOriginal := &infrastructure.Usuario{
+	userOriginal := &domain.Usuario{
 		ID:             userID,
 		Correo:         "original@uct.cl",
 		PasswordHash:   &hashPass,
@@ -253,7 +252,7 @@ func TestAuthService_ActualizarPerfil(t *testing.T) {
 	repo.usuarios[userOriginal.Correo] = userOriginal
 
 	// Usuario secundario para probar conflicto de correo
-	repo.usuarios["otro@uct.cl"] = &infrastructure.Usuario{
+	repo.usuarios["otro@uct.cl"] = &domain.Usuario{
 		ID:             uuid.New(),
 		Correo:         "otro@uct.cl",
 		PasswordHash:   &hashPass,
@@ -314,7 +313,7 @@ func TestAuthService_ActualizarPerfil(t *testing.T) {
 
 		// Verificar que el hash se actualizo en el usuario
 		u := repo.usuarios["original@uct.cl"]
-		if !utils.CheckPasswordHash("NuevaClaveSegura2026!", *u.PasswordHash) {
+		if !security.CheckPasswordHash("NuevaClaveSegura2026!", *u.PasswordHash) {
 			t.Errorf("El hash en repositorio no coincide con la nueva contraseña")
 		}
 	})

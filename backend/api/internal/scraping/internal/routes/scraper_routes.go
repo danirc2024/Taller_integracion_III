@@ -2,21 +2,13 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
 
-	"github.com/danirc2024/Taller_integracion_III/backend/api/handlers"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/repositories"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/services"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/scraping/internal/handlers"
 )
 
 // RegistrarRutasScraper configura los endpoints de ingesta de datos y ciclo de vida de arañas
 // bajo el prefijo /api/v1/scraper
-func RegistrarRutasScraper(rg *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
-	scraperRepo := repositories.NewScraperRepository(db)
-	scraperService := services.NewScraperService(scraperRepo)
-	scraperHandler := handlers.NewScraperHandler(scraperService, rdb)
-
+func RegistrarRutasScraper(rg *gin.RouterGroup, scraperHandler *handlers.ScraperHandler) {
 	scraper := rg.Group("/scraper")
 	{
 		// Auditoría y ciclo de vida de arañas

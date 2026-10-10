@@ -9,8 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 
-	"github.com/danirc2024/Taller_integracion_III/backend/api/domain"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/services"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/scraping/internal/domain"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/scraping/internal/services"
 )
 
 // ScraperHandler gestiona las peticiones HTTP del microservicio de scraping y bots
@@ -82,11 +82,11 @@ func (h *ScraperHandler) EjecutarTrabajo(c *gin.Context) {
 		input.Spider = "jumbo_rsc"
 	}
 	spidersPermitidos := map[string]bool{
-		"jumbo_rsc":         true,
-		"santa_isabel_rsc":  true,
-		"lider_rsc":         true,
-		"acuenta_rsc":       true,
-		"cugat_rsc":         true,
+		"jumbo_rsc":        true,
+		"santa_isabel_rsc": true,
+		"lider_rsc":        true,
+		"acuenta_rsc":      true,
+		"cugat_rsc":        true,
 	}
 	if !spidersPermitidos[input.Spider] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Spider no permitido"})

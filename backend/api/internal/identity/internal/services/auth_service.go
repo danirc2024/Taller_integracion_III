@@ -10,9 +10,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/danirc2024/Taller_integracion_III/backend/api/domain"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/infrastructure"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/repositories"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/domain"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/security"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/utils"
 	"github.com/google/uuid"
 	"google.golang.org/api/idtoken"
@@ -54,18 +53,18 @@ type UsuarioCreadoDTO struct {
 // AuthService define los casos de uso para la autenticación e identidad de usuarios
 type AuthService interface {
 	Registrar(ctx context.Context, input RegistroDTO) (*UsuarioCreadoDTO, error)
-	Login(correo, password string) (*infrastructure.Usuario, error)
-	LoginWithContext(ctx context.Context, correo, password string) (*infrastructure.Usuario, error)
-	GoogleLogin(ctx context.Context, tokenGoogle string) (*infrastructure.Usuario, error)
+	Login(correo, password string) (*domain.Usuario, error)
+	LoginWithContext(ctx context.Context, correo, password string) (*domain.Usuario, error)
+	GoogleLogin(ctx context.Context, tokenGoogle string) (*domain.Usuario, error)
 	ActualizarPerfil(ctx context.Context, userID string, input domain.ActualizarPerfilDTO) (*domain.PerfilUsuarioDTO, error)
 }
 
 type authService struct {
-	usuarioRepo repositories.UsuarioRepository
+	usuarioRepo domain.UsuarioRepository
 }
 
 // NewAuthService inicializa el servicio inyectando el repositorio de usuarios
-func NewAuthService(usuarioRepo repositories.UsuarioRepository) AuthService {
+func NewAuthService(usuarioRepo domain.UsuarioRepository) AuthService {
 	return &authService{
 		usuarioRepo: usuarioRepo,
 	}
@@ -129,7 +128,7 @@ func (s *authService) Registrar(ctx context.Context, input RegistroDTO) (*Usuari
 	}
 
 	// 4. Generar hash bcrypt de la contraseña
-	hash, err := utils.HashPassword(input.Password)
+	hash, err := security.HashPassword(input.Password)
 	if err != nil {
 		return nil, fmt.Errorf("error al generar hash seguro de contraseña: %w", err)
 	}
@@ -138,7 +137,7 @@ func (s *authService) Registrar(ctx context.Context, input RegistroDTO) (*Usuari
 	tokenVerificacion := uuid.New()
 
 	// 6. Instanciar modelo de dominio
-	nuevoUsuario := &infrastructure.Usuario{
+	nuevoUsuario := &domain.Usuario{
 		Correo:            correoNormalizado,
 		PasswordHash:      &hash,
 		NombreCompleto:    nombreSanitizado,
@@ -166,12 +165,12 @@ func (s *authService) Registrar(ctx context.Context, input RegistroDTO) (*Usuari
 }
 
 // Login ejecuta la autenticación de un usuario con contexto por defecto
-func (s *authService) Login(correo, password string) (*infrastructure.Usuario, error) {
+func (s *authService) Login(correo, password string) (*domain.Usuario, error) {
 	return s.LoginWithContext(context.Background(), correo, password)
 }
 
 // LoginWithContext ejecuta la autenticación verificando credenciales y estado de forma segura
-func (s *authService) LoginWithContext(ctx context.Context, correo, password string) (*infrastructure.Usuario, error) {
+func (s *authService) LoginWithContext(ctx context.Context, correo, password string) (*domain.Usuario, error) {
 	// 1. Buscar al usuario por correo usando el repositorio
 	correoNormalizado := strings.ToLower(strings.TrimSpace(correo))
 	usuario, err := s.usuarioRepo.FindByEmail(ctx, correoNormalizado)
@@ -194,15 +193,15 @@ func (s *authService) LoginWithContext(ctx context.Context, correo, password str
 		return nil, ErrCuentaInactiva
 	}
 
-	// 4. Validación de Credenciales: comparar contraseña con utils.CheckPasswordHash de forma segura
-	if !utils.CheckPasswordHash(password, *usuario.PasswordHash) {
+	// 4. Validación de Credenciales: comparar contraseña con security.CheckPasswordHash de forma segura
+	if !security.CheckPasswordHash(password, *usuario.PasswordHash) {
 		return nil, ErrCredencialesInvalidas
 	}
 
 	return usuario, nil
 }
 
-func (s *authService) GoogleLogin(ctx context.Context, tokenGoogle string) (*infrastructure.Usuario, error) {
+func (s *authService) GoogleLogin(ctx context.Context, tokenGoogle string) (*domain.Usuario, error) {
 	clientID := os.Getenv("GOOGLE_CLIENT_ID")
 	if clientID == "" {
 		return nil, errors.New("configuración del servidor incompleta para login social")
@@ -228,7 +227,7 @@ func (s *authService) GoogleLogin(ctx context.Context, tokenGoogle string) (*inf
 	}
 
 	if usuario == nil {
-		nuevoUsuario := &infrastructure.Usuario{
+		nuevoUsuario := &domain.Usuario{
 			ID:             uuid.New(),
 			Correo:         email,
 			NombreCompleto: name,
@@ -310,7 +309,7 @@ func (s *authService) ActualizarPerfil(ctx context.Context, userID string, input
 		if err := validarComplejidadPassword(*input.Password); err != nil {
 			return nil, err
 		}
-		hash, err := utils.HashPassword(*input.Password)
+		hash, err := security.HashPassword(*input.Password)
 		if err != nil {
 			return nil, fmt.Errorf("error al generar hash de contraseña: %w", err)
 		}

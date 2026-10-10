@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/danirc2024/Taller_integracion_III/backend/api/docs"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/scraping"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/routes"
 	"github.com/gin-gonic/gin"
@@ -116,10 +118,12 @@ func setupRouter() *gin.Engine {
 	// Grupo de rutas de la API v1
 	v1 := r.Group("/api/v1")
 	v1.GET("/health", HealthHandler)
-	routes.RegistrarRutasAuth(v1, DB, RDB)
+	identidad := identity.New(DB, RDB)
+	coordinacion := scraping.New(DB, RDB)
+	identidad.RegisterRoutes(v1)
 	routes.RegistrarRutasProductos(v1, DB)
-	routes.RegistrarRutasScraper(v1, DB, RDB)
-	routes.RegistrarRutasAdmin(v1, DB)
+	coordinacion.RegisterRoutes(v1)
+	routes.RegistrarRutasAdmin(v1, DB, identidad.RequireAuth(), identidad.RequireRole("admin"))
 
 	return r
 }
