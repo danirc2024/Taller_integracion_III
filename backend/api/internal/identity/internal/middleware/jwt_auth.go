@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/danirc2024/Taller_integracion_III/backend/api/utils"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/security"
+	httperrors "github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,7 +15,7 @@ func RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := c.Cookie("jwt")
 		if err != nil || strings.TrimSpace(tokenString) == "" {
-			ResponderError(
+			httperrors.ResponderError(
 				c,
 				http.StatusUnauthorized,
 				"Cookie de autenticación requerida.",
@@ -23,9 +24,9 @@ func RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		token, err := utils.ValidarToken(strings.TrimSpace(tokenString))
+		token, err := security.ValidarToken(strings.TrimSpace(tokenString))
 		if err != nil || token == nil || !token.Valid {
-			ResponderError(
+			httperrors.ResponderError(
 				c,
 				http.StatusUnauthorized,
 				"Token inválido o expirado.",
@@ -34,9 +35,9 @@ func RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		claims, ok := token.Claims.(*utils.JWTClaims)
+		claims, ok := token.Claims.(*security.JWTClaims)
 		if !ok {
-			ResponderError(
+			httperrors.ResponderError(
 				c,
 				http.StatusUnauthorized,
 				"Claims del token inválidos.",

@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/middleware"
 	"github.com/gin-gonic/gin"
 )
 

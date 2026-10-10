@@ -1,5 +1,11 @@
 # Guía de Arquitectura y Uso del Backend en Go (API Gateway y Servicios de Dominio)
 
+> Durante el refactor, consulta [Gateway y entornos (SUP-265)](GUIA_GATEWAY_DESARROLLO_PRUEBAS.md)
+> y [módulos del backend (SUP-266)](GUIA_MODULOS_BACKEND.md) para la estructura
+> vigente. Algunas secciones de esta guía describen el diseño anterior u objetivo:
+> la Gateway actual vive en `backend/gateway`, mientras la API reúne Catálogo,
+> Identidad y coordinación de scraping; la autenticación actual usa la cookie `jwt`.
+
 Esta guía documenta la estructura, el rol arquitectónico y las convenciones del backend en **Go (Golang)** dentro de la plataforma de comparación de precios y optimización de rutas, adaptado a la arquitectura de **Microservicios** contenerizada en Kubernetes y Docker Compose.
 
 ---

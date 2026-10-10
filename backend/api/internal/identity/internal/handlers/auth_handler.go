@@ -4,10 +4,10 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/danirc2024/Taller_integracion_III/backend/api/domain"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/domain"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/security"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/services"
 	"github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/services"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -97,7 +97,7 @@ func (h *AuthHandler) RegistrarUsuario(c *gin.Context) {
 	}
 
 	// Auto-login: emisión del JWT centralizado e inyección de cookie HttpOnly
-	tokenString, err := utils.GenerarToken(creado.ID.String(), creado.Rol, "local")
+	tokenString, err := security.GenerarToken(creado.ID.String(), creado.Rol, "local")
 	if err != nil {
 		middleware.ResponderError(c, http.StatusInternalServerError, "Error generando token de autorización tras registro.", err)
 		return
@@ -151,7 +151,7 @@ func (h *AuthHandler) LoginUsuario(c *gin.Context) {
 	}
 
 	// Emisión del JWT centralizado (provider siempre es 'local' en login nativo)
-	tokenString, err := utils.GenerarToken(usuario.ID.String(), usuario.Rol, "local")
+	tokenString, err := security.GenerarToken(usuario.ID.String(), usuario.Rol, "local")
 	if err != nil {
 		middleware.ResponderError(c, http.StatusInternalServerError, "Error generando token de autorización.", err)
 		return
@@ -274,7 +274,7 @@ func (h *AuthHandler) GoogleLoginUsuario(c *gin.Context) {
 	}
 
 	// Emisión del JWT centralizado
-	tokenString, err := utils.GenerarToken(usuario.ID.String(), usuario.Rol, "google")
+	tokenString, err := security.GenerarToken(usuario.ID.String(), usuario.Rol, "google")
 	if err != nil {
 		middleware.ResponderError(c, http.StatusInternalServerError, "Error generando token de autorización local.", err)
 		return

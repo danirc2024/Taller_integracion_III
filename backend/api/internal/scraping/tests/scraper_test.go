@@ -14,29 +14,28 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"github.com/danirc2024/Taller_integracion_III/backend/api/domain"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/handlers"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/infrastructure"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/services"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/scraping/internal/domain"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/scraping/internal/handlers"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/scraping/internal/services"
 )
 
 // mockScraperRepository implementa la interfaz ScraperRepository para pruebas unitarias
 type mockScraperRepository struct {
-	trabajos   map[uuid.UUID]*infrastructure.TrabajoScraper
-	cadenas    map[string]*infrastructure.CadenaSupermercado
-	sucursales map[int]*infrastructure.SucursalSupermercado
+	trabajos   map[uuid.UUID]*domain.TrabajoScraper
+	cadenas    map[string]*domain.CadenaSupermercado
+	sucursales map[int]*domain.SucursalSupermercado
 	err        error
 }
 
 func newMockScraperRepository() *mockScraperRepository {
 	return &mockScraperRepository{
-		trabajos:   make(map[uuid.UUID]*infrastructure.TrabajoScraper),
-		cadenas:    make(map[string]*infrastructure.CadenaSupermercado),
-		sucursales: make(map[int]*infrastructure.SucursalSupermercado),
+		trabajos:   make(map[uuid.UUID]*domain.TrabajoScraper),
+		cadenas:    make(map[string]*domain.CadenaSupermercado),
+		sucursales: make(map[int]*domain.SucursalSupermercado),
 	}
 }
 
-func (m *mockScraperRepository) CrearTrabajo(ctx context.Context, trabajo *infrastructure.TrabajoScraper) error {
+func (m *mockScraperRepository) CrearTrabajo(ctx context.Context, trabajo *domain.TrabajoScraper) error {
 	if m.err != nil {
 		return m.err
 	}
@@ -44,7 +43,7 @@ func (m *mockScraperRepository) CrearTrabajo(ctx context.Context, trabajo *infra
 	return nil
 }
 
-func (m *mockScraperRepository) ObtenerTrabajoPorID(ctx context.Context, id uuid.UUID) (*infrastructure.TrabajoScraper, error) {
+func (m *mockScraperRepository) ObtenerTrabajoPorID(ctx context.Context, id uuid.UUID) (*domain.TrabajoScraper, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -55,7 +54,7 @@ func (m *mockScraperRepository) ObtenerTrabajoPorID(ctx context.Context, id uuid
 	return t, nil
 }
 
-func (m *mockScraperRepository) FinalizarTrabajo(ctx context.Context, id uuid.UUID, estado string, elementosExtraidos *int, registroErrores *string) (*infrastructure.TrabajoScraper, error) {
+func (m *mockScraperRepository) FinalizarTrabajo(ctx context.Context, id uuid.UUID, estado string, elementosExtraidos *int, registroErrores *string) (*domain.TrabajoScraper, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -73,7 +72,7 @@ func (m *mockScraperRepository) FinalizarTrabajo(ctx context.Context, id uuid.UU
 	return t, nil
 }
 
-func (m *mockScraperRepository) ObtenerCadena(ctx context.Context, cadenaID int, nombreCadena string) (*infrastructure.CadenaSupermercado, error) {
+func (m *mockScraperRepository) ObtenerCadena(ctx context.Context, cadenaID int, nombreCadena string) (*domain.CadenaSupermercado, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -89,7 +88,7 @@ func (m *mockScraperRepository) ObtenerCadena(ctx context.Context, cadenaID int,
 			return c, nil
 		}
 		// Simula la creación automática en mock
-		nueva := &infrastructure.CadenaSupermercado{
+		nueva := &domain.CadenaSupermercado{
 			ID:         len(m.cadenas) + 1,
 			Nombre:     nombreCadena,
 			EstaActiva: true,
@@ -101,7 +100,7 @@ func (m *mockScraperRepository) ObtenerCadena(ctx context.Context, cadenaID int,
 	return nil, nil
 }
 
-func (m *mockScraperRepository) ObtenerSucursal(ctx context.Context, cadenaID int, sucursalID *int, codigoSucursal *string) (*infrastructure.SucursalSupermercado, error) {
+func (m *mockScraperRepository) ObtenerSucursal(ctx context.Context, cadenaID int, sucursalID *int, codigoSucursal *string) (*domain.SucursalSupermercado, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -112,7 +111,7 @@ func (m *mockScraperRepository) ObtenerSucursal(ctx context.Context, cadenaID in
 	}
 	// Retornar primera sucursal mock
 	cod := "CENTRAL-001"
-	s := &infrastructure.SucursalSupermercado{
+	s := &domain.SucursalSupermercado{
 		ID:             1,
 		CadenaID:       cadenaID,
 		CodigoSucursal: &cod,
@@ -154,13 +153,13 @@ func (m *mockScraperRepository) IngestarLote(ctx context.Context, trabajoID *uui
 
 func TestScraperService_IniciarTrabajo_Exitoso(t *testing.T) {
 	mockRepo := newMockScraperRepository()
-	mockRepo.cadenas["jumbo"] = &infrastructure.CadenaSupermercado{
+	mockRepo.cadenas["jumbo"] = &domain.CadenaSupermercado{
 		ID:         1,
 		Nombre:     "Jumbo",
 		EstaActiva: true,
 	}
 
-	service := services.NewScraperService(mockRepo)
+	service := services.NewScraperService(mockRepo, mockRepo)
 
 	input := domain.IniciarTrabajoDTO{
 		CadenaID:     1,
@@ -182,10 +181,10 @@ func TestScraperService_IniciarTrabajo_Exitoso(t *testing.T) {
 
 func TestScraperService_FinalizarTrabajo_Validaciones(t *testing.T) {
 	mockRepo := newMockScraperRepository()
-	service := services.NewScraperService(mockRepo)
+	service := services.NewScraperService(mockRepo, mockRepo)
 
 	trabajoID := uuid.New()
-	mockRepo.trabajos[trabajoID] = &infrastructure.TrabajoScraper{
+	mockRepo.trabajos[trabajoID] = &domain.TrabajoScraper{
 		ID:         trabajoID,
 		CadenaID:   1,
 		Estado:     "en_progreso",
@@ -230,7 +229,7 @@ func TestScraperService_FinalizarTrabajo_Validaciones(t *testing.T) {
 
 func TestScraperService_IngestarProductos_LimitesYValidaciones(t *testing.T) {
 	mockRepo := newMockScraperRepository()
-	service := services.NewScraperService(mockRepo)
+	service := services.NewScraperService(mockRepo, mockRepo)
 
 	// 1. Lote vacío
 	_, err := service.IngestarProductos(context.Background(), nil, domain.IngestaLoteDTO{
@@ -269,13 +268,13 @@ func TestScraperHandler_EndpointsHTTP(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	mockRepo := newMockScraperRepository()
-	mockRepo.cadenas["jumbo"] = &infrastructure.CadenaSupermercado{
+	mockRepo.cadenas["jumbo"] = &domain.CadenaSupermercado{
 		ID:         1,
 		Nombre:     "Jumbo",
 		EstaActiva: true,
 	}
 
-	service := services.NewScraperService(mockRepo)
+	service := services.NewScraperService(mockRepo, mockRepo)
 	handler := handlers.NewScraperHandler(service)
 
 	router := gin.New()

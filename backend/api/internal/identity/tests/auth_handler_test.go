@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/danirc2024/Taller_integracion_III/backend/api/domain"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/handlers"
-	"github.com/danirc2024/Taller_integracion_III/backend/api/services"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/domain"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/handlers"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )

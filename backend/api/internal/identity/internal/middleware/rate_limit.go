@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	httperrors "github.com/danirc2024/Taller_integracion_III/backend/api/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 )
@@ -17,7 +18,7 @@ func RateLimiterIP(rdb *redis.Client, prefijo string, maxIntentos int64, ventana
 		if rdb == nil {
 			// Fail-Closed: Bloqueo por defecto si Redis no está inicializado
 			log.Println("[RATE LIMIT CRITICAL] Cliente Redis no disponible. Bloqueando petición (Fail-Closed).")
-			ResponderError(
+			httperrors.ResponderError(
 				c,
 				http.StatusInternalServerError,
 				"Servicio temporalmente no disponible",
@@ -35,7 +36,7 @@ func RateLimiterIP(rdb *redis.Client, prefijo string, maxIntentos int64, ventana
 		if err != nil {
 			// Fail-Closed: Bloqueo por defecto si Redis está caído o falla la consulta
 			log.Printf("[RATE LIMIT CRITICAL] Error consultando Redis: %v. Bloqueando petición (Fail-Closed).", err)
-			ResponderError(
+			httperrors.ResponderError(
 				c,
 				http.StatusInternalServerError,
 				"Servicio temporalmente no disponible",
@@ -55,7 +56,7 @@ func RateLimiterIP(rdb *redis.Client, prefijo string, maxIntentos int64, ventana
 		}
 
 		if intentos > maxIntentos {
-			ResponderError(
+			httperrors.ResponderError(
 				c,
 				http.StatusTooManyRequests,
 				"Demasiados intentos de acceso. Por favor, espere 15 minutos antes de volver a intentar.",

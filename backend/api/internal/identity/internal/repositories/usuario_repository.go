@@ -4,30 +4,22 @@ import (
 	"context"
 	"errors"
 
-	"github.com/danirc2024/Taller_integracion_III/backend/api/infrastructure"
+	"github.com/danirc2024/Taller_integracion_III/backend/api/internal/identity/internal/domain"
 	"gorm.io/gorm"
 )
-
-// UsuarioRepository define el contrato para operaciones sobre la tabla api.usuarios
-type UsuarioRepository interface {
-	FindByEmail(ctx context.Context, email string) (*infrastructure.Usuario, error)
-	FindByID(ctx context.Context, id string) (*infrastructure.Usuario, error)
-	Create(ctx context.Context, usuario *infrastructure.Usuario) error
-	Actualizar(ctx context.Context, id string, datos map[string]interface{}) error
-}
 
 type gormUsuarioRepository struct {
 	db *gorm.DB
 }
 
 // NewUsuarioRepository inicializa un repositorio de usuarios con conexión GORM
-func NewUsuarioRepository(db *gorm.DB) UsuarioRepository {
+func NewUsuarioRepository(db *gorm.DB) domain.UsuarioRepository {
 	return &gormUsuarioRepository{db: db}
 }
 
 // FindByEmail consulta si existe un usuario por su dirección de correo electrónico
-func (r *gormUsuarioRepository) FindByEmail(ctx context.Context, email string) (*infrastructure.Usuario, error) {
-	var usuario infrastructure.Usuario
+func (r *gormUsuarioRepository) FindByEmail(ctx context.Context, email string) (*domain.Usuario, error) {
+	var usuario domain.Usuario
 	err := r.db.WithContext(ctx).Where("correo = ?", email).First(&usuario).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -39,8 +31,8 @@ func (r *gormUsuarioRepository) FindByEmail(ctx context.Context, email string) (
 }
 
 // FindByID consulta a un usuario por su clave primaria UUID
-func (r *gormUsuarioRepository) FindByID(ctx context.Context, id string) (*infrastructure.Usuario, error) {
-	var usuario infrastructure.Usuario
+func (r *gormUsuarioRepository) FindByID(ctx context.Context, id string) (*domain.Usuario, error) {
+	var usuario domain.Usuario
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&usuario).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -52,14 +44,14 @@ func (r *gormUsuarioRepository) FindByID(ctx context.Context, id string) (*infra
 }
 
 // Create inserta un nuevo registro de usuario en la base de datos
-func (r *gormUsuarioRepository) Create(ctx context.Context, usuario *infrastructure.Usuario) error {
+func (r *gormUsuarioRepository) Create(ctx context.Context, usuario *domain.Usuario) error {
 	return r.db.WithContext(ctx).Create(usuario).Error
 }
 
 // Actualizar aplica cambios parciales dinámicamente a la tabla api.usuarios usando GORM Updates
 func (r *gormUsuarioRepository) Actualizar(ctx context.Context, id string, datos map[string]interface{}) error {
 	res := r.db.WithContext(ctx).
-		Model(&infrastructure.Usuario{}).
+		Model(&domain.Usuario{}).
 		Where("id = ?", id).
 		Updates(datos)
 	if res.Error != nil {
