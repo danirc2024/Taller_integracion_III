@@ -17,6 +17,7 @@ func TestLoadDefaults(t *testing.T) {
 		t.Fatal(err)
 	}
 	if c.ListenAddr != ":8082" || c.RequestTimeout != 30*time.Second || len(c.TrustedProxies) != 0 {
+	if c.ListenAddr != ":8082" || c.RequestTimeout != 30*time.Second || c.ReadinessTimeout != 2*time.Second || len(c.TrustedProxies) != 0 {
 		t.Fatalf("unexpected defaults: %+v", c)
 	}
 }
@@ -35,6 +36,7 @@ func TestLoadRejectsInvalidConfiguration(t *testing.T) {
 		{"GATEWAY_REQUEST_TIMEOUT", "-1s"},
 		{"GATEWAY_DIAL_TIMEOUT", "0s"},
 		{"GATEWAY_RESPONSE_HEADER_TIMEOUT", "soon"},
+		{"GATEWAY_READINESS_TIMEOUT", "0s"},
 		{"GATEWAY_TRUSTED_PROXIES", "localhost"},
 	} {
 		t.Run(tc.key+"="+tc.value, func(t *testing.T) {

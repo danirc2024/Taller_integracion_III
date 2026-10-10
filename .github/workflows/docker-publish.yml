@@ -5,9 +5,12 @@ on:
     branches:
       - main
       - develop
+      - develop-refactor
     paths:
       - 'backend/api/**'
+      - 'backend/gateway/**'
       - 'backend/bot_discord/**'
+      - 'backend/scraper/**'
       - 'frontend/web/**'
       - '.github/workflows/**'
 
@@ -17,6 +20,7 @@ env:
   IMAGE_NAME_API: ${{ github.repository }}-api
   IMAGE_NAME_FRONTEND: ${{ github.repository }}-frontend
   IMAGE_NAME_SCRAPER: ${{ github.repository }}-scraper
+  IMAGE_NAME_GATEWAY: ${{ github.repository }}-gateway
 
 jobs:
   build-and-push:
@@ -35,6 +39,31 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Gateway
+        id: meta-gateway
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_GATEWAY }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=sha
+
+      - name: Test Gateway image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/gateway
+          target: test
+          push: false
+
+      - name: Build and push Gateway image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/gateway
+          push: true
+          tags: ${{ steps.meta-gateway.outputs.tags }}
+          labels: ${{ steps.meta-gateway.outputs.labels }}
 
       # ==== BUILD API ====
       - name: Extract metadata for API

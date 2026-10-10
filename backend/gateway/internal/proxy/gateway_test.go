@@ -45,6 +45,89 @@ func bodyOf(t *testing.T, res *http.Response) []byte {
 	return body
 }
 
+func TestReadinessRequiresHealthyDependencies(t *testing.T) {
+	for _, tc := range []struct {
+		name, body                     string
+		upstreamStatus, expectedStatus int
+	}{
+		{"healthy", `{"status":"ok","checks":{"database":"ok","redis":"ok"}}`, 200, 200},
+		{"database_down", `{"status":"ok","checks":{"database":"error","redis":"ok"}}`, 200, 503},
+		{"redis_down", `{"status":"ok","checks":{"database":"ok","redis":"error"}}`, 200, 503},
+		{"missing_checks", `{"status":"ok"}`, 200, 503},
+		{"backend_unhealthy", `{"status":"error","checks":{"database":"ok","redis":"ok"}}`, 200, 503},
+		{"invalid_response", `<html>Error</html>`, 200, 503},
+		{"backend_error", `{"status":"ok","checks":{"database":"ok","redis":"ok"}}`, 500, 503},
+		{"redirect", ``, 302, 503},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != "GET" || r.URL.Path != "/api/v1/health" || r.Header.Get("X-Request-ID") != "ready-test" {
+					t.Errorf("incorrect health probe: %s %s", r.Method, r.URL.Path)
+				}
+				w.Header().Set("Location", "/unexpected-redirect")
+				w.WriteHeader(tc.upstreamStatus)
+				_, _ = io.WriteString(w, tc.body)
+			}))
+			defer backend.Close()
+			gateway := gatewayFor(t, backend.URL, nil, nil)
+			req, _ := http.NewRequest("GET", gateway.URL+"/_gateway/ready", nil)
+			req.Header.Set("X-Request-ID", "ready-test")
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			body := bodyOf(t, res)
+			if res.StatusCode != tc.expectedStatus || res.Header.Get("X-Request-ID") != "ready-test" {
+				t.Fatalf("unexpected readiness response: %d %s", res.StatusCode, body)
+			}
+			var state struct {
+				Status string            `json:"status"`
+				Checks map[string]string `json:"checks"`
+			}
+			if err := json.Unmarshal(body, &state); err != nil {
+				t.Fatal(err)
+			}
+			if len(state.Checks) != 3 || (state.Status == "ok") != (tc.expectedStatus == 200) {
+				t.Fatalf("incorrect dependency state: %s", body)
+			}
+		})
+	}
+}
+
+func TestReadinessTimeoutAndLivenessIndependence(t *testing.T) {
+	var calls atomic.Int32
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		<-r.Context().Done()
+	}))
+	defer backend.Close()
+	gateway := gatewayFor(t, backend.URL, map[string]string{"GATEWAY_READINESS_TIMEOUT": "30ms"}, nil)
+	client := &http.Client{Timeout: time.Second}
+	for _, tc := range []struct {
+		method, path   string
+		expectedStatus int
+	}{
+		{"GET", "/_gateway/ready", 503}, {"HEAD", "/_gateway/ready", 503},
+		{"POST", "/_gateway/ready", 405}, {"GET", "/_gateway/live", 200},
+	} {
+		req, _ := http.NewRequest(tc.method, gateway.URL+tc.path, nil)
+		res, err := client.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body := bodyOf(t, res)
+		if res.StatusCode != tc.expectedStatus || (tc.method == "HEAD" && len(body) != 0) {
+			t.Fatalf("%s %s: %d %s", tc.method, tc.path, res.StatusCode, body)
+		}
+		if tc.expectedStatus == 405 && res.Header.Get("Allow") != "GET, HEAD" {
+			t.Fatal("missing Allow header")
+		}
+	}
+	if calls.Load() != 2 {
+		t.Fatalf("liveness or rejected method queried the backend: %d calls", calls.Load())
+	}
+}
+
 func TestTransparentRequestAndResponse(t *testing.T) {
 	for _, method := range []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"} {
 		t.Run(method, func(t *testing.T) {

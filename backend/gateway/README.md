@@ -1,4 +1,4 @@
-# Gateway transparente — SUP-264
+# Gateway transparente — SUP-264 / SUP-265
 
 Servicio Go independiente que reenvía las solicitudes al backend actual. Esta
 primera extracción conserva autenticación, catálogo y scraping en `backend/api`.
@@ -16,6 +16,7 @@ Escucha por defecto en el puerto 8082. Para validar localmente:
 
 ```bash
 curl -fsS http://127.0.0.1:8082/_gateway/live
+curl -fsS http://127.0.0.1:8082/_gateway/ready
 curl -fsS http://127.0.0.1:8082/api/v1/health
 curl -fsS 'http://127.0.0.1:8082/api/v1/productos?page=1&limit=5'
 ```
@@ -25,6 +26,12 @@ curl -fsS 'http://127.0.0.1:8082/api/v1/productos?page=1&limit=5'
 backend sin sustituir sus respuestas. En `/api/v1/health`, verificar también los
 campos de PostgreSQL y Redis: un HTTP 200 no demuestra que esas dependencias estén
 disponibles.
+
+`/_gateway/ready` consulta `/api/v1/health` y responde 200 únicamente cuando la
+API, PostgreSQL y Redis están disponibles; responde 503 ante fallos, respuestas
+inválidas o timeout. Acepta GET/HEAD, sin seguir redirects. Liveness sigue
+respondiendo independientemente del backend para evitar reinicios por fallos de
+dependencias.
 
 ## Configuración
 
@@ -38,6 +45,7 @@ disponibles.
 | `GATEWAY_READ_HEADER_TIMEOUT` | `5s` | Lectura de headers del cliente |
 | `GATEWAY_IDLE_TIMEOUT` | `60s` | Conexión entrante inactiva |
 | `GATEWAY_SHUTDOWN_TIMEOUT` | `10s` | Espera de solicitudes activas al recibir SIGINT/SIGTERM |
+| `GATEWAY_READINESS_TIMEOUT` | `2s` | Tiempo máximo de consulta al health del backend |
 | `GATEWAY_TRUSTED_PROXIES` | Vacío | IPs/CIDRs de proxies de entrada confiables, separados por coma |
 
 Los timeouts deben ser duraciones positivas de Go, como `500ms` o `30s`. Una
@@ -71,8 +79,9 @@ conexiones internas no usan automáticamente el proxy de salida de la máquina.
 Los GET/HEAD/OPTIONS/TRACE reutilizan conexiones al backend. Para los demás
 métodos se abre una conexión HTTP/1 por solicitud: se evita que el transporte
 reenvíe una escritura ante un fallo de una conexión reutilizada, incluso con
-`Idempotency-Key`. Esto agrega costo de conexión a las escrituras; medirlo en
-SUP-265. La Gateway no implementa reintentos de negocio.
+`Idempotency-Key`. Esto agrega costo de conexión a las escrituras. Las pruebas de
+integración verifican el comportamiento funcional; el rendimiento bajo carga
+debe medirse en el entorno de prueba. La Gateway no implementa reintentos de negocio.
 
 Si no se puede conectar al backend, devuelve HTTP 502 con `backend_unavailable`.
 Un timeout antes de empezar la respuesta devuelve HTTP 504 con `backend_timeout`.
@@ -94,7 +103,7 @@ go build ./cmd/gateway
 Las pruebas usan servidores HTTP locales y cubren transparencia de requests y
 respuestas, cookies, estados de error del backend, compresión, redirects, IPs de
 proxies confiables, correlación sin credenciales en logs, conexión fallida,
-timeout, cancelación y escrituras sin replay.
+timeout, cancelación, escrituras sin replay y readiness ante fallos de dependencias.
 
 La comprobación funcional de SUP-264 además debe comparar las rutas actuales
 directas y proxificadas con fixtures aislados: catálogo, búsqueda/detalle, salud,
@@ -117,14 +126,26 @@ backend. Los ejemplos usan Python 3 aunque el comando disponible sea `python`.
 No basta con una salida exitosa de los tests del proxy para afirmar compatibilidad
 del backend real. Registrar resultados de ambas suites y del humo por separado.
 
-## Alcance y retorno al estado anterior
+## Docker, integración y retorno al estado anterior
 
-SUP-264 agrega el proxy, su configuración y sus pruebas. Dockerfiles, Compose,
-CI, Services/Ingress y despliegue en clúster corresponden a SUP-265; no se cambian
-en esta tarea. No se modifica el backend existente ni se migra su base de datos.
+Desde la raíz del repositorio:
 
-Hasta la integración, el frontend y el bot conservan su entrada actual. Para
-probar el proxy se usa explícitamente el puerto 8082. El retorno local consiste
-en detener la Gateway y usar nuevamente el puerto/destino del backend; no hay
-datos que restaurar. Antes de un cambio de entrada en el clúster, SUP-265 debe
-probar el retorno del Service/Ingress con las imágenes existentes.
+```bash
+docker build --target test -t gateway-tests backend/gateway
+docker build -t gateway backend/gateway
+bash scripts/smoke_gateway_compose.sh
+```
+
+La imagen ejecuta un binario estático como UID/GID 65532. Compose y Kubernetes
+añaden filesystem de solo lectura, recursos y probes. Gateway no recibe secretos
+JWT, acceso Redis ni credenciales PostgreSQL.
+
+SUP-265 incorpora Gateway a Compose, CI y los manifiestos de prueba. La API actual
+conserva todos sus dominios y datos. Los clientes usan `api:8080`; Gateway reenvía
+a `go_service:8080` en Compose y `api-backend:8080` en Kubernetes.
+
+La [guía de desarrollo y pruebas](../../docs/Guias/GUIA_GATEWAY_DESARROLLO_PRUEBAS.md)
+describe configuración, pruebas aisladas, cambio de entrada gradual y rollback.
+El script prueba también el frontend tras detener Gateway y devolver el alias
+`api` a la API original. Los manifiestos no implican un despliegue automático en
+el clúster de la universidad.

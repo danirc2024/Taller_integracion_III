@@ -9,6 +9,8 @@ parser = argparse.ArgumentParser(description='Comparar API directa y Gateway sob
 parser.add_argument('--backend-url', default='http://127.0.0.1:8080')
 parser.add_argument('--gateway-url', default='http://127.0.0.1:8082')
 parser.add_argument('--write-fixtures', action='store_true', help='Crear usuario, trabajo y producto; usar solo una base aislada de prueba.')
+parser.add_argument('--api-only', action='store_true', help='Comparar solo /api/v1, por ejemplo detrás de Nginx.')
+parser.add_argument('--direct-entrypoint', action='store_true', help='Verificar el retorno a la entrada directa sin Gateway.')
 args = parser.parse_args()
 DIRECT = args.backend_url.rstrip('/')
 GATEWAY = args.gateway_url.rstrip('/')
@@ -50,13 +52,15 @@ def compare(path, status, method='GET'):
         gateway[2].pop('timestamp', None)
         assert gateway[2]['checks'] == {'database': 'ok', 'redis': 'ok'}
     assert direct[2] == gateway[2], 'Response changed for ' + path
-    assert gateway[1].get('X-Request-Id') or gateway[1].get('X-Request-ID'), 'Missing request ID'
+    request_id = gateway[1].get('X-Request-Id') or gateway[1].get('X-Request-ID')
+    assert bool(request_id) != args.direct_entrypoint, 'Unexpected request ID at comparison entrypoint'
     checks.append(method + ' ' + path + ': compatible')
     return gateway[2]
 
 
-compare('/', 200)
-compare('/health', 200)
+if not args.api_only:
+    compare('/', 200)
+    compare('/health', 200)
 compare('/api/v1/health', 200)
 page = compare('/api/v1/productos?page=1&limit=5', 200)
 assert len(page['data']) == 5
@@ -66,9 +70,10 @@ compare('/api/v1/productos/buscar?q=leche&page=1&limit=5', 200)
 compare('/api/v1/productos/buscar?q=le', 400)
 compare('/api/v1/auth/me', 401)
 compare('/api/v1/admin/productos', 401)
-compare('/ruta-inexistente', 404)
+compare('/api/v1/ruta-inexistente', 404)
 compare('/api/v1/productos', 405, 'PUT')
-compare('/swagger/doc.json', 200)
+if not args.api_only:
+    compare('/swagger/doc.json', 200)
 
 origin = {'Origin': 'https://frontend.example', 'Access-Control-Request-Method': 'POST'}
 direct = request(DIRECT, '/api/v1/auth/login', 'OPTIONS', headers=origin)
