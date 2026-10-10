@@ -62,6 +62,13 @@ p.write_text('DB_USER=sup265\nDB_NAME=sup265\nDB_PASSWORD=' + secrets.token_hex(
 p.chmod(0o600)
 PY
 
+if [ -f /etc/ssl/certs/ca-certificates.crt ]; then
+  cp /etc/ssl/certs/ca-certificates.crt "$test_dir/ca.crt"
+else
+  touch "$test_dir/ca.crt"
+fi
+export SUP265_CA_BUNDLE="$test_dir/ca.crt"
+
 compose config --quiet
 if [[ "${SUP265_SKIP_BUILD:-0}" != 1 ]]; then
   compose build --build-arg HTTP_PROXY --build-arg HTTPS_PROXY --build-arg NO_PROXY --build-arg http_proxy --build-arg https_proxy --build-arg no_proxy go_service gateway frontend

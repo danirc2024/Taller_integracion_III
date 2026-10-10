@@ -16,7 +16,6 @@ func TestLoadDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.ListenAddr != ":8082" || c.RequestTimeout != 30*time.Second || len(c.TrustedProxies) != 0 {
 	if c.ListenAddr != ":8082" || c.RequestTimeout != 30*time.Second || c.ReadinessTimeout != 2*time.Second || len(c.TrustedProxies) != 0 {
 		t.Fatalf("unexpected defaults: %+v", c)
 	}
