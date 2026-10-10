@@ -6,7 +6,10 @@ retomar las tareas y actualizarlo cuando cambie la base de integración.
 ## Base de integración revisada
 
 - Rama: `develop-refactor`.
-- HEAD remoto revisado: `bd942762e02d3ad0e62166bd55e24bbed06737e2`.
+- HEAD remoto actual al comenzar SUP-267: `b2d1b5f1e14896602f24d39d96605b70d7419366`.
+- SUP-266 se integró por squash en `b2d1b5f` ([PR #93](https://github.com/danirc2024/Taller_integracion_III/pull/93));
+  el seguimiento de SUP-264/265 se integró en `e263379` (PR #92).
+- La revisión histórica de SUP-264/265 descrita debajo corresponde a `bd94276`.
 - SUP-265 se integró mediante squash en `27f15cd` ([PR #91](https://github.com/danirc2024/Taller_integracion_III/pull/91)).
 - SUP-264 se integró después mediante squash en `bd94276` ([PR #90](https://github.com/danirc2024/Taller_integracion_III/pull/90)).
 - Al revisar, la rama publicada de SUP-265 estaba en `5841afc`. No contiene por sí sola los
@@ -95,12 +98,18 @@ registrados y no se modificaron durante la revisión.
 
 ## Continuidad del trabajo
 
-La siguiente tarea planificada es SUP-266: modularizar Identidad y coordinación
-de scraping, conservando los contratos actuales. Crear su rama desde
-`develop-refactor` actualizada, con el alias `vmatus` y la nomenclatura del equipo.
+SUP-266 está integrada: Identidad y Scraping tienen módulos privados, conservan
+sus contratos y siguen en el binario de API. Se verificó el review de login SSO:
+la comprobación de `PasswordHash` nulo/vacío estaba conservada en `390a2bd`, con
+prueba de regresión aprobada. No fue necesario modificar la lógica de login.
+
+La tarea en curso es SUP-267: Catálogo y precios como servicio independiente.
+Su rama `backend/refactor/sup-267-extraer-catalogo-vmatus` parte de `b2d1b5f`.
+La activación de rutas y despliegues corresponde a SUP-268. Consultar
+`GUIA_CATALOGO_INDEPENDIENTE.md` para alcance y brechas funcionales previas.
 Los squashes ya incorporaron el contenido de las ramas anteriores; evitar
 reintroducir sus commits históricos al preparar la siguiente tarea.
 
 Autor de commits: Vicente Sebastian Matus Mora, `vmatus2024@alu.uct.cl`.
 No hacer nuevos commits ni push sin autorización para la tarea correspondiente.
-El autor abre los PR manualmente.
+El autor abre los PR manualmente salvo autorización expresa para crearlos.

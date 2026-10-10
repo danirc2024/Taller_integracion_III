@@ -21,6 +21,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 SERVICES = {
+    "backend/catalogo": {
+        "lang": "go",
+        "name": "Catálogo y precios (Go + Gin)",
+        "extensions": [".go"],
+        "exclude": ["tmp"],
+    },
     "backend/api": {
         "lang": "go",
         "name": "API Gateway (Go + Gin)",
