@@ -136,6 +136,10 @@ Estas fronteras permiten hacerlo sin arrastrar registro, JWT ni coordinación de
 trabajos al nuevo servicio. Su activación en la Gateway y los despliegues se
 realizarán en SUP-268.
 
+La implementación y comparación independiente de SUP-267 se documentan en
+[Catálogo independiente](GUIA_CATALOGO_INDEPENDIENTE.md). El lector anterior
+permanece en la API hasta activar el nuevo destino en SUP-268.
+
 ## Comprobaciones realizadas en esta rama
 
 - 69 comprobaciones existentes conservadas y 20 nuevas de composición y
